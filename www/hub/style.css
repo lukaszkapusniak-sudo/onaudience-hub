@@ -57,7 +57,9 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'IBM Plex
 @keyframes pulse{0%,100%{opacity:.9}50%{opacity:.35}}
 .center{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);min-width:0}
 .center-scroll{flex:1;overflow-y:auto;padding:20px}
-.empty-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px}
+.empty-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px}
+.empty-logo{width:56px;height:56px;border-radius:50%;background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;font:600 18px 'IBM Plex Mono',monospace}
+.empty-hint{font:500 9px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
 .empty-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
 .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:520px;width:100%}
 .qa-card{background:var(--surf);border:1px solid var(--rule);border-radius:2px;padding:12px 14px;cursor:pointer;transition:all .15s}.qa-card:hover{border-color:var(--g);background:var(--gb)}
