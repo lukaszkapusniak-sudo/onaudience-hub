@@ -105,7 +105,7 @@ function audRowHtml(a) {
   const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
   const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
   return `
-<div class="aud-row${active}" onclick="audOpen(${JSON.stringify(a.id)})">
+<div class="aud-row${active}" onclick="audEdit(${JSON.stringify(a.id)})">
   <div class="aud-row-head">
     <span class="aud-row-name">${esc(a.name)}</span>
     <span class="aud-row-count">${n} co</span>
@@ -113,7 +113,6 @@ function audRowHtml(a) {
   ${a.description ? `<div class="aud-row-desc">${esc(a.description)}</div>` : ''}
   <div class="aud-row-pills">${typePill}${tagPills}</div>
   <div class="aud-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audEdit(${JSON.stringify(a.id)})">EDIT</button>
     <button class="btn sm" onclick="event.stopPropagation();audExportCsv(${JSON.stringify(a.id)})">↗ CSV</button>
     <button class="btn sm" onclick="event.stopPropagation();audDelete(${JSON.stringify(a.id)})" style="color:var(--prc)">✕</button>
   </div>
