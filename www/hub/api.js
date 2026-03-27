@@ -258,34 +258,71 @@ export async function withCache(companyId, source, ttlHours, fn){
 }
 
 /* ── Status ───────────────────────────────────────────────── */
-export function setStatus(live){const el=document.getElementById('dbStatus');if(live){el.textContent=`● Live · ${S.companies.length}`;el.className='nav-status live';}else{el.textContent=`○ Seed · ${S.companies.length}`;el.className='nav-status';}}
+export function setStatus(live){
+  const el=document.getElementById('dbStatus');
+  if(!el) return;
+  const loaded=S.companies.length;
+  const total=S.totalCompaniesInDb||0;
+  const countStr = total && total>loaded ? `${loaded} / ${total}` : `${loaded}`;
+  if(live){ el.textContent=`● Live · ${countStr}`; el.className='nav-status live'; }
+  else     { el.textContent=`○ ${countStr}`;         el.className='nav-status'; }
+}
 
 /* ── Load from Supabase (companies + contacts + relations in parallel) ── */
+/* ── loadFromSupabase — paginated streaming ──────────────────
+   Page 1 (200 rows) loads first → renders immediately.
+   Remaining pages load silently in background, list grows.
+   Order: ICP DESC, richness DESC → best accounts always first.
+   ─────────────────────────────────────────────────────────── */
+const _PAGE = 200;
+
 export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),30000);
   try{
-    const hdrRange = authHdr({'Range':'0-4999','Prefer':'count=exact'});
-    const[cr,ct,rl]=await Promise.all([
-      fetch(`${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,{headers:hdrRange}),
-      fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,{headers:hdrRange}),
+    const hdr1 = authHdr({'Range':`0-${_PAGE-1}`,'Prefer':'count=exact'});
+    const hdrCt = authHdr({'Range':'0-4999','Prefer':'count=exact'});
+    const[cr,ct,rl] = await Promise.all([
+      fetch(`${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,{headers:hdr1}),
+      fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,{headers:hdrCt}),
       fetch(`${SB_URL}/rest/v1/company_relations?select=*`,{headers:authHdr()}),
     ]);
-    clearTimeout(timer);
-    if(!cr.ok)throw new Error(cr.status);
-    const dbc=await cr.json(),dbt=ct.ok?await ct.json():[];
-    const dbr=rl.ok?await rl.json():[];
-    if(Array.isArray(dbc)&&dbc.length)S.companies=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}));
-    if(Array.isArray(dbt))S.contacts=dbt;
-    if(Array.isArray(dbr))S.allRelations=dbr;
-    const contentRange=cr.headers.get('content-range');
-    const totalMatch=contentRange&&contentRange.match(/\/(\d+)/);
-    const totalInDb=totalMatch?parseInt(totalMatch[1]):S.companies.length;
-    S.totalCompaniesInDb = totalInDb;  // store for stats bar
-    setStatus(S.companies.length>0);
-    if(window.clog)window.clog('db',`Loaded <b>${S.companies.length}</b> of ${totalInDb} companies · <b>${S.contacts.length}</b> contacts · <b>${S.allRelations.length}</b> relations`);
-    if(totalInDb>S.companies.length&&window.clog)window.clog('db',`⚠️ Loaded ${S.companies.length} of ${totalInDb} — showing highest ICP + richness first`);
-  }catch(e){clearTimeout(timer);console.warn('seed',e.message);setStatus(false);if(window.clog)window.clog('db',`Seed mode — ${e.message}`);}
-  renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
+    if(!cr.ok) throw new Error(`HTTP ${cr.status}`);
+    const dbc=await cr.json(), dbt=ct.ok?await ct.json():[], dbr=rl.ok?await rl.json():[];
+    const total=parseInt((cr.headers.get('content-range')||'').match(/\/(\d+)/)?.[1]||0);
+    S.totalCompaniesInDb=total;
+    if(Array.isArray(dbc)&&dbc.length) S.companies=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}));
+    if(Array.isArray(dbt)) S.contacts=dbt;
+    if(Array.isArray(dbr)) S.allRelations=dbr;
+    setStatus(true);
+    renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
+    if(window.clog) window.clog('db',`<b>${S.companies.length}</b> / ${total} companies · <b>${S.contacts.length}</b> contacts — loading remaining…`);
+    if(total>_PAGE) _loadRemainingPages(total,renderStats,renderList,renderTagPanel);
+  }catch(e){
+    console.warn('[load]',e.message);
+    setStatus(false);
+    if(window.clog) window.clog('db',`Load failed — ${e.message}`);
+    renderStats();renderList();
+  }
+}
+
+async function _loadRemainingPages(total,renderStats,renderList,renderTagPanel){
+  let offset=_PAGE;
+  while(offset<total){
+    const end=Math.min(offset+_PAGE-1,total-1);
+    try{
+      const r=await fetch(
+        `${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,
+        {headers:authHdr({'Range':`${offset}-${end}`})}
+      );
+      if(!r.ok) break;
+      const page=await r.json();
+      if(!Array.isArray(page)||!page.length) break;
+      S.companies=[...S.companies,...page.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}))];
+      setStatus(true);
+      renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
+    }catch(e){ break; }
+    offset+=_PAGE;
+  }
+  if(window.clog) window.clog('db',`✓ All loaded: <b>${S.companies.length}</b> / ${total} companies`);
 }
 
 /* ── Refresh relations cache only ─────────────────────────── */
