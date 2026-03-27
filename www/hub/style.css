@@ -19,7 +19,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'IBM Plex
 .main{flex:1;display:flex;overflow:hidden}
 .left{width:360px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--rule);background:var(--surf);overflow:hidden}
 .left-tabs{display:flex;border-bottom:1px solid var(--rule);height:32px;flex-shrink:0;width:100%}
-.left-tab{flex:1;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent}
+.left-tab{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent}
 .left-tab.active{color:var(--g);border-bottom-color:var(--g);background:var(--gb)}
 .left-search{padding:7px 8px;border-bottom:1px solid var(--rule2);flex-shrink:0;display:flex;gap:5px;align-items:center}
 .left-search input{flex:1;height:26px;padding:0 8px;border:1px solid var(--rule);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surf2);color:var(--t1);outline:none;transition:border-color .15s}
