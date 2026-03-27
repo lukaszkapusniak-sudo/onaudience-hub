@@ -39,14 +39,14 @@
   <div class="sb-col" id="sbNogo" onclick="setFilter('nogo',this)"><div class="sb-num" id="stNogo">&#8212;</div><div class="sb-lbl">No Outreach</div></div>
   <div class="sb-col" id="sbFresh" onclick="setFilter('fresh',this)"><div class="sb-num" id="stFresh">&#8212;</div><div class="sb-lbl">Fresh &#129385;</div></div>
 </div>
+<div class="left-tabs">
+  <div class="left-tab active" id="tabComp" onclick="switchTab('companies')">Companies</div>
+  <div class="left-tab" id="tabCont" onclick="switchTab('contacts')">Contacts</div>
+  <div class="left-tab" id="tabAud" onclick="switchTab('audiences')">Audiences</div>
+  <div class="left-tab" id="tab-tcf" onclick="switchTab('tcf')">TCF</div>
+</div>
 <div class="main">
   <div class="left">
-    <div class="left-tabs">
-      <div class="left-tab active" id="tabComp" onclick="switchTab('companies')">Companies</div>
-      <div class="left-tab" id="tabCont" onclick="switchTab('contacts')">Contacts</div>
-      <div class="left-tab" id="tabAud" onclick="switchTab('audiences')">Audiences</div>
-      <div class="left-tab" id="tab-tcf" onclick="switchTab('tcf')">TCF</div>
-    </div>
     <div class="left-search" id="leftSearch">
       <input type="text" id="searchInput" placeholder="Search&#8230;" oninput="onSearch()"/>
       <button class="btn sm" id="tagBtn" onclick="toggleTagPanel()" title="Tag filter">&#127991;</button>
