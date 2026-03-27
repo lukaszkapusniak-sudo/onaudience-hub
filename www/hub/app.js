@@ -238,8 +238,15 @@ async function bootHub(session) {
   }
   await loadFromSupabase(renderStats, renderList, renderTagPanel);
   _lastSync = Date.now();
-  /* Retry once on cold CORS start (page 1 came back empty) */
-  if (!S.companies.length) setTimeout(() => refreshData(true), 1500);
+  /* Retry on cold CORS start — poll up to 4× at 1s intervals */
+  if (!S.companies.length) {
+    let _retries = 0;
+    const _retryTimer = setInterval(async () => {
+      if (S.companies.length || ++_retries > 4) { clearInterval(_retryTimer); return; }
+      await loadFromSupabase(renderStats, renderList, renderTagPanel);
+      _lastSync = Date.now();
+    }, 1000);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
