@@ -252,6 +252,31 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
 .aud-detail-toolbar-count{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
 .aud-sort-sel{font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--surf2);border:1px solid var(--rule2);color:var(--t1);padding:3px 7px;border-radius:2px;letter-spacing:.04em;cursor:pointer}
 .aud-co-list{background:var(--surf);border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+/* System audience styles */
+.aud-sys-section{margin-bottom:8px}
+.aud-section-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t4);padding:6px 10px 3px}
+.sys-lock{font-size:9px;opacity:.5}
+.sys-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);background:var(--surf2);border:1px solid var(--rule);border-radius:2px;padding:1px 5px}
+.aud-member-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--rule3);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--t1)}
+.aud-member-row:last-child{border-bottom:none}
+.aud-add-wrap{padding:10px 14px;border-top:1px solid var(--rule);background:var(--surf)}
+.aud-add-search{width:100%;height:28px;padding:0 10px;border:1px solid var(--rule);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surf2);color:var(--t1);outline:none;box-sizing:border-box}
+.aud-add-search:focus{border-color:var(--g)}
+.sys-suggest-list{position:absolute;top:100%;left:0;right:0;background:var(--surf);border:1px solid var(--rule);border-radius:2px;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:200px;overflow-y:auto}
+.sys-suggest-row{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t1);border-bottom:1px solid var(--rule3)}
+.sys-suggest-row:last-child{border-bottom:none}
+.sys-suggest-row:hover{background:var(--surf2)}
+/* System chips in company panel */
+.ib-sys-row{display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap}
+.sys-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:2px;font-size:9px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;background:var(--gb);color:var(--g);border:1px solid var(--gr);transition:background .12s}
+.sys-chip:hover{background:var(--gr)}
+.sys-chip-add{background:none;color:var(--t3);border-color:var(--rule);border-style:dashed}
+.sys-chip-add:hover{background:var(--surf2);color:var(--t2)}
+.sys-dd{display:none;position:absolute;top:calc(100% + 3px);left:0;background:var(--surf);border:1px solid var(--rule);border-radius:2px;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:120px}
+.sys-dd.open{display:block}
+.sys-dd-item{padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;color:var(--t2);border-bottom:1px solid var(--rule3)}
+.sys-dd-item:last-child{border-bottom:none}
+.sys-dd-item:hover{background:var(--surf2);color:var(--g)}
 
 /* Company row inside audience detail */
 .aud-co-row{padding:9px 14px;border-bottom:1px solid var(--rule3);cursor:pointer;transition:background .1s}

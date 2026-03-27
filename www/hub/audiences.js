@@ -46,30 +46,64 @@ async function sbDeleteAudience(id) {
   if (!res.ok) throw new Error(await res.text());
 }
 
+async function sbPatchCompanyType(companyId, type) {
+  const res = await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(companyId)}`, {
+    method: 'PATCH',
+    headers: authHdr({ 'Prefer': 'return=representation' }),
+    body: JSON.stringify({ type })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
 /* ─── Left panel render ────────────────────────────────────── */
 
 export async function renderAudiencesPanel() {
   const panel = document.getElementById('audiencesPanel');
   if (!panel) return;
   S.audiences = await sbLoadAudiences();
+  const sysAuds  = S.audiences.filter(a => a.is_system);
+  const userAuds = S.audiences.filter(a => !a.is_system);
+  const sysSection = sysAuds.length ? `
+<div class="aud-sys-section">
+  <div class="aud-section-lbl">SYSTEM LISTS</div>
+  ${sysAuds.map(audRowHtml).join('')}
+</div>` : '';
   panel.innerHTML = `
 <div class="aud-toolbar">
-  <span class="aud-count">${S.audiences.length} AUDIENCE${S.audiences.length !== 1 ? 'S' : ''}</span>
+  <span class="aud-count">${userAuds.length} AUDIENCE${userAuds.length !== 1 ? 'S' : ''}</span>
   <button class="btn sm p" onclick="audNew()">＋ NEW</button>
 </div>
+${sysSection}
 <div class="aud-list">
-  ${S.audiences.length === 0
+  ${userAuds.length === 0
     ? '<div class="aud-empty">No audiences yet.<br>Use AI to build your first list.</div>'
-    : S.audiences.map(audRowHtml).join('')}
+    : userAuds.map(audRowHtml).join('')}
 </div>`;
 }
 
 function audRowHtml(a) {
+  const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
+  if (a.is_system) {
+    const targetType = a.system_filter?.type;
+    const allCos = window._oaState?.companies || S.companies || [];
+    const n = targetType ? allCos.filter(c => c.type === targetType).length : 0;
+    return `
+<div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
+  <div class="aud-row-head">
+    <span class="aud-row-name">${esc(a.name)}</span>
+    <span class="aud-row-count">${n} co</span>
+    <span class="sys-lock" title="System audience">🔒</span>
+  </div>
+  <div class="aud-row-actions">
+    <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
+  </div>
+</div>`;
+  }
   const n = Array.isArray(a.company_ids) ? a.company_ids.length : 0;
   const f = a.filters || {};
   const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
   const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
-  const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
   return `
 <div class="aud-row${active}" onclick="audOpen(${JSON.stringify(a.id)})">
   <div class="aud-row-head">
@@ -93,7 +127,6 @@ export function renderAudienceDetail(id) {
   if (!aud) return;
   S.activeAudience = aud;
 
-  const companies = getAudienceCompanies(aud);
   const center = document.getElementById('centerScroll');
   if (!center) return;
 
@@ -105,13 +138,6 @@ export function renderAudienceDetail(id) {
   if (cp) cp.style.display = 'none';
   if (tc) tc.style.display = 'none';
 
-  const f = aud.filters || {};
-  const tagPills = (f.tags || []).map(t => `<span class="tag tpr">${esc(t)}</span>`).join('');
-  const sortOpts = ['updated_at', 'name', 'icp', 'size'].map(v =>
-    `<option value="${v}" ${(aud.sort_field || 'updated_at') === v ? 'selected' : ''}>${sortLabel(v)}</option>`
-  ).join('');
-
-  // Inject detail HTML — wraps inside an existing named div so it scrolls naturally
   let detailEl = document.getElementById('aud-detail-wrap');
   if (!detailEl) {
     detailEl = document.createElement('div');
@@ -119,6 +145,19 @@ export function renderAudienceDetail(id) {
     center.appendChild(detailEl);
   }
   detailEl.style.display = '';
+
+  if (aud.is_system) {
+    const companies = getSystemAudienceCompanies(aud);
+    detailEl.innerHTML = renderSystemAudienceDetailHTML(aud, companies);
+    return;
+  }
+
+  const companies = getAudienceCompanies(aud);
+  const f = aud.filters || {};
+  const tagPills = (f.tags || []).map(t => `<span class="tag tpr">${esc(t)}</span>`).join('');
+  const sortOpts = ['updated_at', 'name', 'icp', 'size'].map(v =>
+    `<option value="${v}" ${(aud.sort_field || 'updated_at') === v ? 'selected' : ''}>${sortLabel(v)}</option>`
+  ).join('');
 
   detailEl.innerHTML = `
 <div class="aud-detail">
@@ -154,7 +193,61 @@ export function renderAudienceDetail(id) {
 </div>`;
 }
 
+/* ─── System audience detail helpers ───────────────────────── */
+
+function getSystemAudienceCompanies(aud) {
+  const targetType = aud.system_filter?.type;
+  if (!targetType) return [];
+  const all = window._oaState?.companies || S.companies || [];
+  return [...all.filter(c => c.type === targetType)]
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+
+function renderSystemAudienceDetailHTML(aud, companies) {
+  const audId = esc(aud.id);
+  return `
+<div class="aud-detail">
+  <div class="aud-detail-header">
+    <div class="aud-detail-title">
+      <span class="aud-detail-name">${esc(aud.name)}</span>
+      <span class="sys-badge">🔒 SYSTEM</span>
+      <span class="aud-detail-toolbar-count">${companies.length} COMPANIES</span>
+      <button class="btn sm" onclick="audCloseDetail()">✕</button>
+    </div>
+    ${aud.description ? `<div class="aud-detail-desc">${esc(aud.description)}</div>` : ''}
+  </div>
+  <div class="aud-co-list" id="aud-co-list-inner">
+    ${companies.length === 0
+      ? '<div class="aud-empty" style="padding:24px">No companies in this list yet.</div>'
+      : companies.map(c => sysAudMemberRowHtml(c, aud)).join('')}
+  </div>
+  <div class="aud-add-wrap">
+    <div style="position:relative">
+      <input id="sys-aud-input" class="aud-input aud-add-search"
+        placeholder="Add company…"
+        oninput="sysAudSearchInput('${audId}',this.value)"
+        autocomplete="off"/>
+      <div id="sys-aud-suggest" class="sys-suggest-list" style="display:none"></div>
+    </div>
+  </div>
+</div>`;
+}
+
+function sysAudMemberRowHtml(c, aud) {
+  const slug = esc(c.id || _slug(c.name));
+  const audId = esc(aud.id);
+  const st = c.icp ? '★'.repeat(Math.min(5, Math.round(c.icp / 2))) : '';
+  return `
+<div class="aud-member-row">
+  <span class="aud-co-name" style="cursor:pointer;flex:1" onclick="openBySlug('${slug}')">${esc(c.name)}</span>
+  ${c.category ? `<span style="color:var(--t3);font-size:9px;font-family:'IBM Plex Mono',monospace">${esc(c.category)}</span>` : ''}
+  ${st ? `<span class="aud-stars">${st}</span>` : ''}
+  <button class="btn sm" style="margin-left:auto;color:var(--prc)" onclick="removeFromSystemAudience('${slug}','${audId}')">✕ Remove</button>
+</div>`;
+}
+
 function getAudienceCompanies(aud) {
+  if (aud.is_system) return getSystemAudienceCompanies(aud);
   if (!S.companies) return [];
   let list = [...S.companies];
 
@@ -594,6 +687,70 @@ export async function audToggleCo(audienceId, companyId) {
   } catch (e) {
     clog('db', `Toggle co error: ${esc(e.message)}`);
   }
+}
+
+/* ─── System audience membership (type-sync) ───────────────── */
+
+export async function sysCoSetType(companyId, targetType) {
+  const all = window._oaState?.companies || S.companies || [];
+  const co = all.find(c => c.id === companyId || _slug(c.name) === companyId);
+  if (!co) return;
+  const sysTypes = { client: 'Clients', partner: 'Partners', nogo: 'NoOutreach' };
+  if (targetType !== 'prospect' && sysTypes[co.type] && co.type !== targetType) {
+    if (!confirm(`This will move "${co.name}" from ${sysTypes[co.type]} → ${sysTypes[targetType]}. Continue?`)) return;
+  }
+  try {
+    await sbPatchCompanyType(companyId, targetType);
+    co.type = targetType;
+    if (window.currentCompany?.id === companyId || _slug(window.currentCompany?.name || '') === companyId) {
+      window.currentCompany.type = targetType;
+      window.openCompany?.(window.currentCompany);
+    }
+    if (S.activeAudience?.is_system) renderAudienceDetail(S.activeAudience.id);
+    clog('db', `<b>${esc(co.name)}</b> type → ${targetType}`);
+  } catch (e) {
+    clog('db', `Type update error: ${esc(e.message)}`);
+  }
+}
+
+export async function addToSystemAudience(companyId, audienceId) {
+  const aud = S.audiences.find(a => a.id === audienceId);
+  const targetType = aud?.system_filter?.type;
+  if (!targetType) return;
+  await sysCoSetType(companyId, targetType);
+  // Clear search input & suggestions after adding
+  const inp = document.getElementById('sys-aud-input');
+  const sug = document.getElementById('sys-aud-suggest');
+  if (inp) inp.value = '';
+  if (sug) { sug.innerHTML = ''; sug.style.display = 'none'; }
+}
+
+export async function removeFromSystemAudience(companyId, audienceId) {
+  await sysCoSetType(companyId, 'prospect');
+}
+
+export function sysAudSearchInput(audienceId, query) {
+  const aud = S.audiences.find(a => a.id === audienceId);
+  if (!aud) return;
+  const targetType = aud.system_filter?.type;
+  const all = window._oaState?.companies || S.companies || [];
+  const q = (query || '').toLowerCase().trim();
+  const el = document.getElementById('sys-aud-suggest');
+  if (!el) return;
+  if (!q) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  const hits = all
+    .filter(c => c.type !== targetType && (c.name || '').toLowerCase().includes(q))
+    .slice(0, 8);
+  if (!hits.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const audId = esc(audienceId);
+  el.innerHTML = hits.map(c => {
+    const slug = esc(c.id || _slug(c.name));
+    return `<div class="sys-suggest-row" onclick="addToSystemAudience('${slug}','${audId}')">
+  <span>${esc(c.name)}</span>
+  <span class="tag ${tClass(c.type)}" style="font-size:7px">${esc(tLabel(c.type))}</span>
+</div>`;
+  }).join('');
 }
 
 export async function audSetSort(audienceId, sortField) {

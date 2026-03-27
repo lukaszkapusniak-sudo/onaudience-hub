@@ -221,8 +221,15 @@ export function openCompany(c){
     return`<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('${id}')"><span id="${id}-arrow" style="font-size:9px;color:var(--t3)">${arrow}</span><span class="ib-sh-lbl">${icon} ${label}</span>${extra||''}</div><div class="ib-body" id="${id}" style="${disp}">${body}</div></div>`;
   };
 
+  // System audience membership chips
+  const _sysMap={client:'Clients',partner:'Partners',nogo:'NoOutreach'};
+  const _coSlug=esc(c.id||_slug(c.name));
+  const _memberChip=_sysMap[c.type]?`<span class="sys-chip" onclick="sysCoSetType('${_coSlug}','prospect')" title="Remove from ${_sysMap[c.type]}">● ${_sysMap[c.type]} ✕</span>`:'';
+  const _addOpts=Object.entries(_sysMap).filter(([t])=>t!==c.type).map(([t,l])=>`<div class="sys-dd-item" onclick="sysCoSetType('${_coSlug}','${t}')">${l}</div>`).join('');
+  const sysSection=`<div class="ib-sys-row">${_memberChip}<div style="position:relative;display:inline-block"><span class="sys-chip sys-chip-add" onclick="this.nextElementSibling.classList.toggle('open')">+ List ▾</span><div class="sys-dd">${_addOpts}</div></div></div>`;
+
   panel.innerHTML=`<div class="ib">
-<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
+<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
 <div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">🔗 Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button></div>
 <div class="ib-top">
   ${sec('ib-company','🏢','Company',
