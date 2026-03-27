@@ -307,9 +307,9 @@ export function openAudienceModal(existingId) {
     <div id="aud-preview" class="aud-preview"></div>
 
     <div class="aud-modal-foot">
-      <button class="btn p" onclick="audSave(${JSON.stringify(existingId || '')})">SAVE AUDIENCE</button>
+      <button class="btn p" onclick="audSave('${esc(existingId || '')}')">SAVE AUDIENCE</button>
       <button class="btn" onclick="audCloseModal()">CANCEL</button>
-      ${existing ? `<button class="btn" onclick="audDelete(${JSON.stringify(existingId)})" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
+      ${existing ? `<button class="btn" onclick="audDelete('${esc(existingId)}')" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
       <div id="aud-save-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;margin-top:4px;display:none"></div>
     </div>
   </div>
