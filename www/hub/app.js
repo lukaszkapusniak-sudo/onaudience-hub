@@ -1,11 +1,12 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260327c';
-import { _slug } from './utils.js?v=20260327c';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache } from './api.js?v=20260327c';
-import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations } from './hub.js?v=20260327c';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260327c';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260327c';
-import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts } from './audiences.js?v=20260327c';
+import S from './state.js?v=20260327d';
+import { _slug } from './utils.js?v=20260327d';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache } from './api.js?v=20260327d';
+import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations } from './hub.js?v=20260327d';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260327d';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260327d';
+import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience } from './audiences.js?v=20260327d';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js';
 import {
   getSession, getAuthToken, getCurrentUser,
   signOut, onAuthStateChange,
@@ -14,7 +15,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doSignIn,
   renderUserBadge,
-} from './auth.js?v=20260327c';
+} from './auth.js?v=20260327d';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -27,6 +28,7 @@ applyTheme(localStorage.getItem('oaTheme')||'dark');
    bootHub() primes it from the session; auth.js refreshes it.
    ─────────────────────────────────────────────────────────────── */
 window._oaToken = null;
+window._oaState = S;   // shared ref so modules with mismatched version URLs can access canonical state
 
 /* ── Audit trail helpers ────────────────────────────────────────
    Thin wrappers that add context then call logActivity().
@@ -214,6 +216,17 @@ Object.assign(window, {
   renderAudiencesPanel, openAudienceModal, audCloseModal,
   audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete,
   audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts,
+  addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType,
+  icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience,
+
+  /* Merge */
+  openMergeModal,
+  _mergeTab:           (...a) => window._mergeTab?.(...a),
+  _mergeSearch:        (...a) => window._mergeSearch?.(...a),
+  _confirmMerge:       (...a) => window._confirmMerge?.(...a),
+  mergeSuggestion:     (...a) => window.mergeSuggestion?.(...a),
+  rejectMergeSuggestion: (...a) => window.rejectMergeSuggestion?.(...a),
+  _pickMergeSource:    (...a) => window._pickMergeSource?.(...a),
 });
 
 /* ── Boot ───────────────────────────────────────────────────── */
@@ -238,9 +251,17 @@ async function bootHub(session) {
   }
   await loadFromSupabase(renderStats, renderList, renderTagPanel);
   _lastSync = Date.now();
-  /* If no data loaded on first attempt (cold CORS start), retry once */
+  loadMergeSuggestionsCount().then(n => {
+    if (n > 0) { const badge = document.getElementById('mergeBadge'); if (badge) { badge.textContent = n; badge.style.display = 'inline'; } }
+  });
+  /* Retry on cold CORS start — poll up to 4× at 1s intervals */
   if (!S.companies.length) {
-    setTimeout(() => refreshData(true), 2000);
+    let _retries = 0;
+    const _retryTimer = setInterval(async () => {
+      if (S.companies.length || ++_retries > 4) { clearInterval(_retryTimer); return; }
+      await loadFromSupabase(renderStats, renderList, renderTagPanel);
+      _lastSync = Date.now();
+    }, 1000);
   }
 }
 
