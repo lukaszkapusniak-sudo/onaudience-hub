@@ -330,3 +330,21 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
 .kp-inp{flex:1;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surf2);color:var(--t1);outline:none;min-width:0}
 .kp-inp:focus{border-color:var(--g)}
 .kp-status{font-family:'IBM Plex Mono',monospace;font-size:9px;margin-top:7px;min-height:14px;color:var(--t3)}
+
+/* === ICP MATCHING === */
+.icp-modal{max-width:680px}
+.icp-results{max-height:420px;overflow-y:auto}
+.icp-row{display:flex;align-items:center;gap:10px;padding:7px 16px;border-bottom:1px solid var(--rule);font:400 11px 'IBM Plex Mono',monospace;cursor:pointer;transition:background .1s}
+.icp-row:hover{background:var(--surf2)}
+.icp-row:last-child{border-bottom:none}
+.icp-score{min-width:32px;text-align:center;padding:2px 4px;border-radius:2px;font-weight:600;font-size:10px;flex-shrink:0}
+.icp-score.hi{background:var(--gb);color:var(--g)}
+.icp-score.mid{background:#fff8e1;color:#f59e0b}
+.icp-score.lo{background:var(--surf3);color:var(--t3)}
+.icp-reason{font:400 10px 'IBM Plex Sans',sans-serif;color:var(--t3);font-style:italic;margin-left:auto;max-width:220px;text-align:right;flex-shrink:0}
+.aud-hook{font:400 11px 'IBM Plex Sans',sans-serif;font-style:italic;color:var(--t2);border-left:2px solid var(--gr);padding-left:8px;margin-top:4px;padding-bottom:6px}
+.icp-spinner{width:28px;height:28px;border:3px solid var(--rule);border-top-color:var(--g);border-radius:50%;animation:icp-spin .7s linear infinite}
+@keyframes icp-spin{to{transform:rotate(360deg)}}
+.icp-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--g);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;padding:8px 18px;border-radius:3px;z-index:9999;pointer-events:none;animation:icp-fadein .2s ease}
+@keyframes icp-fadein{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+[data-theme=dark] .icp-score.mid{background:#3d2f00;color:#fbbf24}
