@@ -106,15 +106,15 @@ function audRowHtml(a) {
   const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
   const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
   return `
-<div class="aud-row${active}" onclick="audEdit(${JSON.stringify(a.id)})">
+<div class="aud-row${active}" onclick="audOpen(${JSON.stringify(a.id)})">
   <div class="aud-row-head">
     <span class="aud-row-name">${esc(a.name)}</span>
     <span class="aud-row-count">${n} co</span>
   </div>
-  ${a.description ? `<div class="aud-row-desc">${esc(a.description)}</div>` : ''}
   ${a.outreach_hook ? `<div class="aud-hook">✦ ${esc(a.outreach_hook)}</div>` : ''}
   <div class="aud-row-pills">${typePill}${tagPills}</div>
   <div class="aud-row-actions">
+    <button class="btn sm" onclick="event.stopPropagation();audEdit(${JSON.stringify(a.id)})">EDIT</button>
     <button class="btn sm" onclick="event.stopPropagation();audExportCsv(${JSON.stringify(a.id)})">↗ CSV</button>
     <button class="btn sm" onclick="event.stopPropagation();audDelete(${JSON.stringify(a.id)})" style="color:var(--prc)">✕</button>
   </div>
@@ -655,8 +655,14 @@ export function audNew() {
 }
 
 export function audEdit(id) {
-  S._audienceBuiltIds = null;
-  openAudienceModal(id);
+  const aud = S.audiences.find(a => a.id === id);
+  if (!aud) return;
+  if (aud.outreach_hook || aud.filters?.icp_prompt || aud.icp_prompt) {
+    icpEditModal(id);
+  } else {
+    S._audienceBuiltIds = null;
+    openAudienceModal(id);
+  }
 }
 
 export async function audDelete(id) {
@@ -861,6 +867,7 @@ export function audFindContacts(audienceId) {
 
 let _icpPrompt = '';
 let _icpResults = [];
+let _icpThreshold = 70;
 
 function _icpModal() {
   return document.getElementById('audience-modal');
@@ -871,6 +878,14 @@ function _icpSetContent(html) {
   if (m) m.innerHTML = html;
 }
 
+function _icpUpdateSelCount() {
+  let cnt = 0;
+  document.querySelectorAll('.icp-chk').forEach(b => { if (b.checked) cnt++; });
+  const el = document.getElementById('icp-sel-count');
+  if (el) el.textContent = `${cnt} selected`;
+}
+window._icpUpdateSelCount = _icpUpdateSelCount;
+
 /* ── Step 1: Describe modal ─────────────────────────────── */
 export function icpFindByIcp() {
   const all = window._oaState?.companies || S.companies || [];
@@ -879,17 +894,17 @@ export function icpFindByIcp() {
 <div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
-    <span class="aud-modal-title">✦ FIND COMPANIES BY ICP</span>
+    <span class="aud-modal-title">✦ FIND BY ICP</span>
     <button class="btn sm" onclick="audCloseModal()">✕</button>
   </div>
   <div class="aud-modal-body">
     <div class="aud-form-row">
       <label class="aud-label">DESCRIBE YOUR IDEAL COMPANY PROFILE</label>
       <textarea id="icp-prompt" class="aud-input aud-textarea" rows="4"
-        placeholder="e.g. European DSPs with CTV capabilities, cookieless-ready,&#10;50-500 employees, active in programmatic buying"></textarea>
+        placeholder="e.g. European DSPs with CTV capabilities, cookieless-ready,&#10;50-500 employees, active in programmatic buying">${esc(_icpPrompt)}</textarea>
     </div>
     <div style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:var(--t3);margin-top:6px;line-height:1.5">
-      AI will match against <b>${n}</b> companies using category, description, ICP score, region, size, tags.
+      AI will match against <b>${n}</b> companies.
     </div>
     <div class="aud-modal-foot" style="margin-top:16px">
       <button class="btn p" onclick="icpMatch()">✦ Find Matches</button>
@@ -906,19 +921,19 @@ export async function icpMatch() {
   const prompt = promptEl?.value?.trim();
   if (!prompt) { promptEl?.focus(); return; }
   _icpPrompt = prompt;
+  _icpThreshold = 70;
 
-  // Spinner
   _icpSetContent(`
 <div class="aud-modal-overlay">
 <div class="aud-modal-box icp-modal" style="align-items:center;justify-content:center;min-height:180px;display:flex;flex-direction:column;gap:14px">
   <div class="icp-spinner"></div>
-  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Analysing companies…</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Scoring companies…</div>
 </div>
 </div>`);
 
   try {
     const all = window._oaState?.companies || S.companies || [];
-    const candidates = all.filter(c => c.type !== 'nogo').slice(0, 450);
+    const candidates = all.filter(c => c.type !== 'nogo').slice(0, 500);
 
     const coList = candidates.map(c => ({
       id: c.id || _slug(c.name),
@@ -934,8 +949,8 @@ export async function icpMatch() {
     const data = await anthropicFetch({
       model: MODEL_CREATIVE,
       max_tokens: 2000,
-      system: `You are a B2B data partnership analyst at onAudience, a European audience data company. Given a list of companies and an ICP description, score each company 0-100 for fit. Return ONLY a valid JSON array of objects: [{"id":"...","score":85,"reason":"..."}] sorted by score descending. Include only scores >= 40. reason: max 12 words explaining the fit. No markdown, no explanation, just the JSON array.`,
-      messages: [{ role: 'user', content: `ICP: ${prompt}\n\nCompanies:\n${JSON.stringify(coList)}` }],
+      system: `You are a B2B sales analyst. Score each company 0-100 for fit with the given ICP. Return ONLY valid JSON array: [{"id":"...","score":85,"reason":"..."}] sorted desc. reason max 10 words. Include only scores >= 40. No markdown, no explanation.`,
+      messages: [{ role: 'user', content: `ICP: ${prompt}\n\nCompanies: ${JSON.stringify(coList)}` }],
     });
 
     const raw = data.content?.[0]?.text || '[]';
@@ -945,7 +960,6 @@ export async function icpMatch() {
       scores = JSON.parse(match ? match[0] : raw);
     } catch { scores = []; }
 
-    // Join with full company data
     _icpResults = scores.map(s => {
       const co = candidates.find(c => (c.id || _slug(c.name)) === s.id);
       return co ? { ...s, co } : null;
@@ -988,99 +1002,94 @@ function _icpRenderResults() {
     const sc = r.score;
     const cls = sc >= 80 ? 'hi' : sc >= 60 ? 'mid' : 'lo';
     const co = r.co;
-    const presel = sc >= 70 ? 'checked' : '';
+    const presel = sc >= _icpThreshold ? 'checked' : '';
+    const meta = [co.region, co.size].filter(Boolean).join(' · ');
     return `
 <label class="icp-row">
-  <input type="checkbox" class="icp-chk" data-idx="${i}" ${presel} onchange="window._icpToggle(${i},this.checked)"/>
+  <input type="checkbox" class="icp-chk" data-idx="${i}" ${presel} onchange="window._icpUpdateSelCount()"/>
   <span class="icp-score ${cls}">${sc}</span>
-  <span style="flex:1;min-width:0">
-    <span style="font-weight:500">${esc(co.name)}</span>
-    ${co.category ? `<span style="color:var(--t3);font-size:9px;margin-left:5px">${esc(co.category)}</span>` : ''}
-    ${co.region ? `<span style="color:var(--t3);font-size:9px;margin-left:4px">${esc(co.region)}</span>` : ''}
-    ${co.size ? `<span style="color:var(--t3);font-size:9px;margin-left:4px">${esc(co.size)}</span>` : ''}
-  </span>
+  <span class="icp-name">${esc(co.name)}</span>
+  <span class="icp-cat">${esc(co.category || '')}</span>
+  ${meta ? `<span class="icp-cat">${esc(meta)}</span>` : ''}
   <span class="icp-reason">${esc(r.reason || '')}</span>
 </label>`;
   }).join('');
 
-  const preselCount = results.filter(r => r.score >= 70).length;
+  const preselCount = results.filter(r => r.score >= _icpThreshold).length;
+  const threshOpts = [50, 60, 70, 80].map(v =>
+    `<option value="${v}" ${_icpThreshold === v ? 'selected' : ''}>${v}</option>`
+  ).join('');
+
   _icpSetContent(`
 <div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
-    <span class="aud-modal-title">✦ ${results.length} MATCHES FOUND</span>
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);margin-left:8px" id="icp-sel-count">${preselCount} selected</span>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g);cursor:pointer;text-decoration:underline" onclick="window._icpSelAll(true)">Select all</span>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);cursor:pointer;text-decoration:underline" onclick="window._icpSelAll(false)">Deselect all</span>
+    <span class="aud-modal-title">✦ ${results.length} MATCHES</span>
+    <span id="icp-sel-count" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);margin-left:8px">${preselCount} selected</span>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <button class="btn sm" onclick="icpFindByIcp()">← Back</button>
+      <button class="btn sm p" onclick="icpSaveStep()">✦ Save Audience</button>
       <button class="btn sm" onclick="audCloseModal()">✕</button>
     </div>
   </div>
   <div class="aud-modal-body" style="padding:0">
-    <div class="icp-results">${rows}</div>
-    <div class="aud-modal-foot" style="border-top:1px solid var(--rule);padding:10px 16px">
-      <button class="btn" onclick="icpFindByIcp()">← Back</button>
-      <button class="btn p" onclick="icpSaveStep()" style="margin-left:auto">Save as Audience →</button>
+    <div class="icp-toolbar">
+      <span onclick="window._icpSelAll(true)" style="cursor:pointer">☑ All</span>
+      <span onclick="window._icpSelAll(false)" style="cursor:pointer">☐ None</span>
+      <span style="color:var(--rule2)">|</span>
+      <span>Score ≥</span>
+      <select class="icp-threshold" onchange="window._icpSetThreshold(this.value)">${threshOpts}</select>
     </div>
+    <div class="icp-results">${rows}</div>
   </div>
 </div>
 </div>`);
 }
+window._icpBack = () => _icpRenderResults();
 
-/* Selection helpers (window-assigned below) */
-window._icpToggle = function(idx, checked) {
-  if (_icpResults[idx]) _icpResults[idx]._sel = checked;
-  const n = _icpResults.filter(r => r._sel !== false && (r.score >= 70 || r._sel === true)).length;
-  const el = document.getElementById('icp-sel-count');
-  // Count actual checked boxes
-  const boxes = document.querySelectorAll('.icp-chk');
-  let cnt = 0; boxes.forEach(b => { if (b.checked) cnt++; });
-  if (el) el.textContent = `${cnt} selected`;
-};
 window._icpSelAll = function(sel) {
+  document.querySelectorAll('.icp-chk').forEach(b => { b.checked = sel; });
+  _icpUpdateSelCount();
+};
+window._icpSetThreshold = function(val) {
+  _icpThreshold = parseInt(val) || 70;
   document.querySelectorAll('.icp-chk').forEach((b, i) => {
-    b.checked = sel;
-    if (_icpResults[i]) _icpResults[i]._sel = sel;
+    b.checked = _icpResults[i] && _icpResults[i].score >= _icpThreshold;
   });
-  const el = document.getElementById('icp-sel-count');
-  if (el) el.textContent = `${sel ? _icpResults.length : 0} selected`;
+  _icpUpdateSelCount();
 };
 
 /* ── Step 3: Save modal ─────────────────────────────────── */
 export async function icpSaveStep() {
-  // Collect selected
   const boxes = document.querySelectorAll('.icp-chk');
   const selected = [];
   boxes.forEach((b, i) => { if (b.checked && _icpResults[i]) selected.push(_icpResults[i]); });
   if (!selected.length) { return; }
 
-  const nameDefault = _icpPrompt.split(/\s+/).slice(0, 4).join(' ');
-
-  // Spinner while generating description + hook in parallel
   _icpSetContent(`
 <div class="aud-modal-overlay">
 <div class="aud-modal-box icp-modal" style="align-items:center;justify-content:center;min-height:180px;display:flex;flex-direction:column;gap:14px">
   <div class="icp-spinner"></div>
-  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Generating audience hook…</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Generating title & hook…</div>
 </div>
 </div>`);
 
-  let desc = '', hook = '';
+  let name = '', hook = '';
   try {
-    const [dRes, hRes] = await Promise.all([
+    const [tRes, hRes] = await Promise.all([
       anthropicFetch({
-        model: MODEL_CREATIVE, max_tokens: 80,
-        messages: [{ role: 'user', content: `Write a 1-sentence audience description (max 20 words) for: "${_icpPrompt}". Return only the sentence.` }],
+        model: MODEL_CREATIVE, max_tokens: 20,
+        messages: [{ role: 'user', content: `Generate a short 3-5 word audience name for this ICP: "${_icpPrompt}". Only the name, no punctuation. Examples: EU CTV DSPs, Cookieless Mid-Market, DACH Agency Groups` }],
       }),
       anthropicFetch({
-        model: MODEL_CREATIVE, max_tokens: 130,
-        messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience data partnerships targeting this audience: "${_icpPrompt}". Focus on what EU first-party audience data solves for them. Be specific. No fluff. Return only the hook text.` }],
+        model: MODEL_CREATIVE, max_tokens: 100,
+        messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${_icpPrompt}". Be specific, no fluff.` }],
       }),
     ]);
-    desc = dRes.content?.[0]?.text?.trim() || '';
+    name = tRes.content?.[0]?.text?.trim() || '';
     hook = hRes.content?.[0]?.text?.trim() || '';
   } catch (e) {
-    clog('ai', `ICP hook gen error: ${esc(e.message)}`);
+    clog('ai', `ICP title/hook gen error: ${esc(e.message)}`);
   }
 
   const ids = selected.map(r => r.co.id || _slug(r.co.name));
@@ -1095,20 +1104,17 @@ export async function icpSaveStep() {
     <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">${selected.length} COMPANIES SELECTED</div>
     <div class="aud-form-row">
       <label class="aud-label">NAME</label>
-      <input id="icp-save-name" class="aud-input" value="${esc(nameDefault)}" placeholder="Audience name"/>
+      <input id="icp-save-name" class="aud-input" value="${esc(name)}" placeholder="Audience name"/>
     </div>
     <div class="aud-form-row">
-      <label class="aud-label">DESCRIPTION</label>
-      <textarea id="icp-save-desc" class="aud-input aud-textarea" rows="2">${esc(desc)}</textarea>
-    </div>
-    <div class="aud-form-row">
-      <label class="aud-label" style="display:flex;align-items:center;gap:6px">✦ UNIVERSAL HOOK <span style="font-size:7px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">AI-generated, editable</span></label>
+      <label class="aud-label" style="display:flex;align-items:center;gap:6px">✦ HOOK <span style="font-size:7px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">AI-generated, editable</span></label>
       <textarea id="icp-save-hook" class="aud-input aud-textarea" rows="3">${esc(hook)}</textarea>
+      <div style="font-family:'IBM Plex Sans',sans-serif;font-size:9px;color:var(--t3);margin-top:3px">Use as opener for all companies in this audience</div>
     </div>
     <div id="icp-save-err" style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:4px"></div>
     <div class="aud-modal-foot" style="margin-top:12px">
-      <button class="btn" onclick="audCloseModal()">✕ Cancel</button>
-      <button class="btn p" onclick="icpSaveAudience(${JSON.stringify(ids)})">💾 Save Audience</button>
+      <button class="btn" onclick="window._icpBack()">← Back</button>
+      <button class="btn p" onclick="icpSaveAudience(${JSON.stringify(ids)})">💾 Save</button>
     </div>
   </div>
 </div>
@@ -1118,7 +1124,6 @@ export async function icpSaveStep() {
 /* ── Final save ─────────────────────────────────────────── */
 export async function icpSaveAudience(ids) {
   const name = document.getElementById('icp-save-name')?.value?.trim();
-  const desc = document.getElementById('icp-save-desc')?.value?.trim() || '';
   const hook = document.getElementById('icp-save-hook')?.value?.trim() || '';
   const errEl = document.getElementById('icp-save-err');
   if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
@@ -1127,9 +1132,9 @@ export async function icpSaveAudience(ids) {
   const id = `aud-${Date.now()}`;
   const payload = {
     id, name,
-    description: desc,
     company_ids: ids,
-    filters: { icp_prompt: _icpPrompt, min_score: 40 },
+    filters: { icp_prompt: _icpPrompt, threshold: _icpThreshold },
+    icp_prompt: _icpPrompt,
     outreach_hook: hook || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -1139,15 +1144,97 @@ export async function icpSaveAudience(ids) {
     await sbSaveAudience(payload);
     audCloseModal();
     await renderAudiencesPanel();
-    // Toast
     const toast = document.createElement('div');
     toast.className = 'icp-toast';
-    toast.textContent = `✓ Audience saved — ${ids.length} companies`;
+    toast.textContent = `✓ ${name} saved — ${ids.length} companies`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
     clog('db', `ICP audience saved: <b>${esc(name)}</b> · ${ids.length} companies`);
   } catch (e) {
     if (errEl) errEl.textContent = 'Save failed: ' + e.message;
     clog('db', `ICP save error: ${esc(e.message)}`);
+  }
+}
+
+/* ── ICP audience edit modal ─────────────────────────────── */
+export function icpEditModal(id) {
+  const aud = S.audiences.find(a => a.id === id);
+  if (!aud) return;
+  const modal = document.getElementById('audience-modal');
+  if (!modal) return;
+  const n = Array.isArray(aud.company_ids) ? aud.company_ids.length : 0;
+  modal.innerHTML = `
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head">
+    <span class="aud-modal-title">EDIT AUDIENCE</span>
+    <button class="btn sm" onclick="audCloseModal()">✕</button>
+  </div>
+  <div class="aud-modal-body">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">${n} COMPANIES</div>
+    <div class="aud-form-row">
+      <label class="aud-label">NAME</label>
+      <input id="icp-edit-name" class="aud-input" value="${esc(aud.name)}" placeholder="Audience name"/>
+    </div>
+    <div class="aud-form-row">
+      <label class="aud-label" style="display:flex;align-items:center;gap:6px">
+        ✦ HOOK
+        <button class="btn sm" onclick="icpRegenHook('${esc(id)}')">↺ Regen</button>
+        <span id="icp-regen-status" style="font-size:8px;color:var(--t3)"></span>
+      </label>
+      <textarea id="icp-edit-hook" class="aud-input aud-textarea" rows="3">${esc(aud.outreach_hook || '')}</textarea>
+    </div>
+    <div id="icp-edit-err" style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:4px"></div>
+    <div class="aud-modal-foot" style="margin-top:12px">
+      <button class="btn" onclick="audCloseModal()">Cancel</button>
+      <button class="btn" onclick="audDelete('${esc(id)}')" style="color:var(--prc);border-color:var(--prr)">DELETE</button>
+      <button class="btn p" onclick="icpPatchAudience('${esc(id)}')">💾 Save</button>
+    </div>
+  </div>
+</div>
+</div>`;
+}
+
+export async function icpRegenHook(id) {
+  const aud = S.audiences.find(a => a.id === id);
+  const prompt = aud?.filters?.icp_prompt || aud?.icp_prompt || aud?.name || '';
+  const statusEl = document.getElementById('icp-regen-status');
+  if (statusEl) statusEl.textContent = '⟳ generating…';
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 100,
+      messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${prompt}". Be specific, no fluff.` }],
+    });
+    const hook = res.content?.[0]?.text?.trim() || '';
+    const el = document.getElementById('icp-edit-hook');
+    if (el) el.value = hook;
+    if (statusEl) statusEl.textContent = '✓';
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Error';
+  }
+}
+
+export async function icpPatchAudience(id) {
+  const name = document.getElementById('icp-edit-name')?.value?.trim();
+  const hook = document.getElementById('icp-edit-hook')?.value?.trim() || '';
+  const errEl = document.getElementById('icp-edit-err');
+  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (errEl) errEl.textContent = '';
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: authHdr(),
+      body: JSON.stringify({ name, outreach_hook: hook || null, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const aud = S.audiences.find(a => a.id === id);
+    if (aud) { aud.name = name; aud.outreach_hook = hook || null; }
+    audCloseModal();
+    await renderAudiencesPanel();
+    if (S.activeAudience?.id === id) renderAudienceDetail(id);
+    clog('db', `Audience updated: <b>${esc(name)}</b>`);
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Save failed: ' + e.message;
   }
 }
