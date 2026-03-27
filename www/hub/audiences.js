@@ -87,8 +87,7 @@ function audRowHtml(a) {
   const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
   if (a.is_system) {
     const targetType = a.system_filter?.type;
-    const allCos = window._oaState?.companies || S.companies || [];
-    const n = targetType ? allCos.filter(c => c.type === targetType).length : 0;
+    const n = targetType ? S.companies.filter(c => c.type === targetType).length : 0;
     return `
 <div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
   <div class="aud-row-head">
@@ -199,7 +198,7 @@ export function renderAudienceDetail(id) {
 function getSystemAudienceCompanies(aud) {
   const targetType = aud.system_filter?.type;
   if (!targetType) return [];
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   return [...all.filter(c => c.type === targetType)]
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
@@ -594,7 +593,7 @@ export async function audSave(existingId) {
     // company_ids: AI-built takes priority, else derive from filters
     let companyIds = S._audienceBuiltIds;
     if (!companyIds || companyIds.length === 0) {
-      let list = (window._oaState?.companies) || S.companies || [];
+      let list = S.companies;
       if (type) list = list.filter(c => c.type === type);
       if (region) list = list.filter(c => c.region === region);
       if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
@@ -699,7 +698,7 @@ export async function audToggleCo(audienceId, companyId) {
 /* ─── System audience membership (type-sync) ───────────────── */
 
 export async function sysCoSetType(companyId, targetType) {
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const co = all.find(c => c.id === companyId || _slug(c.name) === companyId);
   if (!co) return;
   const sysTypes = { client: 'Clients', partner: 'Partners', nogo: 'NoOutreach' };
@@ -740,7 +739,7 @@ export function sysAudSearchInput(audienceId, query) {
   const aud = S.audiences.find(a => a.id === audienceId);
   if (!aud) return;
   const targetType = aud.system_filter?.type;
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const q = (query || '').toLowerCase().trim();
   const el = document.getElementById('sys-aud-suggest');
   if (!el) return;
@@ -888,7 +887,7 @@ window._icpUpdateSelCount = _icpUpdateSelCount;
 
 /* ── Step 1: Describe modal ─────────────────────────────── */
 export function icpFindByIcp() {
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const n = all.filter(c => c.type !== 'nogo').length;
   _icpSetContent(`
 <div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
@@ -932,7 +931,7 @@ export async function icpMatch() {
 </div>`);
 
   try {
-    const all = window._oaState?.companies || S.companies || [];
+    const all = S.companies;
     const candidates = all.filter(c => c.type !== 'nogo').slice(0, 500);
 
     const coList = candidates.map(c => ({
