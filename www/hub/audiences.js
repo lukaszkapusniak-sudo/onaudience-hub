@@ -310,6 +310,7 @@ export function openAudienceModal(existingId) {
       <button class="btn p" onclick="audSave(${JSON.stringify(existingId || '')})">SAVE AUDIENCE</button>
       <button class="btn" onclick="audCloseModal()">CANCEL</button>
       ${existing ? `<button class="btn" onclick="audDelete(${JSON.stringify(existingId)})" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
+      <div id="aud-save-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;margin-top:4px;display:none"></div>
     </div>
   </div>
 </div>
@@ -478,9 +479,15 @@ ${matched.length > 8 ? `<div class="aud-preview-more">+${matched.length - 8} MOR
 
 /* ─── Save ──────────────────────────────────────────────────── */
 
+function _audErr(msg) {
+  const el = document.getElementById('aud-save-err');
+  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+}
+
 export async function audSave(existingId) {
+  _audErr('');
   const name = document.getElementById('aud-name')?.value?.trim();
-  if (!name) { alert('Name required'); return; }
+  if (!name) { _audErr('Name required'); return; }
 
   const type = document.getElementById('aud-f-type')?.value || '';
   const region = document.getElementById('aud-f-region')?.value || '';
@@ -489,38 +496,38 @@ export async function audSave(existingId) {
   const sortField = document.getElementById('aud-sort')?.value || 'updated_at';
   const desc = document.getElementById('aud-desc')?.value?.trim() || '';
 
-  // company_ids: AI-built takes priority, else derive from filters
-  let companyIds = S._audienceBuiltIds;
-  if (!companyIds || companyIds.length === 0) {
-    let list = S.companies || [];
-    if (type) list = list.filter(c => c.type === type);
-    if (region) list = list.filter(c => c.region === region);
-    if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
-    if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
-    companyIds = list.map(c => c.id || _slug(c.name));
-  }
-  S._audienceBuiltIds = null;
-
-  const id = existingId || `aud-${Date.now()}`;
-  const payload = {
-    id,
-    name,
-    description: desc,
-    company_ids: companyIds,
-    filters: { type: type || null, region: region || null, minIcp: minIcp || null, tags },
-    sort_field: sortField,
-    updated_at: new Date().toISOString()
-  };
-  if (!existingId) payload.created_at = new Date().toISOString();
-
   try {
+    // company_ids: AI-built takes priority, else derive from filters
+    let companyIds = S._audienceBuiltIds;
+    if (!companyIds || companyIds.length === 0) {
+      let list = (window._oaState?.companies) || S.companies || [];
+      if (type) list = list.filter(c => c.type === type);
+      if (region) list = list.filter(c => c.region === region);
+      if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
+      if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+      companyIds = list.map(c => c.id || _slug(c.name));
+    }
+    S._audienceBuiltIds = null;
+
+    const id = existingId || `aud-${Date.now()}`;
+    const payload = {
+      id,
+      name,
+      description: desc,
+      company_ids: companyIds,
+      filters: { type: type || null, region: region || null, minIcp: minIcp || null, tags },
+      sort_field: sortField,
+      updated_at: new Date().toISOString()
+    };
+    if (!existingId) payload.created_at = new Date().toISOString();
+
     await sbSaveAudience(payload);
     audCloseModal();
     await renderAudiencesPanel();
     audOpen(id);
     clog('db', `Audience saved: <b>${esc(name)}</b> (${companyIds.length} companies)`);
   } catch (e) {
-    alert('Save failed: ' + e.message);
+    _audErr('Save failed: ' + e.message);
     clog('db', `Audience save error: ${esc(e.message)}`);
   }
 }

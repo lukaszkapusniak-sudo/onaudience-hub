@@ -28,6 +28,7 @@ applyTheme(localStorage.getItem('oaTheme')||'dark');
    bootHub() primes it from the session; auth.js refreshes it.
    ─────────────────────────────────────────────────────────────── */
 window._oaToken = null;
+window._oaState = S;   // shared ref so modules with mismatched version URLs can access canonical state
 
 /* ── Audit trail helpers ────────────────────────────────────────
    Thin wrappers that add context then call logActivity().
