@@ -1,11 +1,11 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260327a';
-import { _slug } from './utils.js?v=20260327a';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache } from './api.js?v=20260327a';
-import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations } from './hub.js?v=20260327a';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260327a';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260327a';
-import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts } from './audiences.js?v=20260327a';
+import S from './state.js';
+import { _slug } from './utils.js';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, cacheGet, cacheSet, cacheInvalidate, withCache } from './api.js';
+import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations } from './hub.js';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js';
+import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts } from './audiences.js';
 import {
   getSession, getAuthToken, getCurrentUser,
   signOut, onAuthStateChange,
@@ -14,7 +14,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doSignIn,
   renderUserBadge,
-} from './auth.js?v=20260327a';
+} from './auth.js';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -197,7 +197,7 @@ Object.assign(window, {
   refreshData,
 
   /* API key */
-  promptApiKey, toggleKeyPanel, saveKeyPanel, clearKeyPanel,
+  promptApiKey,
 
   /* Meeseeks */
   openComposer, closeComposer, mcOpenPanel,
