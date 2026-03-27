@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>onAudience — Sales Intelligence Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=20260327d"/>
+<link rel="stylesheet" href="style.css?v=20260327c"/>
 <!-- Supabase JS SDK — required for auth session management + magic link OTP -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -23,10 +23,6 @@
     <button class="btn sm" onclick="openProspectFinder('')" title="Find Companies by criteria">&#8853; Find</button>
     <button class="btn sm" onclick="openComposer(null)">&#9993; Compose</button>
     <button class="btn sm p" onclick="promptResearch()">+ Research</button>
-    <button class="btn sm" onclick="openMergeModal(null)" title="Merge duplicate companies" style="position:relative">
-      &#9881; Merge
-      <span id="mergeBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--gr);color:var(--bg);border-radius:2px;font-size:9px;padding:1px 3px;font-family:'IBM Plex Mono',monospace;">0</span>
-    </button>
     <button class="btn sm" onclick="toggleTheme()" id="themeBtn">&#127769;</button>
   </div>
 </nav>
@@ -45,32 +41,34 @@
   <div class="left-tab" id="tabAud" onclick="switchTab('audiences')">Audiences</div>
   <div class="left-tab" id="tab-tcf" onclick="switchTab('tcf')">TCF</div>
 </div>
+<div class="list-bar">
+  <div class="left-search" id="leftSearch">
+    <input type="text" id="searchInput" placeholder="Search&#8230;" oninput="onSearch()"/>
+    <button class="btn sm" id="tagBtn" onclick="toggleTagPanel()" title="Tag filter">&#127991;</button>
+    <button class="btn sm" onclick="promptResearch()" title="Research">&#8599;</button>
+  </div>
+  <div class="left-filters" id="filtersRow">
+    <span class="f-chip active" data-f="all" onclick="setFilter('all',this)">All</span>
+    <span class="f-chip" data-f="client" onclick="setFilter('client',this)">Clients</span>
+    <span class="f-chip" data-f="partner" onclick="setFilter('partner',this)">Partners</span>
+    <span class="f-chip" data-f="prospect" onclick="setFilter('prospect',this)">Prospects</span>
+    <span class="f-chip" data-f="poc" onclick="setFilter('poc',this)">POC</span>
+    <span class="f-chip" data-f="nogo" onclick="setFilter('nogo',this)">Nogo</span>
+  </div>
+  <div class="tag-panel" id="tagPanel">
+    <div class="tp-head">
+      <span class="tp-title">Tag filter</span>
+      <div class="tp-logic">
+        <span class="tp-logic-btn active" id="tlOr" onclick="setTagLogic('or')">OR</span>
+        <span class="tp-logic-btn" id="tlAnd" onclick="setTagLogic('and')">AND</span>
+      </div>
+      <span class="tp-clear" id="tpClear" onclick="clearTags()">Clear all</span>
+    </div>
+    <div class="tp-body" id="tpBody"></div>
+  </div>
+</div>
 <div class="main">
   <div class="left">
-    <div class="left-search" id="leftSearch">
-      <input type="text" id="searchInput" placeholder="Search&#8230;" oninput="onSearch()"/>
-      <button class="btn sm" id="tagBtn" onclick="toggleTagPanel()" title="Tag filter">&#127991;</button>
-      <button class="btn sm" onclick="promptResearch()" title="Research">&#8599;</button>
-    </div>
-    <div class="left-filters" id="filtersRow">
-      <span class="f-chip active" data-f="all" onclick="setFilter('all',this)">All</span>
-      <span class="f-chip" data-f="client" onclick="setFilter('client',this)">Clients</span>
-      <span class="f-chip" data-f="partner" onclick="setFilter('partner',this)">Partners</span>
-      <span class="f-chip" data-f="prospect" onclick="setFilter('prospect',this)">Prospects</span>
-      <span class="f-chip" data-f="poc" onclick="setFilter('poc',this)">POC</span>
-      <span class="f-chip" data-f="nogo" onclick="setFilter('nogo',this)">Nogo</span>
-    </div>
-    <div class="tag-panel" id="tagPanel">
-      <div class="tp-head">
-        <span class="tp-title">Tag filter</span>
-        <div class="tp-logic">
-          <span class="tp-logic-btn active" id="tlOr" onclick="setTagLogic('or')">OR</span>
-          <span class="tp-logic-btn" id="tlAnd" onclick="setTagLogic('and')">AND</span>
-        </div>
-        <span class="tp-clear" id="tpClear" onclick="clearTags()">Clear all</span>
-      </div>
-      <div class="tp-body" id="tpBody"></div>
-    </div>
     <div class="list-meta" id="listMeta">
       <span id="metaTxt">Loading&#8230;</span>
       <div id="metaPills" style="display:flex;gap:3px;flex-wrap:wrap;margin-left:auto"></div>
@@ -185,9 +183,6 @@
 <!-- Audience modal — outside .app -->
 <div id="audience-modal"></div>
 
-<!-- Merge modal — outside .app, content injected by renderMergeModal -->
-<div id="mergeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;"></div>
-
 <div id="ctxMenu" class="ctx-menu"></div>
 <div id="ctDrawerOverlay" onclick="closeDrawer()"></div>
 <div id="ctDrawer">
@@ -250,6 +245,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=20260327d"></script>
+<script type="module" src="app.js?v=20260327c"></script>
 </body>
 </html>
