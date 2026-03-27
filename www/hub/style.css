@@ -302,3 +302,6 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
 .kp-inp{flex:1;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surf2);color:var(--t1);outline:none;min-width:0}
 .kp-inp:focus{border-color:var(--g)}
 .kp-status{font-family:'IBM Plex Mono',monospace;font-size:9px;margin-top:7px;min-height:14px;color:var(--t3)}
+
+/* ── Company number badge ──────────────────────────────────── */
+.c-num{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;color:var(--t4);letter-spacing:.03em;flex-shrink:0;padding:1px 3px;border-radius:2px;border:1px solid var(--rule2);background:var(--surf3)}

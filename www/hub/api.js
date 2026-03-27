@@ -262,13 +262,13 @@ export function setStatus(live){const el=document.getElementById('dbStatus');if(
 
 /* ── Load from Supabase (companies + contacts + relations in parallel) ── */
 export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),30000);
   try{
     const hdrRange = authHdr({'Range':'0-4999','Prefer':'count=exact'});
     const[cr,ct,rl]=await Promise.all([
-      fetch(`${SB_URL}/rest/v1/companies?select=*&order=updated_at.desc.nullslast`,{headers:hdrRange,signal:ctrl.signal}),
-      fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,{headers:hdrRange,signal:ctrl.signal}),
-      fetch(`${SB_URL}/rest/v1/company_relations?select=*`,{headers:authHdr(),signal:ctrl.signal}),
+      fetch(`${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,{headers:hdrRange}),
+      fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,{headers:hdrRange}),
+      fetch(`${SB_URL}/rest/v1/company_relations?select=*`,{headers:authHdr()}),
     ]);
     clearTimeout(timer);
     if(!cr.ok)throw new Error(cr.status);
@@ -280,9 +280,10 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
     const contentRange=cr.headers.get('content-range');
     const totalMatch=contentRange&&contentRange.match(/\/(\d+)/);
     const totalInDb=totalMatch?parseInt(totalMatch[1]):S.companies.length;
-    setStatus(S.companies.length>0);  // live if we have data
-    if(window.clog)window.clog('db',`Loaded <b>${S.companies.length}</b> of ${totalInDb} companies + <b>${S.contacts.length}</b> contacts + <b>${S.allRelations.length}</b> relations`);
-    if(totalInDb>S.companies.length&&window.clog)window.clog('db',`⚠️ Truncated: DB has ${totalInDb} companies but loaded ${S.companies.length}. Consider pagination.`);
+    S.totalCompaniesInDb = totalInDb;  // store for stats bar
+    setStatus(S.companies.length>0);
+    if(window.clog)window.clog('db',`Loaded <b>${S.companies.length}</b> of ${totalInDb} companies · <b>${S.contacts.length}</b> contacts · <b>${S.allRelations.length}</b> relations`);
+    if(totalInDb>S.companies.length&&window.clog)window.clog('db',`⚠️ Loaded ${S.companies.length} of ${totalInDb} — showing highest ICP + richness first`);
   }catch(e){clearTimeout(timer);console.warn('seed',e.message);setStatus(false);if(window.clog)window.clog('db',`Seed mode — ${e.message}`);}
   renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
 }
@@ -305,7 +306,7 @@ export async function saveContact(r){return fetch(`${SB_URL}/rest/v1/contacts`,{
 export function renderStats(){
   const t30=Date.now()-30*24*60*60*1000,cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));
   const fresh=S.companies.filter(c=>c.type==='prospect'&&(!c.updated_at||new Date(c.updated_at).getTime()<t30)&&!cids.has(_slug(c.name))).length;
-  document.getElementById('stAll').textContent=S.companies.length;
+  document.getElementById('stAll').textContent=S.totalCompaniesInDb||S.companies.length;
   document.getElementById('stClient').textContent=S.companies.filter(c=>c.type==='client').length;
   document.getElementById('stPoc').textContent=S.companies.filter(c=>c.type==='poc').length;
   document.getElementById('stPartner').textContent=S.companies.filter(c=>c.type==='partner').length;

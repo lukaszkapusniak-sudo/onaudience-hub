@@ -118,7 +118,7 @@ export function renderList(){
     return`<div class="c-row${sel}" data-slug="${slug}" onclick="openBySlug(this.dataset.slug)" oncontextmenu="showCtxSlug(event,this);return false;">
       <div class="c-av" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}33">${n}</div>
       <div class="c-info">
-        <div style="display:flex;align-items:center;gap:4px"><div class="c-name" style="flex:1">${c.name}</div><span class="tag ${tc}" style="flex-shrink:0">${tl}</span>${enrichBtn}</div>
+        <div style="display:flex;align-items:center;gap:4px"><div class="c-name" style="flex:1">${c.name}</div>${c.company_number?`<span class="c-num">#${c.company_number}</span>`:''}<span class="tag ${tc}" style="flex-shrink:0">${tl}</span>${enrichBtn}</div>
         <div class="c-note">${noteHtml}</div>
         ${detailHtml}
         ${tagRow}
@@ -146,7 +146,11 @@ export function openCompany(c){
     c.funding&&['Funding',esc(c.funding)],
     c.tcf_vendor_id&&['GVL/TCF',`<span style="color:var(--g)">${c.tcf_vendor_id}</span>`],
     c.dsps&&c.dsps.length&&['DSPs',esc((Array.isArray(c.dsps)?c.dsps:c.dsps.split(',')).join(', '))],
-    c.updated_at&&['Updated',new Date(c.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})]
+    c.company_number&&['#',`<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--t2)">#${c.company_number}</span>`],
+    c.data_richness!=null&&['Richness',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${'█'.repeat(Math.min(c.data_richness,11))}${'░'.repeat(Math.max(0,11-c.data_richness))}</span> <span style="color:var(--t3)">${c.data_richness}/11</span>`],
+    c.updated_at&&['Updated',new Date(c.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})],
+    c.updated_by_name&&['Edited by',`<span style="color:var(--g)">${esc(c.updated_by_name)}</span>`],
+    c.relationship_owner&&['Owner',`<span style="color:var(--poc)">${esc(c.relationship_owner)}</span>`]
   ].filter(Boolean);
 
   const links=[];
