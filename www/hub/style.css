@@ -250,6 +250,7 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
 .aud-detail-name{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--t1);flex:1}
 .aud-detail-desc{font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:var(--t2);margin-bottom:6px;line-height:1.4}
 .aud-detail-meta{display:flex;flex-wrap:wrap;gap:4px}
+.aud-detail-source{display:flex;gap:16px;margin-top:4px;font:400 9px 'IBM Plex Mono',monospace;color:var(--t4);letter-spacing:.04em}
 .aud-detail-toolbar{display:flex;align-items:center;gap:8px;padding:8px 0;margin-bottom:6px;flex-wrap:wrap}
 .aud-detail-toolbar-count{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase}
 .aud-sort-sel{font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--surf2);border:1px solid var(--rule2);color:var(--t1);padding:3px 7px;border-radius:2px;letter-spacing:.04em;cursor:pointer}

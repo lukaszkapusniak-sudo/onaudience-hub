@@ -8,7 +8,7 @@
 import { SB_URL, MODEL_CREATIVE } from './config.js';
 import { authHdr } from './utils.js';
 import S from './state.js';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc } from './utils.js';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js';
 import { anthropicFetch } from './api.js';
 import { clog } from './hub.js';
 
@@ -86,8 +86,9 @@ ${sysSection}
 function audRowHtml(a) {
   const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
   if (a.is_system) {
-    const targetType = a.system_filter?.type;
-    const n = targetType ? S.companies.filter(c => c.type === targetType).length : 0;
+    const n = a.system_filter?.type
+      ? S.companies.filter(c => c.type === a.system_filter.type).length
+      : (a.company_ids?.length ?? 0);
     return `
 <div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
   <div class="aud-row-head">
@@ -174,6 +175,10 @@ export function renderAudienceDetail(id) {
       ${f.region ? `<span class="tag tn">${esc(f.region)}</span>` : ''}
       ${f.minIcp ? `<span class="tag tpr">ICP≥${f.minIcp}</span>` : ''}
     </div>
+    <div class="aud-detail-source">
+      <span>Created from: ${aud.filters?.icp_prompt ? 'ICP match' : 'manual'}</span>
+      <span>Updated: ${relTime(aud.updated_at)}</span>
+    </div>
   </div>
   <div class="aud-detail-toolbar">
     <span class="aud-detail-toolbar-count">${companies.length} COMPANIES</span>
@@ -196,10 +201,12 @@ export function renderAudienceDetail(id) {
 /* ─── System audience detail helpers ───────────────────────── */
 
 function getSystemAudienceCompanies(aud) {
-  const targetType = aud.system_filter?.type;
-  if (!targetType) return [];
-  const all = S.companies;
-  return [...all.filter(c => c.type === targetType)]
+  if (aud.system_filter?.type) {
+    return [...S.companies.filter(c => c.type === aud.system_filter.type)]
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }
+  const idSet = new Set(aud.company_ids || []);
+  return [...S.companies.filter(c => idSet.has(c.id))]
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
@@ -215,6 +222,10 @@ function renderSystemAudienceDetailHTML(aud, companies) {
       <button class="btn sm" onclick="audCloseDetail()">✕</button>
     </div>
     ${aud.description ? `<div class="aud-detail-desc">${esc(aud.description)}</div>` : ''}
+    <div class="aud-detail-source">
+      <span>Source: companies.type = ${esc(aud.system_filter?.type || '?')}</span>
+      <span>Auto-synced · Last updated: ${relTime(aud.updated_at)}</span>
+    </div>
   </div>
   <div class="aud-co-list" id="aud-co-list-inner">
     ${companies.length === 0
