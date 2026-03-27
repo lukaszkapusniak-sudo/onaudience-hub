@@ -6,6 +6,7 @@ import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPane
 import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260327d';
 import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260327d';
 import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts } from './audiences.js?v=20260327d';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js';
 import {
   getSession, getAuthToken, getCurrentUser,
   signOut, onAuthStateChange,
@@ -214,6 +215,15 @@ Object.assign(window, {
   renderAudiencesPanel, openAudienceModal, audCloseModal,
   audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete,
   audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts,
+
+  /* Merge */
+  openMergeModal,
+  _mergeTab:           (...a) => window._mergeTab?.(...a),
+  _mergeSearch:        (...a) => window._mergeSearch?.(...a),
+  _confirmMerge:       (...a) => window._confirmMerge?.(...a),
+  mergeSuggestion:     (...a) => window.mergeSuggestion?.(...a),
+  rejectMergeSuggestion: (...a) => window.rejectMergeSuggestion?.(...a),
+  _pickMergeSource:    (...a) => window._pickMergeSource?.(...a),
 });
 
 /* ── Boot ───────────────────────────────────────────────────── */
@@ -238,6 +248,9 @@ async function bootHub(session) {
   }
   await loadFromSupabase(renderStats, renderList, renderTagPanel);
   _lastSync = Date.now();
+  loadMergeSuggestionsCount().then(n => {
+    if (n > 0) { const badge = document.getElementById('mergeBadge'); if (badge) { badge.textContent = n; badge.style.display = 'inline'; } }
+  });
   /* Retry on cold CORS start — poll up to 4× at 1s intervals */
   if (!S.companies.length) {
     let _retries = 0;
