@@ -2,40 +2,35 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-      branches: ["main"]
-          paths:
-                - "www/**"
-                  workflow_dispatch:
+    branches: [main]
+    paths:
+      - "www/**"
+  workflow_dispatch:
 
-                  permissions:
-                    contents: read
-                      pages: write
-                        id-token: write
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-                        concurrency:
-                          group: "pages"
-                            cancel-in-progress: false
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
-                            jobs:
-                              deploy:
-                                  environment:
-                                        name: github-pages
-                                              url: ${{ steps.deployment.outputs.page_url }}
-                                                  runs-on: ubuntu-latest
-                                                      steps:
-                                                            - name: Checkout
-                                                                    uses: actions/checkout@v4
-                                                                          - name: Setup Pages
-                                                                                  uses: actions/configure-pages@v5
-                                                                                        - name: Upload artifact
-                                                                                                uses: actions/upload-pages-artifact@v3
-                                                                                                        with:
-                                                                                                                  path: 'www'
-                                                                                                                        - name: Deploy to GitHub Pages
-                                                                                                                                id: deployment
-                                                                                                                                        uses: actions/deploy-pages@v4
-                                                                                                                                              - name: Post deploy summary
-                                                                                                                                                      run: |
-                                                                                                                                                                echo "### ✅ Hub deployed" >> $GITHUB_STEP_SUMMARY
-                                                                                                                                                                          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-                                                                                                                                                                                    echo "**URL:** https://lukaszkapusniak-sudo.github.io/onaudience-hub/" >> $GITHUB_STEP_SUMMARY
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
