@@ -16,7 +16,7 @@ import { clog } from './hub.js';
 
 async function sbLoadAudiences() {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/audiences?order=updated_at.desc`, {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?select=*&order=updated_at.desc`, {
       headers: authHdr()
     });
     if (!res.ok) throw new Error(await res.text());
