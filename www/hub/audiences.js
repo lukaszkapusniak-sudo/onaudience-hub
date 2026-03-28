@@ -473,12 +473,23 @@ function audCoRowHtml(c, aud) {
 
 /* ─── Modal ────────────────────────────────────────────────── */
 
-export function openAudienceModal(existingId) {
-  S._audienceBuiltIds = null;
-  const existing = existingId ? S.audiences.find(a => a.id === existingId) : null;
-  const f = existing?.filters || {};
+/* ── Scout modal state ────────────────────────────────────── */
+let _scoutResults    = [];
+let _scoutExistingId = null;
 
-  // Collect all tags from DB
+export function openAudienceModal(existingId) {
+  _scoutExistingId = existingId || null;
+  S._audienceBuiltIds = null;
+
+  const existing = existingId ? S.audiences.find(a => a.id === existingId) : null;
+  if (existing?.is_system) {
+    clog('info', 'System audiences cannot be edited in Scout.');
+    return;
+  }
+
+  const f     = existing?.filters || {};
+  const isNew = !existingId;
+
   const allTags = [...new Set((S.companies || []).flatMap(c => getCoTags(c)))].sort();
   const tagCheckboxes = allTags.map(t => {
     const checked = (f.tags || []).includes(t) ? 'checked' : '';
@@ -494,79 +505,286 @@ export function openAudienceModal(existingId) {
   if (!modal) return;
 
   modal.innerHTML = `
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
-<div class="aud-modal-box">
+<div class="aud-modal-overlay" onclick="if(event.target===this)audCloseModal()">
+<div class="aud-modal-box scout-modal-box">
   <div class="aud-modal-head">
-    <span class="aud-modal-title">${existing ? 'EDIT AUDIENCE' : 'NEW AUDIENCE'}</span>
-    <button class="btn sm" onclick="audCloseModal()">✕</button>
+    <span class="aud-modal-title">${isNew ? '&#128270; SCOUT AUDIENCE' : 'EDIT AUDIENCE'}</span>
+    <button class="btn sm" id="scout-close-btn">&#10005;</button>
   </div>
-  <div class="aud-modal-body">
-
-    <div class="aud-form-row">
-      <label class="aud-label">NAME</label>
-      <input id="aud-name" class="aud-input" value="${esc(existing?.name || '')}" placeholder="e.g. EU DSP Prospects"/>
-    </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">DESCRIPTION</label>
-      <textarea id="aud-desc" class="aud-input aud-textarea" placeholder="What is this audience for?">${esc(existing?.description || '')}</textarea>
-    </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">AI BUILD <span style="color:var(--t3);font-size:8px;text-transform:none;letter-spacing:0">— describe target, AI matches from DB using active filters as context</span></label>
-      <div style="display:flex;gap:6px">
-        <input id="aud-ai-prompt" class="aud-input" style="flex:1" placeholder="e.g. EU-based programmatic DSPs with CTV capabilities and cookieless interest"/>
-        <button class="btn sm p" onclick="audAIBuild()">✨ BUILD</button>
+  <div class="scout-cols">
+    <div class="scout-left">
+      <div class="aud-form-row">
+        <label class="aud-label">NAME</label>
+        <input id="scout-name" class="aud-input" value="${esc(existing?.name || '')}" placeholder="e.g. EU DSP Prospects"/>
       </div>
-      <div id="aud-ai-status" style="min-height:16px;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8px"></div>
-    </div>
-
-    <div class="aud-filters-section">
-      <div class="aud-label" style="margin-bottom:6px">FILTERS <span style="color:var(--t3);font-size:8px;font-weight:400;text-transform:none;letter-spacing:0">pre-filter for AI + permanent hard filter on audience</span></div>
-      <div class="aud-filter-row">
-        <label class="aud-label" style="min-width:32px">TYPE</label>
-        <select id="aud-f-type" class="aud-select">${typeOpts}</select>
-        <label class="aud-label" style="min-width:44px">REGION</label>
-        <select id="aud-f-region" class="aud-select">${regionOpts}</select>
-        <label class="aud-label" style="min-width:48px">MIN ICP</label>
-        <input id="aud-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1–10"/>
+      <div class="aud-form-row">
+        <label class="aud-label">DESCRIPTION</label>
+        <textarea id="scout-desc" class="aud-input aud-textarea" rows="2" placeholder="What is this audience for?">${esc(existing?.description || '')}</textarea>
       </div>
-      <div class="aud-filter-row" style="flex-wrap:wrap;gap:4px;margin-top:6px">
-        <label class="aud-label" style="width:100%;margin-bottom:2px">TAGS</label>
-        ${tagCheckboxes || '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:var(--t4)">No tags in DB yet</span>'}
+      <div class="aud-form-row">
+        <label class="aud-label">ICP SCOUT PROMPT <span style="color:var(--t3);font-size:8px;font-weight:400;text-transform:none;letter-spacing:0">&#8212; optional AI filter on top of hard filters</span></label>
+        <div style="display:flex;gap:6px">
+          <input id="scout-prompt" class="aud-input" style="flex:1" value="${esc(existing?.icp_prompt || existing?.filters?.icp_prompt || '')}" placeholder="e.g. EU DSPs with CTV and cookieless interest"/>
+          <button class="btn sm p" id="scout-run-btn">&#128270; SCOUT</button>
+        </div>
+        <div id="scout-status" style="min-height:14px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);margin-top:2px"></div>
+      </div>
+      <div class="aud-filters-section">
+        <div class="aud-label" style="margin-bottom:6px">FILTERS</div>
+        <div class="aud-filter-row">
+          <label class="aud-label" style="min-width:32px">TYPE</label>
+          <select id="scout-f-type" class="aud-select">${typeOpts}</select>
+          <label class="aud-label" style="min-width:44px">REGION</label>
+          <select id="scout-f-region" class="aud-select">${regionOpts}</select>
+          <label class="aud-label" style="min-width:48px">MIN ICP</label>
+          <input id="scout-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1&#8211;10"/>
+        </div>
+        <div class="aud-filter-row" style="flex-wrap:wrap;gap:4px;margin-top:6px">
+          <label class="aud-label" style="width:100%;margin-bottom:2px">TAGS</label>
+          ${tagCheckboxes || '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:var(--t4)">No tags</span>'}
+        </div>
+      </div>
+      <div class="aud-form-row">
+        <label class="aud-label">&#10022; OUTREACH HOOK</label>
+        <textarea id="scout-hook" class="aud-input aud-textarea" rows="2" placeholder="2-sentence outreach angle&#8230;">${esc(existing?.outreach_hook || '')}</textarea>
+      </div>
+      <div class="aud-form-row">
+        <label class="aud-label">SORT</label>
+        <select id="scout-sort" class="aud-select">
+          <option value="updated_at" ${(!existing?.sort_field || existing.sort_field === 'updated_at') ? 'selected' : ''}>RECENTLY UPDATED</option>
+          <option value="name" ${existing?.sort_field === 'name' ? 'selected' : ''}>NAME A&#8594;Z</option>
+          <option value="icp" ${existing?.sort_field === 'icp' ? 'selected' : ''}>ICP &#8595;</option>
+          <option value="size" ${existing?.sort_field === 'size' ? 'selected' : ''}>SIZE &#8595;</option>
+        </select>
+      </div>
+      <div class="scout-footer-bar">
+        <button class="btn p" id="scout-save-btn">${isNew ? '&#128190; Save Audience' : '&#128190; Save Changes'}</button>
+        <button class="btn" id="scout-cancel-btn">Cancel</button>
+        ${!isNew ? `<button class="btn" id="scout-delete-btn" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
+        <div id="scout-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:2px"></div>
       </div>
     </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">SORT</label>
-      <select id="aud-sort" class="aud-select">
-        <option value="updated_at" ${(!existing?.sort_field || existing.sort_field === 'updated_at') ? 'selected' : ''}>RECENTLY UPDATED</option>
-        <option value="name" ${existing?.sort_field === 'name' ? 'selected' : ''}>NAME A→Z</option>
-        <option value="icp" ${existing?.sort_field === 'icp' ? 'selected' : ''}>ICP ↓</option>
-        <option value="size" ${existing?.sort_field === 'size' ? 'selected' : ''}>SIZE ↓</option>
-      </select>
-    </div>
-
-    <div id="aud-preview" class="aud-preview"></div>
-
-    <div class="aud-modal-foot">
-      <button class="btn p" onclick="audSave('${esc(existingId || '')}')">SAVE AUDIENCE</button>
-      <button class="btn" onclick="audCloseModal()">CANCEL</button>
-      ${existing ? `<button class="btn" onclick="audDelete('${esc(existingId)}')" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
-      <div id="aud-save-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;margin-top:4px;display:none"></div>
+    <div class="scout-right">
+      <div class="scout-section">
+        <div class="scout-section-head">
+          <span>A &#8212; IN YOUR DB</span>
+          <span id="scout-a-count" style="font-weight:400;color:var(--t3);margin-left:6px"></span>
+          <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-weight:400;cursor:pointer"><input type="checkbox" id="scout-check-all"/> ALL</label>
+        </div>
+        <div class="scout-section-body" id="scout-a-body"><div class="scout-empty">Run &#128270; SCOUT to find matching companies from your DB</div></div>
+      </div>
+      <div class="scout-section">
+        <div class="scout-section-head">B &#8212; GAPS</div>
+        <div class="scout-section-body" id="scout-b-body">
+          <div class="scout-gap-row" id="scout-gap-nocontact">&#8212; companies with no contacts</div>
+          <div class="scout-gap-row" id="scout-gap-nointel">&#8212; companies with no description</div>
+        </div>
+      </div>
+      <div class="scout-section">
+        <div class="scout-section-head">
+          <span>C &#8212; CANDIDATES</span>
+          <button class="btn sm" id="scout-similar-btn" style="margin-left:auto">Find Similar &#8599;</button>
+        </div>
+        <div class="scout-section-body" id="scout-c-body"><div class="scout-empty">Click &#8220;Find Similar &#8599;&#8221; to discover companies not yet in your DB</div></div>
+      </div>
     </div>
   </div>
-</div>
-</div>`;
+</div></div>`;
 
-  // Wire live preview
-  ['aud-f-type', 'aud-f-region', 'aud-f-icp'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', _audPreviewFilter);
-    document.getElementById(id)?.addEventListener('input', _audPreviewFilter);
+  // Wire events
+  document.getElementById('scout-close-btn')?.addEventListener('click', audCloseModal);
+  document.getElementById('scout-cancel-btn')?.addEventListener('click', audCloseModal);
+  document.getElementById('scout-run-btn')?.addEventListener('click', _scoutRun);
+  document.getElementById('scout-save-btn')?.addEventListener('click', () => _scoutSave(existingId));
+  document.getElementById('scout-similar-btn')?.addEventListener('click', _scoutFindSimilar);
+  document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
+  if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
+
+  // Auto-run when editing an audience that has a prompt or filters set
+  if (!isNew && (existing?.icp_prompt || existing?.filters?.icp_prompt || f.type || f.region || f.minIcp || (f.tags || []).length)) {
+    _scoutRun();
+  }
+}
+
+async function _scoutRun() {
+  const type   = document.getElementById('scout-f-type')?.value   || '';
+  const region = document.getElementById('scout-f-region')?.value || '';
+  const minIcp = parseInt(document.getElementById('scout-f-icp')?.value) || 0;
+  const tags   = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const prompt = document.getElementById('scout-prompt')?.value?.trim() || '';
+
+  const statusEl = document.getElementById('scout-status');
+  const bodyEl   = document.getElementById('scout-a-body');
+  const countEl  = document.getElementById('scout-a-count');
+  if (!bodyEl) return;
+
+  // Hard filter
+  let list = S.companies || [];
+  if (type)        list = list.filter(c => c.type === type);
+  if (region)      list = list.filter(c => c.region === region);
+  if (minIcp)      list = list.filter(c => (c.icp || 0) >= minIcp);
+  if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+
+  // Optional AI filter when prompt is given
+  if (prompt && list.length > 0) {
+    if (statusEl) statusEl.textContent = '⟳ AI filtering…';
+    bodyEl.innerHTML = '<div class="scout-running">&#9889; AI is scanning your DB&#8230;</div>';
+    try {
+      const coList = list.map(c =>
+        `${c.name}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 80)}`
+      ).join('\n');
+      const res = await anthropicFetch({
+        model: MODEL_CREATIVE,
+        max_tokens: 800,
+        messages: [{ role: 'user', content:
+          `You are filtering a B2B CRM for onAudience (EU first-party data provider).\nTarget: "${prompt}"\nReturn a JSON array of company names that best match — be selective.\nCompanies (name|tags|icp|type|description):\n${coList}\n\nReturn ONLY a raw JSON array of matching company names.` }],
+      });
+      const raw  = res.content?.[0]?.text?.trim() || '[]';
+      const m    = raw.match(/\[[\s\S]*\]/);
+      const names = m ? JSON.parse(m[0]) : [];
+      const nameSet = new Set(names.map(n => String(n).toLowerCase()));
+      list = list.filter(c => nameSet.has(c.name.toLowerCase()));
+      if (statusEl) statusEl.textContent = `✓ AI matched ${list.length}`;
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '⚠ AI filter failed — showing filter results';
+    }
+  } else {
+    if (statusEl) statusEl.textContent = list.length
+      ? `${list.length} match${list.length !== 1 ? 'es' : ''}`
+      : 'No matches — relax filters';
+  }
+
+  _scoutResults = list;
+  const existingIds = new Set(_scoutExistingId
+    ? (S.audiences.find(a => a.id === _scoutExistingId)?.company_ids || [])
+    : []);
+
+  if (countEl) countEl.textContent = `(${list.length})`;
+  if (list.length === 0) {
+    bodyEl.innerHTML = '<div class="scout-empty">No companies match — try relaxing filters</div>';
+  } else {
+    bodyEl.innerHTML = list.map(c => {
+      const cid   = c.id || _slug(c.name);
+      const chk   = existingIds.has(cid) ? 'checked' : '';
+      const chips = getCoTags(c).slice(0, 3).map(t => `<span class="scout-tag">${esc(t)}</span>`).join('');
+      const score = c.icp
+        ? `<span class="icp-score ${c.icp >= 7 ? 'hi' : c.icp >= 4 ? 'mid' : 'lo'}">${c.icp}</span>`
+        : '';
+      return `<label class="scout-company-row"><input type="checkbox" class="scout-cb" value="${esc(cid)}" ${chk}/>${score}<span class="icp-name">${esc(c.name)}</span><span class="icp-cat">${esc(tLabel(c.type))}</span>${chips}</label>`;
+    }).join('');
+  }
+
+  // Section B — gaps
+  const noContact = list.filter(c => {
+    const cid = c.id || _slug(c.name);
+    return !S.contacts?.some(ct => ct.company_id === cid);
   });
-  modal.querySelectorAll('.aud-tag-check input').forEach(cb =>
-    cb.addEventListener('change', _audPreviewFilter));
-  _audPreviewFilter();
+  const noIntel = list.filter(c => !c.description && !c.intel);
+  const gcEl = document.getElementById('scout-gap-nocontact');
+  const giEl = document.getElementById('scout-gap-nointel');
+  if (gcEl) gcEl.textContent = `${noContact.length} compan${noContact.length === 1 ? 'y' : 'ies'} with no contacts`;
+  if (giEl) giEl.textContent = `${noIntel.length} compan${noIntel.length === 1 ? 'y' : 'ies'} with no description/intel`;
+}
+
+function _scoutToggleAll(checked) {
+  document.querySelectorAll('#scout-a-body .scout-cb').forEach(cb => { cb.checked = checked; });
+}
+
+async function _scoutSave(existingId) {
+  const name  = document.getElementById('scout-name')?.value?.trim();
+  const errEl = document.getElementById('scout-err');
+  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (errEl) errEl.textContent = '';
+
+  const desc      = document.getElementById('scout-desc')?.value?.trim()    || '';
+  const prompt    = document.getElementById('scout-prompt')?.value?.trim()   || '';
+  const hook      = document.getElementById('scout-hook')?.value?.trim()     || '';
+  const sortField = document.getElementById('scout-sort')?.value             || 'updated_at';
+  const type      = document.getElementById('scout-f-type')?.value           || '';
+  const region    = document.getElementById('scout-f-region')?.value         || '';
+  const minIcp    = parseInt(document.getElementById('scout-f-icp')?.value)   || 0;
+  const tags      = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+
+  const checkedIds = [...document.querySelectorAll('#scout-a-body .scout-cb:checked')].map(cb => cb.value);
+  const companyIds = checkedIds.length > 0 ? checkedIds
+    : _scoutResults.length > 0 ? _scoutResults.map(c => c.id || _slug(c.name))
+    : (S.companies || []).map(c => c.id || _slug(c.name));
+
+  const filters = { type: type || null, region: region || null, minIcp: minIcp || null, tags, icp_prompt: prompt || null };
+
+  try {
+    if (existingId) {
+      const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(existingId)}`, {
+        method: 'PATCH',
+        headers: authHdr(),
+        body: JSON.stringify({
+          name, description: desc || null, outreach_hook: hook || null,
+          filters, icp_prompt: prompt || null, sort_field: sortField,
+          company_ids: companyIds, updated_at: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const aud = S.audiences.find(a => a.id === existingId);
+      if (aud) Object.assign(aud, { name, description: desc, outreach_hook: hook || null, filters, icp_prompt: prompt || null, sort_field: sortField, company_ids: companyIds });
+      audCloseModal();
+      await renderAudiencesPanel();
+      if (S.activeAudience?.id === existingId) renderAudienceDetail(existingId);
+      clog('db', `Audience updated: <b>${esc(name)}</b>`);
+    } else {
+      const id = `aud-${Date.now()}`;
+      await sbSaveAudience({ id, name, description: desc || null, company_ids: companyIds, filters, icp_prompt: prompt || null, outreach_hook: hook || null, sort_field: sortField, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      audCloseModal();
+      await renderAudiencesPanel();
+      audOpen(id);
+      const toast = document.createElement('div');
+      toast.className = 'icp-toast';
+      toast.textContent = `✓ ${name} saved — ${companyIds.length} companies`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      clog('db', `Audience saved: <b>${esc(name)}</b> (${companyIds.length} companies)`);
+    }
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+    clog('db', `Audience save error: ${esc(e.message)}`);
+  }
+}
+
+async function _scoutFindSimilar() {
+  const prompt = document.getElementById('scout-prompt')?.value?.trim()
+    || document.getElementById('scout-name')?.value?.trim() || '';
+  const cBody  = document.getElementById('scout-c-body');
+  if (!cBody) return;
+  if (!prompt) {
+    cBody.innerHTML = '<div class="scout-empty">Add a Scout Prompt or Name first</div>';
+    return;
+  }
+
+  cBody.innerHTML = '<div class="scout-running">&#9889; Searching for similar companies&#8230;</div>';
+  const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
+  const exclude = (S.companies || []).slice(0, 40).map(c => c.name).join(', ');
+
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE,
+      max_tokens: 600,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{ role: 'user', content:
+        `Find 8–10 real companies matching: "${prompt}" — for onAudience EU first-party data partnerships (DSPs, SSPs, agencies, data providers).\nExclude these already in CRM: ${exclude}\nReturn JSON array: [{"name":"...","category":"...","hq":"...","why":"..."}]. Real companies only.` }],
+    });
+    const raw  = res.content?.find(b => b.type === 'text')?.text?.trim() || '[]';
+    const m    = raw.match(/\[[\s\S]*\]/);
+    const candidates = m ? JSON.parse(m[0]) : [];
+    if (!candidates.length) {
+      cBody.innerHTML = '<div class="scout-empty">No new candidates found — try a different prompt</div>';
+      return;
+    }
+    cBody.innerHTML = candidates.map(c => {
+      const inDb = existingNames.has((c.name || '').toLowerCase());
+      return `<div class="scout-candidate-row${inDb ? ' scout-candidate-exists' : ''}"><span class="icp-name">${esc(c.name || '?')}${inDb ? ' <span style="color:var(--t4)">(in DB)</span>' : ''}</span><span class="icp-cat">${esc(c.category || '')}${c.hq ? ' \xb7 ' + esc(c.hq) : ''}</span><span class="icp-reason">${esc(c.why || '')}</span></div>`;
+    }).join('');
+  } catch (e) {
+    cBody.innerHTML = `<div class="scout-empty">Search failed: ${esc(e.message)}</div>`;
+  }
 }
 
 export function audCloseModal() {
@@ -898,12 +1116,8 @@ export function audNew() {
 export function audEdit(id) {
   const aud = S.audiences.find(a => a.id === id);
   if (!aud) return;
-  if (aud.outreach_hook || aud.filters?.icp_prompt || aud.icp_prompt) {
-    icpEditModal(id);
-  } else {
-    S._audienceBuiltIds = null;
-    openAudienceModal(id);
-  }
+  S._audienceBuiltIds = null;
+  openAudienceModal(id);
 }
 
 export async function audDelete(id) {
