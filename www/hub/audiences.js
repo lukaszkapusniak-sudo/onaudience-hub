@@ -600,13 +600,34 @@ export function openAudienceModal(existingId) {
   document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
   if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
 
-  // Auto-run when editing an audience that has a prompt or filters set
-  if (!isNew && (existing?.icp_prompt || existing?.filters?.icp_prompt || f.type || f.region || f.minIcp || (f.tags || []).length)) {
-    _scoutRun();
+  // Fix 1 — post-fill text/select fields after innerHTML is set so values are never lost to escaping
+  if (existing) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('scout-name',     existing.name);
+    set('scout-desc',     existing.description);
+    set('scout-prompt',   existing.icp_prompt || existing.filters?.icp_prompt);
+    set('scout-hook',     existing.outreach_hook);
+    set('scout-f-type',   f.type);
+    set('scout-f-region', f.region);
+    set('scout-f-icp',    f.minIcp);
+    set('scout-sort',     existing.sort_field || 'updated_at');
+  }
+
+  // Fix 2 — auto-run scout when editing any audience that has companies or filters
+  if (!isNew && (existing?.company_ids?.length || existing?.icp_prompt || existing?.filters?.icp_prompt || f.type || f.region || f.minIcp || (f.tags || []).length)) {
+    setTimeout(_scoutRun, 200);
   }
 }
 
 async function _scoutRun() {
+  // Fix 3 — guard: retry if company list not yet loaded
+  if (!S.companies?.length) {
+    const statusEl = document.getElementById('scout-status');
+    if (statusEl) statusEl.textContent = '⟳ Waiting for data…';
+    setTimeout(_scoutRun, 1000);
+    return;
+  }
+
   const type   = document.getElementById('scout-f-type')?.value   || '';
   const region = document.getElementById('scout-f-region')?.value || '';
   const minIcp = parseInt(document.getElementById('scout-f-icp')?.value) || 0;
