@@ -9,7 +9,7 @@ import { SB_URL, MODEL_CREATIVE } from './config.js';
 import { authHdr } from './utils.js';
 import S from './state.js';
 import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js';
-import { anthropicFetch, geocodeCity, saveGeocode } from './api.js';
+import { anthropicFetch, geocodeCity, saveGeocode } from './api.js?v=20260328a';
 import { clog } from './hub.js';
 
 /* ── Map state ─────────────────────────────────────────────── */
@@ -110,7 +110,7 @@ function audRowHtml(a) {
   const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
   const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
   return `
-<div class="aud-row${active}" onclick="audOpen(${JSON.stringify(a.id)})">
+<div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
   <div class="aud-row-head">
     <span class="aud-row-name">${esc(a.name)}</span>
     <span class="aud-row-count">${n} co</span>
@@ -118,9 +118,9 @@ function audRowHtml(a) {
   ${a.outreach_hook ? `<div class="aud-hook">✦ ${esc(a.outreach_hook)}</div>` : ''}
   <div class="aud-row-pills">${typePill}${tagPills}</div>
   <div class="aud-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audEdit(${JSON.stringify(a.id)})">EDIT</button>
-    <button class="btn sm" onclick="event.stopPropagation();audExportCsv(${JSON.stringify(a.id)})">↗ CSV</button>
-    <button class="btn sm" onclick="event.stopPropagation();audDelete(${JSON.stringify(a.id)})" style="color:var(--prc)">✕</button>
+    <button class="btn sm" onclick="event.stopPropagation();audEdit('${esc(a.id)}')">EDIT</button>
+    <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
+    <button class="btn sm" onclick="event.stopPropagation();audDelete('${esc(a.id)}')" style="color:var(--prc)">✕</button>
   </div>
 </div>`;
 }
