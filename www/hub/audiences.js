@@ -591,6 +591,9 @@ export function openAudienceModal(existingId) {
   </div>
 </div></div>`;
 
+  // Bug 1 — ensure modal is visible for both new and edit modes
+  modal.style.display = 'block';
+
   // Wire events
   document.getElementById('scout-close-btn')?.addEventListener('click', audCloseModal);
   document.getElementById('scout-cancel-btn')?.addEventListener('click', audCloseModal);
@@ -600,22 +603,29 @@ export function openAudienceModal(existingId) {
   document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
   if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
 
-  // Fix 1 — post-fill text/select fields after innerHTML is set so values are never lost to escaping
-  if (existing) {
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-    set('scout-name',     existing.name);
-    set('scout-desc',     existing.description);
-    set('scout-prompt',   existing.icp_prompt || existing.filters?.icp_prompt);
-    set('scout-hook',     existing.outreach_hook);
-    set('scout-f-type',   f.type);
-    set('scout-f-region', f.region);
-    set('scout-f-icp',    f.minIcp);
-    set('scout-sort',     existing.sort_field || 'updated_at');
-  }
-
-  // Fix 2 — auto-run scout when editing any audience that has companies or filters
-  if (!isNew && (existing?.company_ids?.length || existing?.icp_prompt || existing?.filters?.icp_prompt || f.type || f.region || f.minIcp || (f.tags || []).length)) {
-    setTimeout(_scoutRun, 200);
+  // Bug 2 — prefill fields after modal is visible, then auto-run scout
+  if (existing && !existing.is_system) {
+    document.querySelector('#scout-name').value        = existing.name || '';
+    document.querySelector('#scout-desc').value        = existing.description || '';
+    document.querySelector('#scout-prompt').value      = existing.icp_prompt || '';
+    document.querySelector('#scout-f-type').value      = existing.filters?.type || '';
+    document.querySelector('#scout-f-region').value    = existing.filters?.region || '';
+    document.querySelector('#scout-f-icp').value       = existing.filters?.minIcp || '';
+    document.querySelector('#scout-hook').value        = existing.outreach_hook || '';
+    document.querySelector('#scout-sort').value        = existing.sort_field || 'updated_at';
+    // pre-check tag checkboxes
+    const savedTags = existing.filters?.tags || [];
+    document.querySelectorAll('.aud-modal-box input[type=checkbox][value]').forEach(cb => {
+      cb.checked = savedTags.includes(cb.value);
+    });
+    // auto-run scout if audience has data
+    if ((existing.company_ids?.length > 0) || existing.filters?.type || existing.filters?.region || existing.icp_prompt) {
+      setTimeout(() => {
+        const scoutBtn = [...document.querySelectorAll('#audience-modal button')]
+          .find(b => b.innerText.includes('SCOUT'));
+        scoutBtn?.click();
+      }, 300);
+    }
   }
 }
 
@@ -810,7 +820,7 @@ async function _scoutFindSimilar() {
 
 export function audCloseModal() {
   const modal = document.getElementById('audience-modal');
-  if (modal) modal.innerHTML = '';
+  if (modal) { modal.innerHTML = ''; modal.style.display = ''; }
 }
 
 /* ── Audience map view ────────────────────────────────────── */
