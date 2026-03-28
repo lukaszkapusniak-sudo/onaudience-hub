@@ -221,16 +221,14 @@ export function openCompany(c){
     return`<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('${id}')"><span id="${id}-arrow" style="font-size:9px;color:var(--t3)">${arrow}</span><span class="ib-sh-lbl">${icon} ${label}</span>${extra||''}</div><div class="ib-body" id="${id}" style="${disp}">${body}</div></div>`;
   };
 
-  // System audience membership chips
-  const _sysMap={client:'Clients',partner:'Partners',nogo:'NoOutreach'};
   const _coSlug=esc(c.id||_slug(c.name));
-  const _memberChip=_sysMap[c.type]?`<span class="sys-chip" onclick="sysCoSetType('${_coSlug}','prospect')" title="Remove from ${_sysMap[c.type]}">● ${_sysMap[c.type]} ✕</span>`:'';
-  const _addOpts=Object.entries(_sysMap).filter(([t])=>t!==c.type).map(([t,l])=>`<div class="sys-dd-item" onclick="sysCoSetType('${_coSlug}','${t}')">${l}</div>`).join('');
-  const sysSection=`<div class="ib-sys-row">${_memberChip}<div style="position:relative;display:inline-block"><span class="sys-chip sys-chip-add" onclick="this.nextElementSibling.classList.toggle('open')">+ List ▾</span><div class="sys-dd">${_addOpts}</div></div></div>`;
+  const _rs=c.relationship_status||'';
+  const _statusBtns=['client','prospect','poc','partner','nogo','on-hold'].map(s=>`<button class="btn sm${_rs===s?' on':''}" onclick="setCompanyStatus('${_coSlug}','${s}')">${s}</button>`).join('');
 
   panel.innerHTML=`<div class="ib">
-<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
+<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
 <div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">🔗 Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button></div>
+<div class="ib-status-bar"><span class="ib-status-lbl">&#127991; Mark as:</span>${_statusBtns}</div>
 <div class="ib-top">
   ${sec('ib-company','🏢','Company',
     (facts.length?`<table class="ib-facts">${facts.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`:'<span style="font-size:11px;color:var(--t3)">No details stored</span>')+linksHtml+(c.description?`<div class="ib-desc">${c.description}</div>`:''),
@@ -267,6 +265,18 @@ export function coAction(a){
   if(a==='angle')bgGenerateAngle();
   if(a==='find-contacts')bgFindDMs();
 }
+export async function setCompanyStatus(id,status){
+  const co=S.companies.find(c=>(c.id||_slug(c.name))===id);
+  if(!co)return;
+  co.relationship_status=status;
+  if(S.currentCompany&&(S.currentCompany.id||_slug(S.currentCompany.name))===id)S.currentCompany.relationship_status=status;
+  // toggle .on on status bar buttons
+  document.querySelectorAll('.ib-status-bar .btn').forEach(b=>{b.classList.toggle('on',b.textContent===status);});
+  renderList();
+  clog('db',`Status set: <b>${esc(co.name)}</b> → ${esc(status)}`);
+  await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({relationship_status:status})}).catch(e=>clog('db',`Status PATCH error: ${esc(e.message)}`));
+}
+
 export function ctAction(action,ctSlug){
   const ct=S.contacts.find(c=>c.id===ctSlug||(c.full_name&&_slug(c.full_name)===ctSlug));if(!ct)return;
   if(action==='email')window.openComposer({company:ct.company_name,contactName:ct.full_name,contactTitle:ct.title,linkedin:ct.linkedin_url});
