@@ -9,8 +9,12 @@ import { SB_URL, MODEL_CREATIVE } from './config.js';
 import { authHdr } from './utils.js';
 import S from './state.js';
 import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js';
-import { anthropicFetch } from './api.js';
+import { anthropicFetch, geocodeCity, saveGeocode } from './api.js';
 import { clog } from './hub.js';
+
+/* ── Map state ─────────────────────────────────────────────── */
+let _audMap = null;
+let _audMapMembers = [];
 
 /* ─── Supabase ─────────────────────────────────────────────── */
 
@@ -217,6 +221,7 @@ function renderCampaignCoRowHtml(c, aud, audContacts) {
 }
 
 function renderCampaignDetailHTML(aud, members, audContacts) {
+  _audMapMembers = members;
   const cov = _audCoverage(members, audContacts);
   const f = aud.filters || {};
   const icpFull = f.icp_prompt || aud.icp_prompt || '';
@@ -259,14 +264,25 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
       </select>
     </div>
   </div>
+  <div class="aud-map-toggle">
+    <button class="btn sm active" id="aud-toggle-list" onclick="toggleAudienceMap('list')">&#9776; List</button>
+    <button class="btn sm" id="aud-toggle-map" onclick="toggleAudienceMap('map')">&#x1F5FA;&#xFE0F; Map</button>
+  </div>
   <div class="aud-body">
-    <div class="aud-co-list-wrap">
+    <div class="aud-co-list-wrap" id="aud-co-list-wrap">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
         <input class="aud-input" style="flex:1;min-width:120px;font-size:10px;padding:4px 8px"
           placeholder="Filter companies…" oninput="audFilterCoList(this.value)"/>
         <div style="display:flex;gap:3px">${sortBtns}</div>
       </div>
       <div id="aud-co-list-inner">${coRows}</div>
+    </div>
+    <div class="aud-map-wrap" id="aud-map-wrap" style="display:none;flex:1;min-width:0">
+      <div id="aud-map"></div>
+      <div class="aud-map-geo-panel">
+        <h4>GEO MIX</h4>
+        <div id="aud-geo-list"></div>
+      </div>
     </div>
     <div class="aud-sidebar">
       <div class="aud-sidebar-section">
@@ -558,6 +574,97 @@ export function audCloseModal() {
   if (modal) modal.innerHTML = '';
 }
 
+/* ── Audience map view ────────────────────────────────────── */
+
+export function toggleAudienceMap(view) {
+  const listWrap = document.getElementById('aud-co-list-wrap');
+  const mapWrap  = document.getElementById('aud-map-wrap');
+  const btnList  = document.getElementById('aud-toggle-list');
+  const btnMap   = document.getElementById('aud-toggle-map');
+  if (!listWrap || !mapWrap) return;
+
+  if (view === 'map') {
+    listWrap.style.display = 'none';
+    mapWrap.style.display  = 'flex';
+    btnList?.classList.remove('active');
+    btnMap?.classList.add('active');
+    _initAudMap(_audMapMembers);
+  } else {
+    mapWrap.style.display  = 'none';
+    listWrap.style.display = '';
+    btnList?.classList.add('active');
+    btnMap?.classList.remove('active');
+    if (_audMap) { _audMap.remove(); _audMap = null; }
+  }
+}
+
+function _addAudMarker(cluster, c, lat, lng) {
+  const av = getAv(c.name);
+  const initials = ini(c.name);
+  const slug = c.id || _slug(c.name);
+  const icon = L.divIcon({
+    html: `<div style="background:${av.bg};color:${av.fg};width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;border:1px solid ${av.fg}33;box-shadow:0 1px 4px rgba(0,0,0,.2)">${esc(initials)}</div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+  const marker = L.marker([lat, lng], { icon });
+  const tl = tLabel(c.type);
+  marker.bindPopup(`
+    <div style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;min-width:140px;line-height:1.5">
+      <div style="font-weight:600;margin-bottom:2px">${esc(c.name)}</div>
+      <div style="color:#888;font-size:10px">${esc(tl)}${c.icp ? ` · ICP ${c.icp}` : ''}</div>
+      <a href="#" onclick="event.preventDefault();openCompany(${JSON.stringify(slug)})" style="font-size:10px;color:#178066;text-decoration:none">Open →</a>
+    </div>`);
+  cluster.addLayer(marker);
+}
+
+function _initAudMap(members) {
+  if (_audMap) return;
+
+  _audMap = L.map('aud-map').setView([30, 10], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18,
+  }).addTo(_audMap);
+
+  const cluster = L.markerClusterGroup();
+  _audMap.addLayer(cluster);
+
+  const cityCounts = {};
+  let geocodeDelay = 0;
+
+  members.forEach(c => {
+    if (c.hq_lat && c.hq_lng) {
+      if (c.hq_city) cityCounts[c.hq_city] = (cityCounts[c.hq_city] || 0) + 1;
+      _addAudMarker(cluster, c, c.hq_lat, c.hq_lng);
+    } else if (c.hq_city) {
+      cityCounts[c.hq_city] = (cityCounts[c.hq_city] || 0) + 1;
+      geocodeDelay += 1100;
+      setTimeout(async () => {
+        const coords = await geocodeCity(c.hq_city);
+        if (coords) {
+          c.hq_lat = coords.lat;
+          c.hq_lng = coords.lng;
+          await saveGeocode(c.id || _slug(c.name), coords.lat, coords.lng);
+          _addAudMarker(cluster, c, coords.lat, coords.lng);
+          clog('enrich', 'geocoded: ' + c.name);
+        }
+      }, geocodeDelay);
+    }
+  });
+
+  const geoList = document.getElementById('aud-geo-list');
+  if (geoList) {
+    const sorted = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]);
+    geoList.innerHTML = sorted.map(([city, n]) =>
+      `<div class="aud-map-geo-row"><span>${esc(city)}</span><span>${n}</span></div>`
+    ).join('') || `<div style="color:var(--t4);font-size:8px">No location data</div>`;
+  }
+
+  setTimeout(() => _audMap?.invalidateSize(), 100);
+}
+
 function _audPreviewFilter() {
   const type = document.getElementById('aud-f-type')?.value || '';
   const region = document.getElementById('aud-f-region')?.value || '';
@@ -774,6 +881,7 @@ export function audOpen(id) {
 }
 
 export function audCloseDetail() {
+  if (_audMap) { _audMap.remove(); _audMap = null; }
   S.activeAudience = null;
   const wrap = document.getElementById('aud-detail-wrap');
   if (wrap) wrap.style.display = 'none';

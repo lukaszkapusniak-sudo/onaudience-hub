@@ -1,6 +1,6 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, MODEL_RESEARCH } from './config.js';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH } from './config.js';
 import S from './state.js';
 import { classify, _slug, authHdr } from './utils.js';
 
@@ -373,6 +373,32 @@ export async function fetchGoogleNews(name){
       return{title,url,source:src,date,link_type:'press',summary:''};
     }).filter(i=>i.title&&i.url);
   }catch(e){console.warn('Google News error',e.message);return[];}
+}
+
+/* ── Geocoding ────────────────────────────────────────────── */
+export async function geocodeCity(cityStr) {
+  try {
+    const url = `${NOMINATIM_URL}?q=${encodeURIComponent(cityStr)}&format=json&limit=1`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'onAudience-Hub/2' } });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.length) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function saveGeocode(companyId, lat, lng) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/companies`, {
+      method: 'POST',
+      headers: { ...HDR, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ id: companyId, hq_lat: lat, hq_lng: lng }),
+    });
+  } catch (e) {
+    console.warn('saveGeocode error', e);
+  }
 }
 
 /* ── Intelligence save ────────────────────────────────────── */
