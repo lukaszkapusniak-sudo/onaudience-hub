@@ -153,47 +153,170 @@ export function renderAudienceDetail(id) {
     return;
   }
 
-  const companies = getAudienceCompanies(aud);
-  const f = aud.filters || {};
-  const tagPills = (f.tags || []).map(t => `<span class="tag tpr">${esc(t)}</span>`).join('');
-  const sortOpts = ['updated_at', 'name', 'icp', 'size'].map(v =>
-    `<option value="${v}" ${(aud.sort_field || 'updated_at') === v ? 'selected' : ''}>${sortLabel(v)}</option>`
-  ).join('');
+  const ids = aud.company_ids || [];
+  const members = S.companies.filter(c => ids.includes(c.id));
+  const audContacts = S.contacts.filter(ct =>
+    ids.includes(ct.company_id) || members.some(m => _slug(m.name) === _slug(ct.company_name || '')));
+  detailEl.innerHTML = renderCampaignDetailHTML(aud, members, audContacts);
+}
 
-  detailEl.innerHTML = `
-<div class="aud-detail">
-  <div class="aud-detail-header">
+/* ─── Campaign planning view (user audiences) ─────────────── */
+
+function _audCoverage(members, audContacts) {
+  const withContacts = members.filter(c =>
+    audContacts.some(ct => ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name)));
+  const withEmail = audContacts.filter(ct => ct.email);
+  const pct = members.length ? Math.round(withEmail.length / members.length * 100) : 0;
+  return { members: members.length, withContacts: withContacts.length,
+    contacts: audContacts.length, withEmail: withEmail.length, pct };
+}
+
+function renderCampaignCoRowHtml(c, aud, audContacts) {
+  const slug = c.id || _slug(c.name);
+  const tc = tClass(c.type), tl = tLabel(c.type);
+  const st = c.icp ? '★'.repeat(Math.min(5, Math.round(c.icp / 2))) : '';
+  const av = getAv(c.name);
+  const coContacts = audContacts.filter(ct =>
+    ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name));
+  const hasEmail = coContacts.some(ct => ct.email);
+  const audIdJ = JSON.stringify(aud.id), slugJ = JSON.stringify(slug);
+  return `
+<div class="aud-co-row" id="aud-cor-${esc(slug)}" onclick="audToggleCoRow(${JSON.stringify(slug)})">
+  <div class="aud-co-row-main">
+    <span class="c-av" style="background:${av.bg};color:${av.fg};width:22px;height:22px;font-size:9px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${ini(c.name)}</span>
+    <span class="aud-co-name">${esc(c.name)}</span>
+    <span class="tag ${tc}" style="font-size:7px">${esc(tl)}</span>
+    ${st ? `<span class="aud-stars">${st}</span>` : ''}
+    ${coContacts.length ? `<span class="aud-ct-badge">${coContacts.length}</span>` : ''}
+    <div class="aud-co-row-actions" onclick="event.stopPropagation()">
+      ${hasEmail ? `<button class="btn sm" onclick="audDraftEmailToCo(${audIdJ},${slugJ})">✉</button>` : ''}
+      <button class="btn sm" style="color:var(--prc)" onclick="audToggleCo(${audIdJ},${slugJ})">✗</button>
+    </div>
+  </div>
+  <div class="aud-co-row-sub">
+    ${c.hq_city ? `<span>📍${esc(c.hq_city)}</span>` : ''}
+    ${c.size ? `<span>👥${esc(c.size)}</span>` : ''}
+    ${c.category ? `<span>${esc(c.category)}</span>` : ''}
+  </div>
+  <div class="aud-co-expand" id="aud-coe-${esc(slug)}" style="display:none">
+    ${c.note ? `<div class="aud-co-desc">${esc(c.note.slice(0, 200))}</div>` : ''}
+    ${c.outreach_angle ? `<div class="aud-co-angle">✦ ${esc(c.outreach_angle)}</div>` : ''}
+    ${coContacts.length ? `<div class="aud-co-contacts">${coContacts.map(ct => `
+      <div class="aud-ct-row">
+        <span>${esc(ct.full_name || '?')}</span>
+        ${ct.title ? `<span class="aud-ct-title">${esc(ct.title)}</span>` : ''}
+        ${ct.email ? `<span class="aud-ct-email">${esc(ct.email)}</span>` : ''}
+      </div>`).join('')}</div>`
+      : '<div style="font-size:9px;color:var(--t4);padding:4px 0">No contacts yet</div>'}
+    <div class="aud-co-expand-actions">
+      <button class="btn sm" onclick="event.stopPropagation();audGenAngleForCo(${audIdJ},${slugJ})">✦ Gen angle</button>
+      ${hasEmail ? `<button class="btn sm" onclick="event.stopPropagation();audDraftEmailToCo(${audIdJ},${slugJ})">✉ Draft email</button>` : ''}
+    </div>
+  </div>
+</div>`;
+}
+
+function renderCampaignDetailHTML(aud, members, audContacts) {
+  const cov = _audCoverage(members, audContacts);
+  const f = aud.filters || {};
+  const icpFull = f.icp_prompt || aud.icp_prompt || '';
+  const icpTrunc = icpFull.slice(0, 120) + (icpFull.length > 120 ? '…' : '');
+  const audIdJ = JSON.stringify(aud.id);
+  const coRows = members.length === 0
+    ? '<div class="aud-empty" style="padding:24px">No companies in this audience.</div>'
+    : members.map(c => renderCampaignCoRowHtml(c, aud, audContacts)).join('');
+  const sortBtns = ['updated_at', 'icp', 'name', 'size'].map(v =>
+    `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},${JSON.stringify(v)})">${sortLabel(v).split(' ')[0]}</button>`
+  ).join('');
+  return `
+<div class="aud-detail-full">
+  <div class="aud-detail-hd">
     <div class="aud-detail-title">
       <span class="aud-detail-name">${esc(aud.name)}</span>
-      <button class="btn sm" onclick="audEdit(${JSON.stringify(aud.id)})">EDIT</button>
+      <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${members.length} CO</span>
+      <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${cov.contacts} CT</span>
+      <button class="btn sm" onclick="audEdit(${audIdJ})">✎ EDIT</button>
       <button class="btn sm" onclick="audCloseDetail()">✕</button>
     </div>
-    ${aud.description ? `<div class="aud-detail-desc">${esc(aud.description)}</div>` : ''}
-    <div class="aud-detail-meta">
-      ${f.type ? `<span class="tag tp">${esc(f.type)}</span>` : ''}
-      ${tagPills}
-      ${f.region ? `<span class="tag tn">${esc(f.region)}</span>` : ''}
-      ${f.minIcp ? `<span class="tag tpr">ICP≥${f.minIcp}</span>` : ''}
-    </div>
+    ${aud.outreach_hook ? `<div class="aud-hook-box">✦ ${esc(aud.outreach_hook)}</div>` : ''}
+    ${icpTrunc ? `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);margin-top:4px">ICP: ${esc(icpTrunc)}</div>` : ''}
     <div class="aud-detail-source">
-      <span>Created from: ${aud.filters?.icp_prompt ? 'ICP match' : 'manual'}</span>
-      <span>Updated: ${relTime(aud.updated_at)}</span>
+      ${aud.created_at ? `<span>Created ${relTime(aud.created_at)}</span>` : ''}
+      <span>Updated ${relTime(aud.updated_at)}</span>
     </div>
   </div>
-  <div class="aud-detail-toolbar">
-    <span class="aud-detail-toolbar-count">${companies.length} COMPANIES</span>
-    <div style="display:flex;gap:5px;align-items:center;margin-left:auto">
-      <label style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">SORT</label>
-      <select class="aud-sort-sel" onchange="audSetSort(${JSON.stringify(aud.id)},this.value)">${sortOpts}</select>
+  <div class="aud-campaign-bar">
+    <button class="btn sm p" onclick="generateCampaignHook(${audIdJ})">✦ Generate Hook</button>
+    <button class="btn sm" onclick="generateEmailTemplate(${audIdJ})">✉ Draft Campaign</button>
+    <button class="btn sm" onclick="audExportCsv(${audIdJ})">↗ Export CSV</button>
+    <div style="margin-left:auto">
+      <select class="aud-provider-select" style="width:auto" onchange="audProviderChange(this.value)">
+        <option value="">⚙ Provider: not connected ▾</option>
+        <option disabled>Instantly (coming soon)</option>
+        <option disabled>Lemlist (coming soon)</option>
+        <option disabled>Brevo (coming soon)</option>
+        <option disabled>Mailchimp (coming soon)</option>
+      </select>
     </div>
-    <button class="btn sm p" onclick="audFindContacts(${JSON.stringify(aud.id)})">👤 GET CONTACTS</button>
-    <button class="btn sm" onclick="audExportCsv(${JSON.stringify(aud.id)})">↗ CSV</button>
-    <button class="btn sm" onclick="audRefreshDetail(${JSON.stringify(aud.id)})">↺</button>
   </div>
-  <div class="aud-co-list" id="aud-co-list-inner">
-    ${companies.length === 0
-      ? '<div class="aud-empty" style="padding:24px">No companies match this audience.</div>'
-      : companies.map(c => audCoRowHtml(c, aud)).join('')}
+  <div class="aud-body">
+    <div class="aud-co-list-wrap">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <input class="aud-input" style="flex:1;min-width:120px;font-size:10px;padding:4px 8px"
+          placeholder="Filter companies…" oninput="audFilterCoList(this.value)"/>
+        <div style="display:flex;gap:3px">${sortBtns}</div>
+      </div>
+      <div id="aud-co-list-inner">${coRows}</div>
+    </div>
+    <div class="aud-sidebar">
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Campaign Hook</div>
+        <textarea id="aud-hook-ta" class="aud-input aud-textarea" rows="3"
+          placeholder="Outreach hook for this audience…">${esc(aud.outreach_hook || '')}</textarea>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm" onclick="generateCampaignHook(${audIdJ})">↺ Regen</button>
+          <button class="btn sm p" onclick="saveCampaignTemplate(${audIdJ})">💾 Save</button>
+        </div>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Email Template</div>
+        <input id="aud-tpl-subject" class="aud-input" style="font-size:10px"
+          placeholder="Subject line…" value="${esc(aud.template_subject || '')}"/>
+        <textarea id="aud-tpl-body" class="aud-input aud-textarea" rows="8"
+          placeholder="Email body… (AI will generate from hook + ICP)">${esc(aud.template_body || '')}</textarea>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm p" onclick="generateEmailTemplate(${audIdJ})">✦ Generate</button>
+          <button class="btn sm" onclick="saveCampaignTemplate(${audIdJ})">💾 Save template</button>
+        </div>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Coverage</div>
+        <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--t2);display:flex;flex-direction:column;gap:3px">
+          <span>${cov.members} companies · ${cov.withContacts} with contacts</span>
+          <span>${cov.contacts} contacts found · ${cov.withEmail} with email</span>
+        </div>
+        <div class="aud-coverage-bar"><div class="aud-coverage-fill" style="width:${cov.pct}%"></div></div>
+        <div style="font:400 8px 'IBM Plex Mono',monospace;color:var(--t4)">${cov.pct}% email coverage</div>
+        <button class="btn sm" onclick="audFindContacts(${audIdJ})">👤 Find missing contacts</button>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Past Campaigns</div>
+        <div id="aud-campaigns-list" style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t4)">No campaigns yet.</div>
+      </div>
+      <div class="aud-sidebar-section" style="border-top:1px solid var(--rule);padding-top:12px">
+        <div class="aud-sidebar-lbl">⚡ Launch</div>
+        <select class="aud-provider-select" id="aud-launch-provider" onchange="audProviderChange(this.value)">
+          <option value="">not connected — select ▾</option>
+          <option disabled>Instantly (coming soon)</option>
+          <option disabled>Lemlist (coming soon)</option>
+          <option disabled>Brevo (coming soon)</option>
+          <option disabled>Mailchimp (coming soon)</option>
+        </select>
+        <button class="btn sm aud-launch-btn" disabled
+          title="Connect a mailing provider to launch">🚀 Create Campaign in Provider</button>
+        <button class="btn sm" onclick="launchCampaign(${audIdJ})">💾 Save Draft</button>
+      </div>
+    </div>
   </div>
 </div>`;
 }
@@ -1246,5 +1369,155 @@ export async function icpPatchAudience(id) {
     clog('db', `Audience updated: <b>${esc(name)}</b>`);
   } catch (e) {
     if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+  }
+}
+
+/* ─── Campaign planning exports ────────────────────────────── */
+
+export function audToggleCoRow(slug) {
+  const exp = document.getElementById(`aud-coe-${slug}`);
+  if (!exp) return;
+  const row = document.getElementById(`aud-cor-${slug}`);
+  const open = exp.style.display !== 'none';
+  exp.style.display = open ? 'none' : '';
+  if (row) row.classList.toggle('expanded', !open);
+}
+
+export function audFilterCoList(q) {
+  const inner = document.getElementById('aud-co-list-inner');
+  if (!inner) return;
+  const term = (q || '').toLowerCase();
+  inner.querySelectorAll('.aud-co-row').forEach(row => {
+    const name = (row.querySelector('.aud-co-name')?.textContent || '').toLowerCase();
+    row.style.display = term && !name.includes(term) ? 'none' : '';
+  });
+}
+
+export function audProviderChange(val) {
+  const btn = document.querySelector('.aud-launch-btn');
+  if (btn) btn.disabled = !val;
+}
+
+export async function generateCampaignHook(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const ta = document.getElementById('aud-hook-ta');
+  if (ta) ta.placeholder = '⟳ generating…';
+  const prompt = aud.filters?.icp_prompt || aud.icp_prompt || aud.name || '';
+  const n = (aud.company_ids || []).length;
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 120,
+      messages: [{ role: 'user', content:
+        `Write a 2–3 sentence outreach hook for a B2B email campaign.\nAudience: "${prompt}" (${n} companies).\nContext: onAudience sells EU first-party audience data to DSPs, SSPs, agencies and data providers.\nBe direct, specific, no buzzwords.` }],
+    });
+    const hook = res.content?.[0]?.text?.trim() || '';
+    if (ta) { ta.value = hook; ta.placeholder = ''; }
+  } catch (e) {
+    if (ta) ta.placeholder = 'Error generating hook';
+    clog('ai', `generateCampaignHook error: ${esc(e.message)}`);
+  }
+}
+
+export async function generateEmailTemplate(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const subjectEl = document.getElementById('aud-tpl-subject');
+  const bodyEl = document.getElementById('aud-tpl-body');
+  if (bodyEl) bodyEl.placeholder = '⟳ generating…';
+  const hook = document.getElementById('aud-hook-ta')?.value?.trim() || aud.outreach_hook || '';
+  const prompt = aud.filters?.icp_prompt || aud.icp_prompt || aud.name || '';
+  const n = (aud.company_ids || []).length;
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 400,
+      messages: [{ role: 'user', content:
+        `Write a cold B2B email template (subject + body) for onAudience EU first-party data partnerships.\nAudience: "${prompt}" (${n} companies).\nHook: "${hook}"\nFormat:\nSUBJECT: <subject line>\n\n<email body — 3–4 short paragraphs, {{first_name}} placeholder, no fluffy sign-off>` }],
+    });
+    const text = res.content?.[0]?.text?.trim() || '';
+    const subjectMatch = text.match(/^SUBJECT:\s*(.+)/im);
+    const body = text.replace(/^SUBJECT:.*\n?/im, '').trim();
+    if (subjectEl && subjectMatch) subjectEl.value = subjectMatch[1].trim();
+    if (bodyEl) { bodyEl.value = body; bodyEl.placeholder = ''; }
+  } catch (e) {
+    if (bodyEl) bodyEl.placeholder = 'Error generating template';
+    clog('ai', `generateEmailTemplate error: ${esc(e.message)}`);
+  }
+}
+
+export async function saveCampaignTemplate(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const hook    = document.getElementById('aud-hook-ta')?.value?.trim() || null;
+  const subject = document.getElementById('aud-tpl-subject')?.value?.trim() || null;
+  const body    = document.getElementById('aud-tpl-body')?.value?.trim() || null;
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`, {
+      method: 'PATCH',
+      headers: authHdr(),
+      body: JSON.stringify({ outreach_hook: hook, template_subject: subject, template_body: body, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    if (aud) { aud.outreach_hook = hook; aud.template_subject = subject; aud.template_body = body; }
+    clog('db', `Campaign template saved for <b>${esc(aud.name)}</b>`);
+  } catch (e) {
+    clog('db', `saveCampaignTemplate error: ${esc(e.message)}`);
+  }
+}
+
+export async function launchCampaign(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  await saveCampaignTemplate(audId);
+  clog('info', `Campaign draft saved for <b>${esc(aud.name)}</b> — provider launch coming soon`);
+}
+
+export async function audDraftEmailToCo(audId, coSlug) {
+  const aud = S.audiences.find(a => a.id === audId);
+  const co  = S.companies.find(c => (c.id || _slug(c.name)) === coSlug);
+  if (!aud || !co) return;
+  const ids = aud.company_ids || [];
+  const members = S.companies.filter(c => ids.includes(c.id));
+  const audContacts = S.contacts.filter(ct =>
+    ids.includes(ct.company_id) || members.some(m => _slug(m.name) === _slug(ct.company_name || '')));
+  const coContacts = audContacts.filter(ct =>
+    ct.company_id === co.id || _slug(ct.company_name || '') === _slug(co.name));
+  const contact = coContacts.find(ct => ct.email) || coContacts[0];
+  const hook = aud.outreach_hook || aud.name;
+  const body = aud.template_body || '';
+  const subject = aud.template_subject || `Partnership opportunity — ${co.name}`;
+  const to = contact?.email || '';
+  const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body ? body.replace(/\{\{first_name\}\}/gi, contact?.full_name?.split(' ')[0] || 'there') : hook)}`;
+  window.open(mailto, '_blank');
+}
+
+export async function audGenAngleForCo(audId, coSlug) {
+  const aud = S.audiences.find(a => a.id === audId);
+  const co  = S.companies.find(c => (c.id || _slug(c.name)) === coSlug);
+  if (!aud || !co) return;
+  const expandEl = document.getElementById(`aud-coe-${coSlug}`);
+  let angleEl = expandEl?.querySelector('.aud-co-angle');
+  if (!angleEl) {
+    angleEl = document.createElement('div');
+    angleEl.className = 'aud-co-angle';
+    if (expandEl) expandEl.insertBefore(angleEl, expandEl.firstChild);
+  }
+  angleEl.textContent = '⟳ generating angle…';
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 80,
+      messages: [{ role: 'user', content:
+        `Write 1 short outreach angle for approaching ${co.name} (${co.category || co.type || ''}) about onAudience EU first-party audience data partnerships. Audience context: "${aud.name}". 1–2 sentences, very specific.` }],
+    });
+    const angle = res.content?.[0]?.text?.trim() || '';
+    angleEl.textContent = `✦ ${angle}`;
+    // persist to company record
+    fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(co.id)}`, {
+      method: 'PATCH', headers: authHdr(),
+      body: JSON.stringify({ outreach_angle: angle, updated_at: new Date().toISOString() }),
+    }).catch(() => {});
+    co.outreach_angle = angle;
+  } catch (e) {
+    angleEl.textContent = 'Error generating angle';
   }
 }
