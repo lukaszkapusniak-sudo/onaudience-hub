@@ -89,39 +89,55 @@ ${sysSection}
 
 function audRowHtml(a) {
   const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
-  if (a.is_system) {
-    const targetType = a.system_filter?.type;
-    const allCos = window._oaState?.companies || S.companies || [];
-    const n = targetType ? allCos.filter(c => c.type === targetType).length : 0;
-    return `
-<div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
-  <div class="aud-row-head">
+  const n = a.is_system
+    ? (a.system_filter?.type ? S.companies.filter(c => c.type === a.system_filter.type).length : (a.company_ids?.length ?? 0))
+    : (Array.isArray(a.company_ids) ? a.company_ids.length : 0);
+
+  /* Line 1: name + count + lock */
+  const line1 = `<div class="aud-row-head">
     <span class="aud-row-name">${esc(a.name)}</span>
-    <span class="aud-row-count">${n} co</span>
-    <span class="sys-lock" title="System audience">🔒</span>
-  </div>
-  <div class="aud-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
-  </div>
-</div>`;
+    <span style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+      <span class="aud-row-count">${n} co</span>
+      ${a.is_system ? '<span style="font-size:9px" title="System audience">🔒</span>' : ''}
+    </span>
+  </div>`;
+
+  /* Line 2: desc (truncated 60) + tag chips — or SYSTEM chip */
+  let line2;
+  if (a.is_system) {
+    line2 = `<div class="aud-row-line2"><span class="tag tpr" style="font-size:7px">SYSTEM</span></div>`;
+  } else {
+    const desc = a.description ? a.description.slice(0, 60) + (a.description.length > 60 ? '…' : '') : '';
+    const f = a.filters || {};
+    const typePill  = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
+    const tagChips  = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
+    line2 = `<div class="aud-row-line2">
+      ${desc ? `<span class="aud-row-desc2">${esc(desc)}</span>` : ''}
+      ${typePill}${tagChips}
+    </div>`;
   }
-  const n = Array.isArray(a.company_ids) ? a.company_ids.length : 0;
-  const f = a.filters || {};
-  const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
-  const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
+
+  /* Line 3: relTime */
+  const line3 = a.updated_at
+    ? `<div class="aud-row-time">${relTime(a.updated_at)}</div>`
+    : '';
+
+  const actions = a.is_system
+    ? `<div class="aud-row-actions">
+        <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
+      </div>`
+    : `<div class="aud-row-actions">
+        <button class="btn sm" onclick="event.stopPropagation();audEdit('${esc(a.id)}')">EDIT</button>
+        <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
+        <button class="btn sm" onclick="event.stopPropagation();audDelete('${esc(a.id)}')" style="color:var(--prc)">✕</button>
+      </div>`;
+
   return `
 <div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
-  <div class="aud-row-head">
-    <span class="aud-row-name">${esc(a.name)}</span>
-    <span class="aud-row-count">${n} co</span>
-  </div>
-  ${a.outreach_hook ? `<div class="aud-hook">✦ ${esc(a.outreach_hook)}</div>` : ''}
-  <div class="aud-row-pills">${typePill}${tagPills}</div>
-  <div class="aud-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audEdit('${esc(a.id)}')">EDIT</button>
-    <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
-    <button class="btn sm" onclick="event.stopPropagation();audDelete('${esc(a.id)}')" style="color:var(--prc)">✕</button>
-  </div>
+  ${line1}
+  ${line2}
+  ${line3}
+  ${actions}
 </div>`;
 }
 
@@ -157,27 +173,48 @@ export function renderAudienceDetail(id) {
     return;
   }
 
-  const companies = getAudienceCompanies(aud);
-  const f = aud.filters || {};
-  const tagPills = (f.tags || []).map(t => `<span class="tag tpr">${esc(t)}</span>`).join('');
-  const sortOpts = ['updated_at', 'name', 'icp', 'size'].map(v =>
-    `<option value="${v}" ${(aud.sort_field || 'updated_at') === v ? 'selected' : ''}>${sortLabel(v)}</option>`
-  ).join('');
+  const ids = aud.company_ids || [];
+  const members = S.companies.filter(c => ids.includes(c.id));
+  const audContacts = S.contacts.filter(ct =>
+    ids.includes(ct.company_id) || members.some(m => _slug(m.name) === _slug(ct.company_name || '')));
+  detailEl.innerHTML = renderCampaignDetailHTML(aud, members, audContacts);
+}
 
-  detailEl.innerHTML = `
-<div class="aud-detail">
-  <div class="aud-detail-header">
-    <div class="aud-detail-title">
-      <span class="aud-detail-name">${esc(aud.name)}</span>
-      <button class="btn sm" onclick="audEdit(${JSON.stringify(aud.id)})">EDIT</button>
-      <button class="btn sm" onclick="audCloseDetail()">✕</button>
-    </div>
-    ${aud.description ? `<div class="aud-detail-desc">${esc(aud.description)}</div>` : ''}
-    <div class="aud-detail-meta">
-      ${f.type ? `<span class="tag tp">${esc(f.type)}</span>` : ''}
-      ${tagPills}
-      ${f.region ? `<span class="tag tn">${esc(f.region)}</span>` : ''}
-      ${f.minIcp ? `<span class="tag tpr">ICP≥${f.minIcp}</span>` : ''}
+/* ─── Campaign planning view (user audiences) ─────────────── */
+
+function _audCoverage(members, audContacts) {
+  const withContacts = members.filter(c =>
+    audContacts.some(ct => ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name)));
+  const withEmail = audContacts.filter(ct => ct.email);
+  const pct = members.length ? Math.round(withEmail.length / members.length * 100) : 0;
+  return { members: members.length, withContacts: withContacts.length,
+    contacts: audContacts.length, withEmail: withEmail.length, pct };
+}
+
+function renderCampaignCoRowHtml(c, aud, audContacts) {
+  const slug = c.id || _slug(c.name);
+  const tc = tClass(c.type), tl = tLabel(c.type);
+  const st = c.icp ? '★'.repeat(Math.min(5, Math.round(c.icp / 2))) : '';
+  const av = getAv(c.name);
+  const coContacts = audContacts.filter(ct =>
+    ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name));
+  const hasEmail = coContacts.some(ct => ct.email);
+  const audIdJ = JSON.stringify(aud.id), slugJ = JSON.stringify(slug);
+  const desc = (c.description || c.note || '').slice(0, 90);
+  const descTrunc = desc + ((c.description || c.note || '').length > 90 ? '…' : '');
+  return `
+<div class="aud-co-row" id="aud-cor-${esc(slug)}" onclick="audOpenCoOverlay(${slugJ},${audIdJ})">
+  <div class="aud-co-row-main">
+    <span class="c-av" style="background:${av.bg};color:${av.fg};width:22px;height:22px;font-size:9px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${ini(c.name)}</span>
+    <span class="aud-co-name">${esc(c.name)}</span>
+    <span class="tag ${tc}" style="font-size:7px">${esc(tl)}</span>
+    ${st ? `<span class="aud-stars">${st}</span>` : ''}
+    ${coContacts.length ? `<span class="aud-ct-badge">${coContacts.length}</span>` : ''}
+    ${c.outreach_angle ? `<span class="aud-co-angle-chip">💡 ANGLE</span>` : ''}
+    <div class="aud-co-row-actions" onclick="event.stopPropagation()">
+      <button class="btn sm" onclick="openBySlug('${esc(slug)}')" title="Open company detail">···</button>
+      ${hasEmail ? `<button class="btn sm" onclick="audDraftEmailToCo(${audIdJ},${slugJ})">✉</button>` : ''}
+      <button class="btn sm" style="color:var(--prc)" onclick="audToggleCo(${audIdJ},${slugJ})">✗</button>
     </div>
   </div>
   <div class="aud-co-row-sub">
@@ -185,19 +222,122 @@ export function renderAudienceDetail(id) {
     ${c.size ? `<span>👥${esc(c.size)}</span>` : ''}
     ${c.category ? `<span>${esc(c.category)}</span>` : ''}
   </div>
-  <div class="aud-co-expand" id="aud-coe-${esc(slug)}" style="display:none">
-    ${c.note ? `<div class="aud-co-desc">${esc(c.note.slice(0, 200))}</div>` : ''}
-    ${c.outreach_angle ? `<div class="aud-co-angle">✦ ${esc(c.outreach_angle)}</div>` : ''}
-    ${coContacts.length ? `<div class="aud-co-contacts">${coContacts.map(ct => `
-      <div class="aud-ct-row">
-        <span>${esc(ct.full_name || '?')}</span>
-        ${ct.title ? `<span class="aud-ct-title">${esc(ct.title)}</span>` : ''}
-        ${ct.email ? `<span class="aud-ct-email">${esc(ct.email)}</span>` : ''}
-      </div>`).join('')}</div>`
-      : '<div style="font-size:9px;color:var(--t4);padding:4px 0">No contacts yet</div>'}
-    <div class="aud-co-expand-actions">
-      <button class="btn sm" onclick="event.stopPropagation();audGenAngleForCo(${audIdJ},${slugJ})">✦ Gen angle</button>
-      ${hasEmail ? `<button class="btn sm" onclick="event.stopPropagation();audDraftEmailToCo(${audIdJ},${slugJ})">✉ Draft email</button>` : ''}
+  ${descTrunc ? `<div class="aud-co-desc-line">${esc(descTrunc)}</div>` : ''}
+</div>`;
+}
+
+function renderCampaignDetailHTML(aud, members, audContacts) {
+  _audMapMembers = members;
+  const cov = _audCoverage(members, audContacts);
+  const f = aud.filters || {};
+  const icpFull = f.icp_prompt || aud.icp_prompt || '';
+  const icpTrunc = icpFull.slice(0, 120) + (icpFull.length > 120 ? '…' : '');
+  const audIdJ = JSON.stringify(aud.id);
+  const coRows = members.length === 0
+    ? '<div class="aud-empty" style="padding:24px">No companies in this audience.</div>'
+    : members.map(c => renderCampaignCoRowHtml(c, aud, audContacts)).join('');
+  const sortBtns = ['updated_at', 'icp', 'name', 'size'].map(v =>
+    `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},${JSON.stringify(v)})">${sortLabel(v).split(' ')[0]}</button>`
+  ).join('');
+  return `
+<div class="aud-detail-full">
+  <div class="aud-detail-hd">
+    <div class="aud-detail-title">
+      <span class="aud-detail-name">${esc(aud.name)}</span>
+      <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${members.length} CO</span>
+      <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${cov.contacts} CT</span>
+      <button class="btn sm" onclick="audEdit(${audIdJ})">✎ EDIT</button>
+      <button class="btn sm" onclick="audCloseDetail()">✕</button>
+    </div>
+    ${aud.outreach_hook ? `<div class="aud-hook-box">✦ ${esc(aud.outreach_hook)}</div>` : ''}
+    ${icpTrunc ? `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);margin-top:4px">ICP: ${esc(icpTrunc)}</div>` : ''}
+    <div class="aud-detail-source">
+      ${aud.created_at ? `<span>Created ${relTime(aud.created_at)}</span>` : ''}
+      <span>Updated ${relTime(aud.updated_at)}</span>
+    </div>
+  </div>
+  <div class="aud-campaign-bar">
+    <button class="btn sm p" onclick="generateCampaignHook(${audIdJ})">✦ Generate Hook</button>
+    <button class="btn sm" onclick="generateEmailTemplate(${audIdJ})">✉ Draft Campaign</button>
+    <button class="btn sm" onclick="audExportCsv(${audIdJ})">↗ Export CSV</button>
+    <div style="margin-left:auto">
+      <select class="aud-provider-select" style="width:auto" onchange="audProviderChange(this.value)">
+        <option value="">⚙ Provider: not connected ▾</option>
+        <option disabled>Instantly (coming soon)</option>
+        <option disabled>Lemlist (coming soon)</option>
+        <option disabled>Brevo (coming soon)</option>
+        <option disabled>Mailchimp (coming soon)</option>
+      </select>
+    </div>
+  </div>
+  <div class="aud-map-toggle">
+    <button class="btn sm active" id="aud-toggle-list" onclick="toggleAudienceMap('list')">&#9776; List</button>
+    <button class="btn sm" id="aud-toggle-map" onclick="toggleAudienceMap('map')">&#x1F5FA;&#xFE0F; Map</button>
+  </div>
+  <div class="aud-body">
+    <div class="aud-co-list-wrap" id="aud-co-list-wrap">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <input class="aud-input" style="flex:1;min-width:120px;font-size:10px;padding:4px 8px"
+          placeholder="Filter companies…" oninput="audFilterCoList(this.value)"/>
+        <div style="display:flex;gap:3px">${sortBtns}</div>
+      </div>
+      <div id="aud-co-list-inner">${coRows}</div>
+    </div>
+    <div class="aud-map-wrap" id="aud-map-wrap" style="display:none;flex:1;min-width:0">
+      <div id="aud-map"></div>
+      <div class="aud-map-geo-panel">
+        <h4>GEO MIX</h4>
+        <div id="aud-geo-list"></div>
+      </div>
+    </div>
+    <div class="aud-sidebar">
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Campaign Hook</div>
+        <textarea id="aud-hook-ta" class="aud-input aud-textarea" rows="3"
+          placeholder="Outreach hook for this audience…">${esc(aud.outreach_hook || '')}</textarea>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm" onclick="generateCampaignHook(${audIdJ})">↺ Regen</button>
+          <button class="btn sm p" onclick="saveCampaignTemplate(${audIdJ})">💾 Save</button>
+        </div>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Email Template</div>
+        <input id="aud-tpl-subject" class="aud-input" style="font-size:10px"
+          placeholder="Subject line…" value="${esc(aud.template_subject || '')}"/>
+        <textarea id="aud-tpl-body" class="aud-input aud-textarea" rows="8"
+          placeholder="Email body… (AI will generate from hook + ICP)">${esc(aud.template_body || '')}</textarea>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm p" onclick="generateEmailTemplate(${audIdJ})">✦ Generate</button>
+          <button class="btn sm" onclick="saveCampaignTemplate(${audIdJ})">💾 Save template</button>
+        </div>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Coverage</div>
+        <div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--t2);display:flex;flex-direction:column;gap:3px">
+          <span>${cov.members} companies · ${cov.withContacts} with contacts</span>
+          <span>${cov.contacts} contacts found · ${cov.withEmail} with email</span>
+        </div>
+        <div class="aud-coverage-bar"><div class="aud-coverage-fill" style="width:${cov.pct}%"></div></div>
+        <div style="font:400 8px 'IBM Plex Mono',monospace;color:var(--t4)">${cov.pct}% email coverage</div>
+        <button class="btn sm" onclick="audFindContacts(${audIdJ})">👤 Find missing contacts</button>
+      </div>
+      <div class="aud-sidebar-section">
+        <div class="aud-sidebar-lbl">✦ Past Campaigns</div>
+        <div id="aud-campaigns-list" style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t4)">No campaigns yet.</div>
+      </div>
+      <div class="aud-sidebar-section" style="border-top:1px solid var(--rule);padding-top:12px">
+        <div class="aud-sidebar-lbl">⚡ Launch</div>
+        <select class="aud-provider-select" id="aud-launch-provider" onchange="audProviderChange(this.value)">
+          <option value="">not connected — select ▾</option>
+          <option disabled>Instantly (coming soon)</option>
+          <option disabled>Lemlist (coming soon)</option>
+          <option disabled>Brevo (coming soon)</option>
+          <option disabled>Mailchimp (coming soon)</option>
+        </select>
+        <button class="btn sm aud-launch-btn" disabled
+          title="Connect a mailing provider to launch">🚀 Create Campaign in Provider</button>
+        <button class="btn sm" onclick="launchCampaign(${audIdJ})">💾 Save Draft</button>
+      </div>
     </div>
   </div>
 </div>`;
@@ -206,10 +346,12 @@ export function renderAudienceDetail(id) {
 /* ─── System audience detail helpers ───────────────────────── */
 
 function getSystemAudienceCompanies(aud) {
-  const targetType = aud.system_filter?.type;
-  if (!targetType) return [];
-  const all = window._oaState?.companies || S.companies || [];
-  return [...all.filter(c => c.type === targetType)]
+  if (aud.system_filter?.type) {
+    return [...S.companies.filter(c => c.type === aud.system_filter.type)]
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }
+  const idSet = new Set(aud.company_ids || []);
+  return [...S.companies.filter(c => idSet.has(c.id))]
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
@@ -225,6 +367,10 @@ function renderSystemAudienceDetailHTML(aud, companies) {
       <button class="btn sm" onclick="audCloseDetail()">✕</button>
     </div>
     ${aud.description ? `<div class="aud-detail-desc">${esc(aud.description)}</div>` : ''}
+    <div class="aud-detail-source">
+      <span>Source: companies.type = ${esc(aud.system_filter?.type || '?')}</span>
+      <span>Auto-synced · Last updated: ${relTime(aud.updated_at)}</span>
+    </div>
   </div>
   <div class="aud-co-list" id="aud-co-list-inner">
     ${companies.length === 0
@@ -378,18 +524,9 @@ export function openAudienceModal(existingId) {
         <label class="aud-label">NAME</label>
         <input id="scout-name" class="aud-input" value="${esc(existing?.name || '')}" placeholder="e.g. EU DSP Prospects"/>
       </div>
-      <div id="aud-ai-status" style="min-height:16px;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8px"></div>
-    </div>
-
-    <div class="aud-filters-section">
-      <div class="aud-label" style="margin-bottom:6px;display:flex;align-items:center;gap:8px">FILTERS <span style="color:var(--t3);font-size:8px;font-weight:400;text-transform:none;letter-spacing:0">pre-filter for AI + permanent hard filter on audience</span><button class="btn sm" style="margin-left:auto" onclick="_audPreviewFilter()">🔍 SCOUT</button></div>
-      <div class="aud-filter-row">
-        <label class="aud-label" style="min-width:32px">TYPE</label>
-        <select id="aud-f-type" class="aud-select">${typeOpts}</select>
-        <label class="aud-label" style="min-width:44px">REGION</label>
-        <select id="aud-f-region" class="aud-select">${regionOpts}</select>
-        <label class="aud-label" style="min-width:48px">MIN ICP</label>
-        <input id="aud-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1–10"/>
+      <div class="aud-form-row">
+        <label class="aud-label">DESCRIPTION</label>
+        <textarea id="scout-desc" class="aud-input aud-textarea" rows="2" placeholder="What is this audience for?">${esc(existing?.description || '')}</textarea>
       </div>
       <div class="aud-form-row">
         <label class="aud-label">ICP SCOUT PROMPT <span style="color:var(--t3);font-size:8px;font-weight:400;text-transform:none;letter-spacing:0">&#8212; optional AI filter on top of hard filters</span></label>
@@ -434,29 +571,70 @@ export function openAudienceModal(existingId) {
         <div id="scout-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:2px"></div>
       </div>
     </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">SORT</label>
-      <select id="aud-sort" class="aud-select">
-        <option value="updated_at" ${(!existing?.sort_field || existing.sort_field === 'updated_at') ? 'selected' : ''}>RECENTLY UPDATED</option>
-        <option value="name" ${existing?.sort_field === 'name' ? 'selected' : ''}>NAME A→Z</option>
-        <option value="icp" ${existing?.sort_field === 'icp' ? 'selected' : ''}>ICP ↓</option>
-        <option value="size" ${existing?.sort_field === 'size' ? 'selected' : ''}>SIZE ↓</option>
-      </select>
-    </div>
-
-    <div id="aud-preview" class="aud-preview"></div>
-
-    <div class="aud-modal-foot">
-      <button class="btn p" onclick="audSave('${esc(existingId || '')}')">SAVE AUDIENCE</button>
-      <button class="btn" onclick="audCloseModal()">CANCEL</button>
-      ${existing ? `<button class="btn" onclick="audDelete('${esc(existingId)}')" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
-      <div id="aud-save-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;margin-top:4px;display:none"></div>
+    <div class="scout-right">
+      <div class="scout-section">
+        <div class="scout-section-head">
+          <span>A &#8212; IN YOUR DB</span>
+          <span id="scout-a-count" style="font-weight:400;color:var(--t3);margin-left:6px"></span>
+          <label style="margin-left:auto;display:flex;align-items:center;gap:4px;font-weight:400;cursor:pointer"><input type="checkbox" id="scout-check-all"/> ALL</label>
+        </div>
+        <div class="scout-section-body" id="scout-a-body"><div class="scout-empty">Run &#128270; SCOUT to find matching companies from your DB</div></div>
+      </div>
+      <div class="scout-section">
+        <div class="scout-section-head">
+          <span>B &#8212; GAPS</span>
+          <button class="btn sm" id="scout-fill-all-btn" style="margin-left:auto">&#9654; FILL ALL</button>
+        </div>
+        <div class="scout-section-body" id="scout-b-body"><div class="scout-empty">Run &#128270; SCOUT to see gaps</div></div>
+      </div>
+      <div class="scout-section">
+        <div class="scout-section-head">
+          <span>C &#8212; CANDIDATES</span>
+          <button class="btn sm" id="scout-similar-btn" style="margin-left:auto">Find Similar &#8599;</button>
+        </div>
+        <div class="scout-section-body" id="scout-c-body"><div class="scout-empty">Click &#8220;Find Similar &#8599;&#8221; to discover companies not yet in your DB</div></div>
+      </div>
     </div>
   </div>
 </div></div>`;
 
-  // No auto-preview on filter change — preview only fires when user clicks SCOUT
+  // Bug 1 — ensure modal is visible for both new and edit modes
+  modal.style.display = 'block';
+
+  // Wire events
+  document.getElementById('scout-close-btn')?.addEventListener('click', audCloseModal);
+  document.getElementById('scout-cancel-btn')?.addEventListener('click', audCloseModal);
+  document.getElementById('scout-run-btn')?.addEventListener('click', _scoutRun);
+  document.getElementById('scout-save-btn')?.addEventListener('click', () => _scoutSave(existingId));
+  document.getElementById('scout-similar-btn')?.addEventListener('click', _scoutFindSimilar);
+  document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
+  if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
+  document.getElementById('scout-fill-all-btn')?.addEventListener('click', _gapFillAll);
+
+  // Bug 2 — prefill fields after modal is visible, then auto-run scout
+  if (existing && !existing.is_system) {
+    document.querySelector('#scout-name').value        = existing.name || '';
+    document.querySelector('#scout-desc').value        = existing.description || '';
+    document.querySelector('#scout-prompt').value      = existing.icp_prompt || '';
+    document.querySelector('#scout-f-type').value      = existing.filters?.type || '';
+    document.querySelector('#scout-f-region').value    = existing.filters?.region || '';
+    document.querySelector('#scout-f-icp').value       = existing.filters?.minIcp || '';
+    document.querySelector('#scout-hook').value        = existing.outreach_hook || '';
+    document.querySelector('#scout-sort').value        = existing.sort_field || 'updated_at';
+    // pre-check tag checkboxes
+    const savedTags = existing.filters?.tags || [];
+    document.querySelectorAll('.aud-modal-box input[type=checkbox][value]').forEach(cb => {
+      cb.checked = savedTags.includes(cb.value);
+    });
+    // auto-run scout if audience has data
+    if ((existing.company_ids?.length > 0) || existing.filters?.type || existing.filters?.region || existing.icp_prompt) {
+      setTimeout(() => {
+        const scoutBtn = [...document.querySelectorAll('#audience-modal button')]
+          .find(b => b.innerText.includes('SCOUT'));
+        scoutBtn?.click();
+      }, 300);
+    }
+  }
 }
 
 async function _scoutRun() {
@@ -1038,7 +1216,7 @@ export async function audSave(existingId) {
     // company_ids: AI-built takes priority, else derive from filters
     let companyIds = S._audienceBuiltIds;
     if (!companyIds || companyIds.length === 0) {
-      let list = (window._oaState?.companies) || S.companies || [];
+      let list = S.companies;
       if (type) list = list.filter(c => c.type === type);
       if (region) list = list.filter(c => c.region === region);
       if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
@@ -1102,12 +1280,8 @@ export function audNew() {
 export function audEdit(id) {
   const aud = S.audiences.find(a => a.id === id);
   if (!aud) return;
-  if (aud.outreach_hook || aud.filters?.icp_prompt || aud.icp_prompt) {
-    icpEditModal(id);
-  } else {
-    S._audienceBuiltIds = null;
-    openAudienceModal(id);
-  }
+  S._audienceBuiltIds = null;
+  openAudienceModal(id);
 }
 
 export async function audDelete(id) {
@@ -1144,7 +1318,7 @@ export async function audToggleCo(audienceId, companyId) {
 /* ─── System audience membership (type-sync) ───────────────── */
 
 export async function sysCoSetType(companyId, targetType) {
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const co = all.find(c => c.id === companyId || _slug(c.name) === companyId);
   if (!co) return;
   const sysTypes = { client: 'Clients', partner: 'Partners', nogo: 'NoOutreach' };
@@ -1185,7 +1359,7 @@ export function sysAudSearchInput(audienceId, query) {
   const aud = S.audiences.find(a => a.id === audienceId);
   if (!aud) return;
   const targetType = aud.system_filter?.type;
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const q = (query || '').toLowerCase().trim();
   const el = document.getElementById('sys-aud-suggest');
   if (!el) return;
@@ -1288,127 +1462,24 @@ export function audExportCsv(audienceId) {
   // await lemlistMCP.createCampaign({ name: aud.name, leads: contacts });
 }
 
-/* ─── Find contacts — gaps panel ───────────────────────────── */
+/* ─── Find contacts (trigger per-company lookup hint) ────────── */
 
 export function audFindContacts(audienceId) {
   const aud = S.audiences.find(a => a.id === audienceId);
   if (!aud) return;
   const companies = getAudienceCompanies(aud);
-  const gaps = companies.filter(c =>
+  const noContacts = companies.filter(c =>
     !(S.contacts || []).some(ct =>
       (ct.company_name || '').toLowerCase() === (c.name || '').toLowerCase()
     )
   );
-  _audRenderGapsPanel(audienceId, gaps, companies.length);
-}
-
-function _audRenderGapsPanel(audienceId, gaps, total) {
-  document.getElementById('aud-gaps-panel')?.remove();
-
-  const wrap = document.getElementById('aud-co-list-inner');
-  if (!wrap) return;
-
-  if (gaps.length === 0) {
-    const banner = document.createElement('div');
-    banner.id = 'aud-gaps-panel';
-    banner.style.cssText = 'padding:10px 14px;background:var(--cc-bg,#001800);border:1px solid var(--cc);border-radius:6px;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--cc)';
-    banner.textContent = `✓ All ${total} companies have contacts — export ↗ CSV for Lemlist.`;
-    wrap.parentElement.insertBefore(banner, wrap);
-    setTimeout(() => banner.remove(), 4000);
+  if (noContacts.length === 0) {
+    alert(`All ${companies.length} companies already have contacts in DB. Use ↗ CSV to export.`);
     return;
   }
-
-  const panel = document.createElement('div');
-  panel.id = 'aud-gaps-panel';
-  panel.style.cssText = 'border:1px solid var(--rule2);border-radius:6px;margin-bottom:12px;overflow:hidden';
-  panel.innerHTML = `
-<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--rule2)">
-  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">CONTACT GAPS: <b id="aud-gaps-count">${gaps.length}</b> of ${total}</span>
-  <div style="display:flex;gap:5px;margin-left:auto">
-    <button class="btn sm p" id="aud-gaps-fill-all" onclick="audGapFillAll(${JSON.stringify(audienceId)})">⚡ FILL ALL</button>
-    <button class="btn sm" onclick="document.getElementById('aud-gaps-panel')?.remove()">✕</button>
-  </div>
-</div>
-<div id="aud-gaps-list" style="max-height:320px;overflow-y:auto">
-  ${gaps.map(c => {
-    const id = JSON.stringify(c.id || _slug(c.name));
-    const audId = JSON.stringify(audienceId);
-    const domId = esc(c.id || _slug(c.name));
-    return `
-<div class="aud-gap-row" id="aud-gap-${domId}" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid var(--rule2)">
-  <span style="flex:1;font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:500">${esc(c.name)}</span>
-  <div style="display:flex;gap:4px;flex-shrink:0">
-    <button class="btn sm" onclick="audGapAction(${id},${audId},'contacts',this)">👤 FIND</button>
-    <button class="btn sm" onclick="audGapAction(${id},${audId},'enrich',this)">✦ ENRICH</button>
-    <button class="btn sm" onclick="audGapAction(${id},${audId},'geocode',this)">📍 GEO</button>
-    <button class="btn sm" onclick="audGapAction(${id},${audId},'angles',this)">✉ ANGLES</button>
-  </div>
-  <span id="aud-gap-status-${domId}" style="min-width:56px;font-family:'IBM Plex Mono',monospace;font-size:8px;text-align:right"></span>
-</div>`;
-  }).join('')}
-</div>`;
-  wrap.parentElement.insertBefore(panel, wrap);
-}
-
-export async function audGapAction(companyId, audienceId, action, btn) {
-  const origText = btn?.textContent;
-  const setBtn = (txt, color) => { if (btn) { btn.textContent = txt; btn.disabled = !!color; if (color) btn.style.opacity = '.6'; else btn.style.opacity = ''; } };
-  const domId = String(companyId).replace(/[^a-z0-9-]/g, '-');
-  const statusEl = document.getElementById(`aud-gap-status-${domId}`);
-  const setStatus = (txt, color) => { if (statusEl) { statusEl.textContent = txt; statusEl.style.color = color || 'var(--t3)'; } };
-
-  setBtn('Working…', true);
-  setStatus('…', 'var(--t3)');
-
-  try {
-    if (action === 'contacts') {
-      // Delegate to global quickFind if available, else open company panel
-      if (typeof window.quickEnrich === 'function') await window.quickEnrich(companyId);
-      else if (typeof window.openBySlug === 'function') window.openBySlug(companyId);
-    } else if (action === 'enrich') {
-      if (typeof window.quickEnrich === 'function') await window.quickEnrich(companyId);
-    } else if (action === 'geocode') {
-      if (typeof window.geocodeCompany === 'function') await window.geocodeCompany(companyId);
-    } else if (action === 'angles') {
-      if (typeof window.genAnglesForCo === 'function') await window.genAnglesForCo(companyId);
-    }
-    setStatus('Done ✓', 'var(--cc)');
-    setBtn(origText, false);
-    // Update gap count
-    audRefreshDetail(audienceId);
-    setTimeout(() => setStatus('', ''), 3000);
-  } catch (e) {
-    setStatus('Error', 'var(--prc)');
-    setBtn('↺ retry', false);
-    if (btn) btn.onclick = () => audGapAction(companyId, audienceId, action, btn);
-    clog('db', `Gap action ${action} error for ${companyId}: ${esc(e.message)}`);
-  }
-}
-
-export async function audGapFillAll(audienceId) {
-  const allRows = document.querySelectorAll('#aud-gaps-list .aud-gap-row');
-  const fillBtn = document.getElementById('aud-gaps-fill-all');
-  if (fillBtn) { fillBtn.textContent = 'Running…'; fillBtn.disabled = true; }
-
-  let done = 0;
-  for (const row of allRows) {
-    const statusEl = row.querySelector('[id^="aud-gap-status-"]');
-    if (statusEl) { statusEl.textContent = '…'; statusEl.style.color = 'var(--t3)'; }
-    // Get company id from row id: "aud-gap-{id}"
-    const companyId = row.id.replace('aud-gap-', '');
-    const btns = row.querySelectorAll('.btn');
-    for (const b of btns) {
-      await audGapAction(companyId, audienceId, b.textContent.includes('FIND') ? 'contacts' :
-        b.textContent.includes('ENRICH') ? 'enrich' :
-        b.textContent.includes('GEO') ? 'geocode' : 'angles', b);
-    }
-    done++;
-    if (fillBtn) fillBtn.textContent = `Running… ${done}/${allRows.length}`;
-  }
-
-  if (fillBtn) { fillBtn.textContent = `✓ Done (${done})`; fillBtn.disabled = false; fillBtn.style.color = 'var(--cc)'; }
-  audRefreshDetail(audienceId);
-  clog('info', `Gap fill all complete: ${done} companies processed`);
+  const names = noContacts.slice(0, 5).map(c => c.name).join(', ');
+  const more = noContacts.length - 5;
+  alert(`${noContacts.length} companies have no contacts yet:\n${names}${more > 0 ? ` … +${more} more` : ''}\n\nClick each company → 👤 Find DMs to research decision-makers.\nThen come back and export ↗ CSV for Lemlist.`);
 }
 
 /* ═══ ICP Matching ══════════════════════════════════════════ */
@@ -1436,7 +1507,7 @@ window._icpUpdateSelCount = _icpUpdateSelCount;
 
 /* ── Step 1: Describe modal ─────────────────────────────── */
 export function icpFindByIcp() {
-  const all = window._oaState?.companies || S.companies || [];
+  const all = S.companies;
   const n = all.filter(c => c.type !== 'nogo').length;
   _icpSetContent(`
 <div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
@@ -1480,7 +1551,7 @@ export async function icpMatch() {
 </div>`);
 
   try {
-    const all = window._oaState?.companies || S.companies || [];
+    const all = S.companies;
     const candidates = all.filter(c => c.type !== 'nogo').slice(0, 500);
 
     const coList = candidates.map(c => ({
@@ -1531,17 +1602,6 @@ export async function icpMatch() {
 
 /* ── Step 2 render ──────────────────────────────────────── */
 function _icpRenderResults() {
-  // Save currently checked company ids before re-render (Bug 3 fix)
-  const prevChecked = new Set();
-  document.querySelectorAll('.icp-chk').forEach((b, i) => {
-    if (b.checked && _icpResults[i]) {
-      const co = _icpResults[i].co;
-      prevChecked.add(co.id || _slug(co.name));
-    }
-  });
-  // Also seed from active audience so already-selected companies stay checked
-  (S.activeAudience?.company_ids || []).forEach(id => prevChecked.add(id));
-
   const results = _icpResults;
   if (!results.length) {
     _icpSetContent(`
@@ -1603,21 +1663,8 @@ function _icpRenderResults() {
   </div>
 </div>
 </div>`);
-
-  // Restore previously checked state (Bug 3 fix)
-  if (prevChecked.size > 0) {
-    document.querySelectorAll('.icp-chk').forEach((b, i) => {
-      if (_icpResults[i]) {
-        const coId = _icpResults[i].co.id || _slug(_icpResults[i].co.name);
-        if (prevChecked.has(coId)) b.checked = true;
-      }
-    });
-    _icpUpdateSelCount();
-  }
 }
 window._icpBack = () => _icpRenderResults();
-window.audGapAction = audGapAction;
-window.audGapFillAll = audGapFillAll;
 
 window._icpSelAll = function(sel) {
   document.querySelectorAll('.icp-chk').forEach(b => { b.checked = sel; });
@@ -1820,6 +1867,128 @@ export function audToggleCoRow(slug) {
   const open = exp.style.display !== 'none';
   exp.style.display = open ? 'none' : '';
   if (row) row.classList.toggle('expanded', !open);
+}
+
+/* ─── Company detail overlay inside audience detail ─────────── */
+
+let _ovClickOutsideHandler = null;
+
+export function audOpenCoOverlay(slug, audId) {
+  audCloseCoOverlay();
+
+  const co = S.companies.find(c => (c.id || _slug(c.name)) === slug);
+  if (!co) return;
+
+  const wrap = document.getElementById('aud-detail-wrap');
+  if (!wrap) return;
+  wrap.style.position = 'relative';
+
+  const aud = audId ? S.audiences.find(a => a.id === audId) : null;
+  const contacts = (S.contacts || []).filter(ct =>
+    ct.company_id === (co.id || slug) ||
+    _slug(ct.company_name || '') === _slug(co.name));
+
+  const tc = tClass(co.type), tl = tLabel(co.type);
+  const st = co.icp ? '★'.repeat(Math.min(5, Math.round(co.icp / 2))) : '';
+  const rs = co.relationship_status || '';
+  const audIdJ = JSON.stringify(audId || '');
+  const slugJ  = JSON.stringify(slug);
+
+  const factsArr = [co.category, co.hq_city, co.size].filter(Boolean);
+  const factsHtml = factsArr.map((v, i) =>
+    `<span>${esc(v)}</span>${i < factsArr.length - 1 ? '<span style="opacity:.35">·</span>' : ''}`
+  ).join('');
+
+  const ctHtml = contacts.length
+    ? contacts.map(ct => `
+      <div class="aud-co-ov-ct">
+        <span class="aud-co-ov-ct-name">${esc(ct.full_name || '?')}</span>
+        ${ct.title  ? `<span class="aud-co-ov-ct-title">${esc(ct.title)}</span>`  : ''}
+        ${ct.email  ? `<span class="aud-co-ov-ct-email">${esc(ct.email)}</span>`  : ''}
+      </div>`).join('')
+    : `<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t4);padding:3px 0">No contacts yet</div>`;
+
+  const ov = document.createElement('div');
+  ov.id = 'aud-co-overlay';
+  ov.className = 'aud-co-overlay';
+  ov.innerHTML = `
+<div class="aud-co-ov-inner">
+  <div class="aud-co-ov-hd">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+      <span class="aud-co-ov-name">${esc(co.name)}</span>
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <span class="tag ${tc}" style="font-size:7px">${esc(tl)}</span>
+        ${rs ? `<span class="tag" style="font-size:7px;background:var(--gb);color:var(--g)">${esc(rs)}</span>` : ''}
+        ${st ? `<span class="aud-stars">${st}</span>` : ''}
+      </div>
+    </div>
+    <button class="btn sm" id="aud-co-ov-close" style="flex-shrink:0;margin-left:8px">✕</button>
+  </div>
+  ${factsHtml ? `<div class="aud-co-ov-facts">${factsHtml}</div>` : ''}
+  ${(co.description || co.note) ? `
+  <div class="aud-co-ov-section">
+    <div class="aud-co-ov-lbl">DESCRIPTION</div>
+    <div class="aud-co-ov-text">${esc((co.description || co.note || '').slice(0, 500))}</div>
+  </div>` : ''}
+  ${co.outreach_angle ? `
+  <div class="aud-co-ov-section">
+    <div class="aud-co-ov-lbl">OUTREACH ANGLE</div>
+    <div class="aud-co-ov-text" style="color:var(--g)">${esc(co.outreach_angle)}</div>
+  </div>` : ''}
+  <div class="aud-co-ov-section" style="flex:1">
+    <div class="aud-co-ov-lbl">CONTACTS (${contacts.length})</div>
+    ${ctHtml}
+  </div>
+  <div class="aud-co-ov-actions">
+    <button class="btn sm p" id="aud-ov-email">✉ DRAFT EMAIL</button>
+    <button class="btn sm"   id="aud-ov-dms">👤 FIND DMs</button>
+    <button class="btn sm"   id="aud-ov-full">↗ OPEN FULL</button>
+  </div>
+</div>`;
+
+  wrap.appendChild(ov);
+  requestAnimationFrame(() => ov.classList.add('open'));
+
+  /* Close button */
+  ov.querySelector('#aud-co-ov-close')?.addEventListener('click', e => {
+    e.stopPropagation(); audCloseCoOverlay();
+  });
+
+  /* Action buttons */
+  ov.querySelector('#aud-ov-email')?.addEventListener('click', e => {
+    e.stopPropagation();
+    window.openComposer?.({ company: co.name, companyId: co.id || slug });
+    audCloseCoOverlay();
+  });
+  ov.querySelector('#aud-ov-dms')?.addEventListener('click', e => {
+    e.stopPropagation();
+    window.openCompany?.(co);
+    window.bgFindDMs?.();
+    audCloseCoOverlay();
+  });
+  ov.querySelector('#aud-ov-full')?.addEventListener('click', e => {
+    e.stopPropagation();
+    window.openCompany?.(co);
+    audCloseCoOverlay();
+  });
+
+  /* Click-outside: dismiss when clicking on the wrap but not on the overlay */
+  _ovClickOutsideHandler = e => {
+    if (!ov.contains(e.target)) audCloseCoOverlay();
+  };
+  setTimeout(() => wrap.addEventListener('click', _ovClickOutsideHandler), 50);
+}
+
+export function audCloseCoOverlay() {
+  const ov = document.getElementById('aud-co-overlay');
+  if (!ov) return;
+  const wrap = ov.parentElement;
+  ov.classList.remove('open');
+  setTimeout(() => ov.remove(), 200);
+  if (wrap && _ovClickOutsideHandler) {
+    wrap.removeEventListener('click', _ovClickOutsideHandler);
+    _ovClickOutsideHandler = null;
+  }
 }
 
 export function audFilterCoList(q) {
