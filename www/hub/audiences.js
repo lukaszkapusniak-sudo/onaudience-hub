@@ -193,6 +193,7 @@ function renderCampaignCoRowHtml(c, aud, audContacts) {
     ${st ? `<span class="aud-stars">${st}</span>` : ''}
     ${coContacts.length ? `<span class="aud-ct-badge">${coContacts.length}</span>` : ''}
     <div class="aud-co-row-actions" onclick="event.stopPropagation()">
+      <button class="btn sm" onclick="openBySlug('${esc(slug)}')" title="Open company detail">···</button>
       ${hasEmail ? `<button class="btn sm" onclick="audDraftEmailToCo(${audIdJ},${slugJ})">✉</button>` : ''}
       <button class="btn sm" style="color:var(--prc)" onclick="audToggleCo(${audIdJ},${slugJ})">✗</button>
     </div>
