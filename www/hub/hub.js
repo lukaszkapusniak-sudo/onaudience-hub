@@ -103,18 +103,21 @@ export function renderList(){
     const coTags=getCoTags(c);
     const pct=completeness(c);
 
+    const ctCount=S.contacts.filter(ct=>ct.company_id===(c.id||slug)||_slug(ct.company_name||'')===slug).length;
     const details=[];
     if(c.hq_city||c.region)details.push(`<span class="c-detail-item">📍 <b>${esc(c.hq_city||c.region)}</b></span>`);
     if(c.size)details.push(`<span class="c-detail-item">👥 <b>${esc(c.size)}</b></span>`);
     if(c.category)details.push(`<span class="c-detail-item">${esc(c.category)}</span>`);
     if(c.icp)details.push(`<span class="c-detail-item" style="color:var(--g)">ICP ${c.icp}</span>`);
+    if(ctCount)details.push(`<span class="c-detail-item">🧑‍💼 ${ctCount} contact${ctCount>1?'s':''}</span>`);
+    if(c.relationship_status)details.push(`<span class="c-detail-item" style="color:var(--g);font-weight:600">${esc(c.relationship_status)}</span>`);
     if(c.website)details.push(`<a class="c-detail-item" href="https://${c.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);text-decoration:none">${c.website}</a>`);
+    if(c.updated_at)details.push(`<span class="c-detail-item" style="opacity:.55">${relTime(c.updated_at)}</span>`);
     const detailHtml=details.length?`<div class="c-detail">${details.join('<span class="c-detail-sep"></span>')}</div>`:'';
 
     const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'…':(c.note||''));
     const tagRow=coTags.length?`<div class="c-tags-row">${coTags.slice(0,6).map(t=>`<span class="c-tag-micro${S.activeTags.has(t)?' hit':''}" onclick="event.stopPropagation();toggleTag('${t}')">${t}</span>`).join('')}</div>`:'';
     const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}')" title="${pct}% complete — click to research">✦ enrich</span>`:'';
-    const updStr=c.updated_at?`<span class="c-detail-item" style="opacity:.7">${relTime(c.updated_at)}</span>`:'';
 
     return`<div class="c-row${sel}" data-slug="${slug}" onclick="openBySlug(this.dataset.slug)" oncontextmenu="showCtxSlug(event,this);return false;">
       <div class="c-av" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}33">${n}</div>
