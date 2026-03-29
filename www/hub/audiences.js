@@ -1972,11 +1972,16 @@ export function audOpenCoOverlay(slug, audId) {
     audCloseCoOverlay();
   });
 
-  /* Click-outside: dismiss when clicking on the wrap but not on the overlay */
+  /* Click-outside: use capture so we intercept before any row onclick fires.
+     Stop propagation entirely — only the overlay close should happen,
+     NOT whatever is underneath (row open, audCloseDetail, etc.) */
   _ovClickOutsideHandler = e => {
-    if (!ov.contains(e.target)) audCloseCoOverlay();
+    if (!ov.contains(e.target)) {
+      e.stopPropagation();
+      audCloseCoOverlay();
+    }
   };
-  setTimeout(() => wrap.addEventListener('click', _ovClickOutsideHandler), 50);
+  setTimeout(() => wrap.addEventListener('click', _ovClickOutsideHandler, true), 50);
 }
 
 export function audCloseCoOverlay() {
@@ -1986,9 +1991,11 @@ export function audCloseCoOverlay() {
   ov.classList.remove('open');
   setTimeout(() => ov.remove(), 200);
   if (wrap && _ovClickOutsideHandler) {
-    wrap.removeEventListener('click', _ovClickOutsideHandler);
+    wrap.removeEventListener('click', _ovClickOutsideHandler, true);
     _ovClickOutsideHandler = null;
   }
+  /* restore position so aud-detail-wrap is unaffected */
+  if (wrap) wrap.style.position = '';
 }
 
 export function audFilterCoList(q) {
