@@ -476,6 +476,7 @@ function audCoRowHtml(c, aud) {
 /* ── Scout modal state ────────────────────────────────────── */
 let _scoutResults    = [];
 let _scoutExistingId = null;
+let _gapLists        = { noContact: [], noDesc: [], noHq: [], noAngle: [] };
 
 export function openAudienceModal(existingId) {
   _scoutExistingId = existingId || null;
@@ -574,11 +575,11 @@ export function openAudienceModal(existingId) {
         <div class="scout-section-body" id="scout-a-body"><div class="scout-empty">Run &#128270; SCOUT to find matching companies from your DB</div></div>
       </div>
       <div class="scout-section">
-        <div class="scout-section-head">B &#8212; GAPS</div>
-        <div class="scout-section-body" id="scout-b-body">
-          <div class="scout-gap-row" id="scout-gap-nocontact">&#8212; companies with no contacts</div>
-          <div class="scout-gap-row" id="scout-gap-nointel">&#8212; companies with no description</div>
+        <div class="scout-section-head">
+          <span>B &#8212; GAPS</span>
+          <button class="btn sm" id="scout-fill-all-btn" style="margin-left:auto">&#9654; FILL ALL</button>
         </div>
+        <div class="scout-section-body" id="scout-b-body"><div class="scout-empty">Run &#128270; SCOUT to see gaps</div></div>
       </div>
       <div class="scout-section">
         <div class="scout-section-head">
@@ -602,6 +603,7 @@ export function openAudienceModal(existingId) {
   document.getElementById('scout-similar-btn')?.addEventListener('click', _scoutFindSimilar);
   document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
   if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
+  document.getElementById('scout-fill-all-btn')?.addEventListener('click', _gapFillAll);
 
   // Bug 2 — prefill fields after modal is visible, then auto-run scout
   if (existing && !existing.is_system) {
@@ -705,16 +707,8 @@ async function _scoutRun() {
     }).join('');
   }
 
-  // Section B — gaps
-  const noContact = list.filter(c => {
-    const cid = c.id || _slug(c.name);
-    return !S.contacts?.some(ct => ct.company_id === cid);
-  });
-  const noIntel = list.filter(c => !c.description && !c.intel);
-  const gcEl = document.getElementById('scout-gap-nocontact');
-  const giEl = document.getElementById('scout-gap-nointel');
-  if (gcEl) gcEl.textContent = `${noContact.length} compan${noContact.length === 1 ? 'y' : 'ies'} with no contacts`;
-  if (giEl) giEl.textContent = `${noIntel.length} compan${noIntel.length === 1 ? 'y' : 'ies'} with no description/intel`;
+  // Section B — gaps (fire-and-forget; _renderGaps updates #scout-b-body when ready)
+  _renderGaps(list);
 }
 
 function _scoutToggleAll(checked) {
@@ -817,6 +811,139 @@ async function _scoutFindSimilar() {
     cBody.innerHTML = `<div class="scout-empty">Search failed: ${esc(e.message)}</div>`;
   }
 }
+
+/* ── Gap filler ─────────────────────────────────────────────── */
+
+async function _renderGaps(list) {
+  const bBody = document.getElementById('scout-b-body');
+  if (!bBody) return;
+  bBody.innerHTML = '<div class="scout-running">&#9889; Computing gaps&#8230;</div>';
+
+  // Fast local gaps
+  const noDesc  = list.filter(c => !c.description?.trim());
+  const noHq    = list.filter(c => !c.hq_city?.trim());
+  const noAngle = list.filter(c => !c.outreach_angle?.trim());
+
+  // Contacts gap via Supabase for accuracy
+  const allIds = list.map(c => c.id || _slug(c.name)).filter(Boolean);
+  let noContact = list;
+  if (allIds.length) {
+    try {
+      const res = await fetch(
+        `${SB_URL}/rest/v1/contacts?select=company_id&company_id=in.(${allIds.join(',')})`,
+        { headers: authHdr() }
+      );
+      if (res.ok) {
+        const rows = await res.json();
+        const withContact = new Set(rows.map(r => r.company_id));
+        noContact = list.filter(c => !withContact.has(c.id || _slug(c.name)));
+      }
+    } catch {
+      noContact = list.filter(c => !S.contacts?.some(ct => ct.company_id === (c.id || _slug(c.name))));
+    }
+  }
+
+  _gapLists = { noContact, noDesc, noHq, noAngle };
+
+  const row = (icon, label, n, key, btnLabel) =>
+    `<div class="scout-gap-row" style="display:flex;align-items:center;gap:6px">
+      <span>${icon}</span>
+      <span style="flex:1">${label}</span>
+      <span id="scout-gap-cnt-${key}" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);min-width:18px;text-align:right">${n}</span>
+      ${n > 0 ? `<button class="btn sm" id="scout-gap-btn-${key}">${btnLabel}</button>` : `<span style="font-size:9px;color:var(--gr)">&#10003;</span>`}
+      <span id="scout-gap-prog-${key}" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)"></span>
+    </div>`;
+
+  bBody.innerHTML =
+    row('👤', 'No contacts',        noContact.length, 'contact', 'FIND CONTACTS &#9654;') +
+    row('📝', 'No description',     noDesc.length,    'desc',    'ENRICH &#9654;') +
+    row('📍', 'No HQ city',         noHq.length,      'hq',      'GEOCODE &#9654;') +
+    row('💡', 'No outreach angle',  noAngle.length,   'angle',   'GEN ANGLES &#9654;');
+
+  document.getElementById('scout-gap-btn-contact')?.addEventListener('click', _gapFindContacts);
+  document.getElementById('scout-gap-btn-desc')?.addEventListener('click',    _gapEnrichDesc);
+  document.getElementById('scout-gap-btn-hq')?.addEventListener('click',      _gapGeocode);
+  document.getElementById('scout-gap-btn-angle')?.addEventListener('click',   _gapGenAngles);
+}
+
+function _gapFindContacts() {
+  const names = _gapLists.noContact.map(c => c.name).join(', ');
+  const prompt = `Find decision makers at these companies: ${names}. Use the linkedin-lookup skill.`;
+  navigator.clipboard?.writeText(prompt).catch(() => {});
+  window.open('https://claude.ai/new', '_blank');
+  clog('db', `Prompt copied — finding contacts for ${_gapLists.noContact.length} companies`);
+}
+
+function _gapEnrichDesc() {
+  if (!_gapLists.noDesc.length) return;
+  window.enrFilteredIds = new Set(_gapLists.noDesc.map(c => c.id || _slug(c.name)));
+  audCloseModal();
+  window.switchTab?.('enricher');
+  clog('db', `Enricher queued: ${_gapLists.noDesc.length} companies need description`);
+}
+
+function _gapGeocode() {
+  if (!_gapLists.noHq.length) return;
+  window.enrFilteredIds = new Set(_gapLists.noHq.map(c => c.id || _slug(c.name)));
+  audCloseModal();
+  window.switchTab?.('enricher');
+  clog('db', `Enricher queued: ${_gapLists.noHq.length} companies need HQ city`);
+}
+
+async function _gapGenAngles() {
+  const companies = _gapLists.noAngle;
+  if (!companies.length) return;
+  const progEl = document.getElementById('scout-gap-prog-angle');
+  const cntEl  = document.getElementById('scout-gap-cnt-angle');
+  const btn    = document.getElementById('scout-gap-btn-angle');
+  if (btn) btn.disabled = true;
+
+  const BATCH = 3;
+  let done = 0;
+  for (let i = 0; i < companies.length; i += BATCH) {
+    if (progEl) progEl.textContent = `Generating… ${done} / ${companies.length}`;
+    await Promise.all(companies.slice(i, i + BATCH).map(async c => {
+      try {
+        const res = await anthropicFetch({
+          model: MODEL_CREATIVE, max_tokens: 120,
+          messages: [{ role: 'user', content:
+            `Write a 2-sentence outreach angle for selling audience data to ${c.name} (${c.category || 'unknown'}): ${c.description || 'no description'}. Be specific and direct.` }],
+        });
+        const angle = res.content?.[0]?.text?.trim();
+        if (!angle) return;
+        c.outreach_angle = angle;
+        const sc = S.companies.find(co => (co.id || _slug(co.name)) === (c.id || _slug(c.name)));
+        if (sc) sc.outreach_angle = angle;
+        await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(c.id || _slug(c.name))}`, {
+          method: 'PATCH',
+          headers: authHdr({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ outreach_angle: angle }),
+        }).catch(() => {});
+        done++;
+      } catch { /* skip */ }
+    }));
+  }
+
+  _gapLists.noAngle = _scoutResults.filter(c => !c.outreach_angle?.trim());
+  if (cntEl)  cntEl.textContent  = _gapLists.noAngle.length;
+  if (progEl) progEl.textContent = `&#10003; ${done}/${companies.length} done`;
+  if (btn)  { btn.disabled = false; btn.textContent = '&#8635; REGEN &#9654;'; }
+  clog('db', `Generated ${done} outreach angles`);
+}
+
+async function _gapFillAll() {
+  if (_gapLists.noContact.length) _gapFindContacts();
+  if (_gapLists.noAngle.length)   await _gapGenAngles();
+  if (_gapLists.noDesc.length || _gapLists.noHq.length) {
+    const combined = [...new Set(
+      [..._gapLists.noDesc, ..._gapLists.noHq].map(c => c.id || _slug(c.name))
+    )];
+    window.enrFilteredIds = new Set(combined);
+    audCloseModal();
+    window.switchTab?.('enricher');
+  }
+}
+
 
 export function audCloseModal() {
   const modal = document.getElementById('audience-modal');
