@@ -23,7 +23,6 @@ export function relTime(iso){if(!iso)return'—';const d=new Date(iso);const dif
    even before login completes. Import in every module — never
    construct Supabase headers inline.
    ─────────────────────────────────────────────────────────────── */
-export function safeUrl(w){ return (!w||/^https?:\/\//i.test(w)) ? (w||'') : 'https://'+w; }
 
 export function authHdr(extra) {
   const token = window._oaToken;
