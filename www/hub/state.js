@@ -3,6 +3,7 @@
 const S = {
   /* ── core data ─────────────────────────────────────── */
   companies:      [],
+  totalCompaniesInDb: 0,   // real DB count from content-range header
   contacts:       [],
   allRelations:   [],
 

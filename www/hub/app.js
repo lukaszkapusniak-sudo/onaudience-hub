@@ -183,7 +183,7 @@ Object.assign(window, {
   setSort, quickEnrich, clog, toggleConsole, clearConsole, mapSegments, _slug,
 
   /* company detail */
-  openCompany, closePanel, coAction, ctAction,
+  openCompany, closePanel, coAction, ctAction, setCompanyStatus,
   openBySlug, showCtxSlug, showCtx,
   bgGenerateAngle, bgFindDMs, bgRefreshIntel,
   loadRelationsBrief, extractIntelRelations,

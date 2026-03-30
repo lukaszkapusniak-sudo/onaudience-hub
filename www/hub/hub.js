@@ -103,6 +103,7 @@ export function renderList(){
     const coTags=getCoTags(c);
     const pct=completeness(c);
 
+    const ctCount=S.contacts.filter(ct=>ct.company_id===(c.id||slug)||_slug(ct.company_name||'')===slug).length;
     const details=[];
     if(c.hq_city||c.region)details.push(`<span class="c-detail-item">📍 <b>${esc(c.hq_city||c.region)}</b></span>`);
     if(c.size)details.push(`<span class="c-detail-item">👥 <b>${esc(c.size)}</b></span>`);
@@ -114,7 +115,6 @@ export function renderList(){
     const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'…':(c.note||''));
     const tagRow=coTags.length?`<div class="c-tags-row">${coTags.slice(0,6).map(t=>`<span class="c-tag-micro${S.activeTags.has(t)?' hit':''}" onclick="event.stopPropagation();toggleTag('${t}')">${t}</span>`).join('')}</div>`:'';
     const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}')" title="${pct}% complete — click to research">✦ enrich</span>`:'';
-    const updStr=c.updated_at?`<span class="c-detail-item" style="opacity:.7">${relTime(c.updated_at)}</span>`:'';
 
     return`<div class="c-row${sel}" data-slug="${slug}" onclick="openBySlug(this.dataset.slug)" oncontextmenu="showCtxSlug(event,this);return false;">
       <div class="c-av" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}33">${n}</div>
@@ -267,6 +267,18 @@ export function coAction(a){
   if(a==='angle')bgGenerateAngle();
   if(a==='find-contacts')bgFindDMs();
 }
+export async function setCompanyStatus(id,status){
+  const co=S.companies.find(c=>(c.id||_slug(c.name))===id);
+  if(!co)return;
+  co.relationship_status=status;
+  if(S.currentCompany&&(S.currentCompany.id||_slug(S.currentCompany.name))===id)S.currentCompany.relationship_status=status;
+  // toggle .on on status bar buttons
+  document.querySelectorAll('.ib-status-bar .btn').forEach(b=>{b.classList.toggle('on',b.textContent===status);});
+  renderList();
+  clog('db',`Status set: <b>${esc(co.name)}</b> → ${esc(status)}`);
+  await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({relationship_status:status})}).catch(e=>clog('db',`Status PATCH error: ${esc(e.message)}`));
+}
+
 export function ctAction(action,ctSlug){
   const ct=S.contacts.find(c=>c.id===ctSlug||(c.full_name&&_slug(c.full_name)===ctSlug));if(!ct)return;
   if(action==='email')window.openComposer({company:ct.company_name,contactName:ct.full_name,contactTitle:ct.title,linkedin:ct.linkedin_url});

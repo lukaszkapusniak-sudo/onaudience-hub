@@ -77,3 +77,5 @@ export const TCF_P={1:'Store/access info on device',2:'Select basic ads',3:'Crea
 export const TCF_SP={1:'Security & fraud prevention',2:'Deliver advertising & content'};
 export const TCF_F={1:'Match offline data sources',2:'Link different devices',3:'Auto device ID'};
 export const TCF_SF={1:'Precise geolocation data',2:'Active device scanning'};
+
+export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';

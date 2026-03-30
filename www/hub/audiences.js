@@ -8,15 +8,19 @@
 import { SB_URL, MODEL_CREATIVE } from './config.js';
 import { authHdr } from './utils.js';
 import S from './state.js';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc } from './utils.js';
-import { anthropicFetch } from './api.js';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js';
+import { anthropicFetch, geocodeCity, saveGeocode } from './api.js?v=20260328a';
 import { clog } from './hub.js';
+
+/* ── Map state ─────────────────────────────────────────────── */
+let _audMap = null;
+let _audMapMembers = [];
 
 /* ─── Supabase ─────────────────────────────────────────────── */
 
 async function sbLoadAudiences() {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/audiences?order=updated_at.desc`, {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?select=*&order=updated_at.desc`, {
       headers: authHdr()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -106,7 +110,7 @@ function audRowHtml(a) {
   const tagPills = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
   const typePill = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
   return `
-<div class="aud-row${active}" onclick="audOpen(${JSON.stringify(a.id)})">
+<div class="aud-row${active}" onclick="audOpen('${esc(a.id)}')">
   <div class="aud-row-head">
     <span class="aud-row-name">${esc(a.name)}</span>
     <span class="aud-row-count">${n} co</span>
@@ -114,9 +118,9 @@ function audRowHtml(a) {
   ${a.outreach_hook ? `<div class="aud-hook">✦ ${esc(a.outreach_hook)}</div>` : ''}
   <div class="aud-row-pills">${typePill}${tagPills}</div>
   <div class="aud-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audEdit(${JSON.stringify(a.id)})">EDIT</button>
-    <button class="btn sm" onclick="event.stopPropagation();audExportCsv(${JSON.stringify(a.id)})">↗ CSV</button>
-    <button class="btn sm" onclick="event.stopPropagation();audDelete(${JSON.stringify(a.id)})" style="color:var(--prc)">✕</button>
+    <button class="btn sm" onclick="event.stopPropagation();audEdit('${esc(a.id)}')">EDIT</button>
+    <button class="btn sm" onclick="event.stopPropagation();audExportCsv('${esc(a.id)}')">↗ CSV</button>
+    <button class="btn sm" onclick="event.stopPropagation();audDelete('${esc(a.id)}')" style="color:var(--prc)">✕</button>
   </div>
 </div>`;
 }
@@ -176,20 +180,25 @@ export function renderAudienceDetail(id) {
       ${f.minIcp ? `<span class="tag tpr">ICP≥${f.minIcp}</span>` : ''}
     </div>
   </div>
-  <div class="aud-detail-toolbar">
-    <span class="aud-detail-toolbar-count">${companies.length} COMPANIES</span>
-    <div style="display:flex;gap:5px;align-items:center;margin-left:auto">
-      <label style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">SORT</label>
-      <select class="aud-sort-sel" onchange="audSetSort(${JSON.stringify(aud.id)},this.value)">${sortOpts}</select>
-    </div>
-    <button class="btn sm p" onclick="audFindContacts(${JSON.stringify(aud.id)})">👤 GET CONTACTS</button>
-    <button class="btn sm" onclick="audExportCsv(${JSON.stringify(aud.id)})">↗ CSV</button>
-    <button class="btn sm" onclick="audRefreshDetail(${JSON.stringify(aud.id)})">↺</button>
+  <div class="aud-co-row-sub">
+    ${c.hq_city ? `<span>📍${esc(c.hq_city)}</span>` : ''}
+    ${c.size ? `<span>👥${esc(c.size)}</span>` : ''}
+    ${c.category ? `<span>${esc(c.category)}</span>` : ''}
   </div>
-  <div class="aud-co-list" id="aud-co-list-inner">
-    ${companies.length === 0
-      ? '<div class="aud-empty" style="padding:24px">No companies match this audience.</div>'
-      : companies.map(c => audCoRowHtml(c, aud)).join('')}
+  <div class="aud-co-expand" id="aud-coe-${esc(slug)}" style="display:none">
+    ${c.note ? `<div class="aud-co-desc">${esc(c.note.slice(0, 200))}</div>` : ''}
+    ${c.outreach_angle ? `<div class="aud-co-angle">✦ ${esc(c.outreach_angle)}</div>` : ''}
+    ${coContacts.length ? `<div class="aud-co-contacts">${coContacts.map(ct => `
+      <div class="aud-ct-row">
+        <span>${esc(ct.full_name || '?')}</span>
+        ${ct.title ? `<span class="aud-ct-title">${esc(ct.title)}</span>` : ''}
+        ${ct.email ? `<span class="aud-ct-email">${esc(ct.email)}</span>` : ''}
+      </div>`).join('')}</div>`
+      : '<div style="font-size:9px;color:var(--t4);padding:4px 0">No contacts yet</div>'}
+    <div class="aud-co-expand-actions">
+      <button class="btn sm" onclick="event.stopPropagation();audGenAngleForCo(${audIdJ},${slugJ})">✦ Gen angle</button>
+      ${hasEmail ? `<button class="btn sm" onclick="event.stopPropagation();audDraftEmailToCo(${audIdJ},${slugJ})">✉ Draft email</button>` : ''}
+    </div>
   </div>
 </div>`;
 }
@@ -324,12 +333,24 @@ function audCoRowHtml(c, aud) {
 
 /* ─── Modal ────────────────────────────────────────────────── */
 
-export function openAudienceModal(existingId) {
-  S._audienceBuiltIds = null;
-  const existing = existingId ? S.audiences.find(a => a.id === existingId) : null;
-  const f = existing?.filters || {};
+/* ── Scout modal state ────────────────────────────────────── */
+let _scoutResults    = [];
+let _scoutExistingId = null;
+let _gapLists        = { noContact: [], noDesc: [], noHq: [], noAngle: [] };
 
-  // Collect all tags from DB
+export function openAudienceModal(existingId) {
+  _scoutExistingId = existingId || null;
+  S._audienceBuiltIds = null;
+
+  const existing = existingId ? S.audiences.find(a => a.id === existingId) : null;
+  if (existing?.is_system) {
+    clog('info', 'System audiences cannot be edited in Scout.');
+    return;
+  }
+
+  const f     = existing?.filters || {};
+  const isNew = !existingId;
+
   const allTags = [...new Set((S.companies || []).flatMap(c => getCoTags(c)))].sort();
   const tagCheckboxes = allTags.map(t => {
     const checked = (f.tags || []).includes(t) ? 'checked' : '';
@@ -345,29 +366,17 @@ export function openAudienceModal(existingId) {
   if (!modal) return;
 
   modal.innerHTML = `
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
-<div class="aud-modal-box">
+<div class="aud-modal-overlay" onclick="if(event.target===this)audCloseModal()">
+<div class="aud-modal-box scout-modal-box">
   <div class="aud-modal-head">
-    <span class="aud-modal-title">${existing ? 'EDIT AUDIENCE' : 'NEW AUDIENCE'}</span>
-    <button class="btn sm" onclick="audCloseModal()">✕</button>
+    <span class="aud-modal-title">${isNew ? '&#128270; SCOUT AUDIENCE' : 'EDIT AUDIENCE'}</span>
+    <button class="btn sm" id="scout-close-btn">&#10005;</button>
   </div>
-  <div class="aud-modal-body">
-
-    <div class="aud-form-row">
-      <label class="aud-label">NAME</label>
-      <input id="aud-name" class="aud-input" value="${esc(existing?.name || '')}" placeholder="e.g. EU DSP Prospects"/>
-    </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">DESCRIPTION</label>
-      <textarea id="aud-desc" class="aud-input aud-textarea" placeholder="What is this audience for?">${esc(existing?.description || '')}</textarea>
-    </div>
-
-    <div class="aud-form-row">
-      <label class="aud-label">AI BUILD <span style="color:var(--t3);font-size:8px;text-transform:none;letter-spacing:0">— describe target, AI matches from DB using active filters as context</span></label>
-      <div style="display:flex;gap:6px">
-        <input id="aud-ai-prompt" class="aud-input" style="flex:1" placeholder="e.g. EU-based programmatic DSPs with CTV capabilities and cookieless interest"/>
-        <button class="btn sm p" onclick="audAIBuild()">✨ BUILD</button>
+  <div class="scout-cols">
+    <div class="scout-left">
+      <div class="aud-form-row">
+        <label class="aud-label">NAME</label>
+        <input id="scout-name" class="aud-input" value="${esc(existing?.name || '')}" placeholder="e.g. EU DSP Prospects"/>
       </div>
       <div id="aud-ai-status" style="min-height:16px;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8px"></div>
     </div>
@@ -382,9 +391,47 @@ export function openAudienceModal(existingId) {
         <label class="aud-label" style="min-width:48px">MIN ICP</label>
         <input id="aud-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1–10"/>
       </div>
-      <div class="aud-filter-row" style="flex-wrap:wrap;gap:4px;margin-top:6px">
-        <label class="aud-label" style="width:100%;margin-bottom:2px">TAGS</label>
-        ${tagCheckboxes || '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:var(--t4)">No tags in DB yet</span>'}
+      <div class="aud-form-row">
+        <label class="aud-label">ICP SCOUT PROMPT <span style="color:var(--t3);font-size:8px;font-weight:400;text-transform:none;letter-spacing:0">&#8212; optional AI filter on top of hard filters</span></label>
+        <div style="display:flex;gap:6px">
+          <input id="scout-prompt" class="aud-input" style="flex:1" value="${esc(existing?.icp_prompt || existing?.filters?.icp_prompt || '')}" placeholder="e.g. EU DSPs with CTV and cookieless interest"/>
+          <button class="btn sm p" id="scout-run-btn">&#128270; SCOUT</button>
+        </div>
+        <div id="scout-status" style="min-height:14px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);margin-top:2px"></div>
+      </div>
+      <div class="aud-filters-section">
+        <div class="aud-label" style="margin-bottom:6px">FILTERS</div>
+        <div class="aud-filter-row">
+          <label class="aud-label" style="min-width:32px">TYPE</label>
+          <select id="scout-f-type" class="aud-select">${typeOpts}</select>
+          <label class="aud-label" style="min-width:44px">REGION</label>
+          <select id="scout-f-region" class="aud-select">${regionOpts}</select>
+          <label class="aud-label" style="min-width:48px">MIN ICP</label>
+          <input id="scout-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1&#8211;10"/>
+        </div>
+        <div class="aud-filter-row" style="flex-wrap:wrap;gap:4px;margin-top:6px">
+          <label class="aud-label" style="width:100%;margin-bottom:2px">TAGS</label>
+          ${tagCheckboxes || '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:var(--t4)">No tags</span>'}
+        </div>
+      </div>
+      <div class="aud-form-row">
+        <label class="aud-label">&#10022; OUTREACH HOOK</label>
+        <textarea id="scout-hook" class="aud-input aud-textarea" rows="2" placeholder="2-sentence outreach angle&#8230;">${esc(existing?.outreach_hook || '')}</textarea>
+      </div>
+      <div class="aud-form-row">
+        <label class="aud-label">SORT</label>
+        <select id="scout-sort" class="aud-select">
+          <option value="updated_at" ${(!existing?.sort_field || existing.sort_field === 'updated_at') ? 'selected' : ''}>RECENTLY UPDATED</option>
+          <option value="name" ${existing?.sort_field === 'name' ? 'selected' : ''}>NAME A&#8594;Z</option>
+          <option value="icp" ${existing?.sort_field === 'icp' ? 'selected' : ''}>ICP &#8595;</option>
+          <option value="size" ${existing?.sort_field === 'size' ? 'selected' : ''}>SIZE &#8595;</option>
+        </select>
+      </div>
+      <div class="scout-footer-bar">
+        <button class="btn p" id="scout-save-btn">${isNew ? '&#128190; Save Audience' : '&#128190; Save Changes'}</button>
+        <button class="btn" id="scout-cancel-btn">Cancel</button>
+        ${!isNew ? `<button class="btn" id="scout-delete-btn" style="margin-left:auto;color:var(--prc);border-color:var(--prr)">DELETE</button>` : ''}
+        <div id="scout-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:2px"></div>
       </div>
     </div>
 
@@ -407,15 +454,419 @@ export function openAudienceModal(existingId) {
       <div id="aud-save-err" style="width:100%;color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;margin-top:4px;display:none"></div>
     </div>
   </div>
-</div>
-</div>`;
+</div></div>`;
 
   // No auto-preview on filter change — preview only fires when user clicks SCOUT
 }
 
+async function _scoutRun() {
+  // Fix 3 — guard: retry if company list not yet loaded
+  if (!S.companies?.length) {
+    const statusEl = document.getElementById('scout-status');
+    if (statusEl) statusEl.textContent = '⟳ Waiting for data…';
+    setTimeout(_scoutRun, 1000);
+    return;
+  }
+
+  const type   = document.getElementById('scout-f-type')?.value   || '';
+  const region = document.getElementById('scout-f-region')?.value || '';
+  const minIcp = parseInt(document.getElementById('scout-f-icp')?.value) || 0;
+  const tags   = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const prompt = document.getElementById('scout-prompt')?.value?.trim() || '';
+
+  const statusEl = document.getElementById('scout-status');
+  const bodyEl   = document.getElementById('scout-a-body');
+  const countEl  = document.getElementById('scout-a-count');
+  if (!bodyEl) return;
+
+  // Hard filter
+  let list = S.companies || [];
+  if (type)        list = list.filter(c => c.type === type);
+  if (region)      list = list.filter(c => c.region === region);
+  if (minIcp)      list = list.filter(c => (c.icp || 0) >= minIcp);
+  if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+
+  // Optional AI filter when prompt is given
+  if (prompt && list.length > 0) {
+    if (statusEl) statusEl.textContent = '⟳ AI filtering…';
+    bodyEl.innerHTML = '<div class="scout-running">&#9889; AI is scanning your DB&#8230;</div>';
+    try {
+      const coList = list.map(c =>
+        `${c.name}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 80)}`
+      ).join('\n');
+      const res = await anthropicFetch({
+        model: MODEL_CREATIVE,
+        max_tokens: 800,
+        messages: [{ role: 'user', content:
+          `You are filtering a B2B CRM for onAudience (EU first-party data provider).\nTarget: "${prompt}"\nReturn a JSON array of company names that best match — be selective.\nCompanies (name|tags|icp|type|description):\n${coList}\n\nReturn ONLY a raw JSON array of matching company names.` }],
+      });
+      const raw  = res.content?.[0]?.text?.trim() || '[]';
+      const m    = raw.match(/\[[\s\S]*\]/);
+      const names = m ? JSON.parse(m[0]) : [];
+      const nameSet = new Set(names.map(n => String(n).toLowerCase()));
+      list = list.filter(c => nameSet.has(c.name.toLowerCase()));
+      if (statusEl) statusEl.textContent = `✓ AI matched ${list.length}`;
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '⚠ AI filter failed — showing filter results';
+    }
+  } else {
+    if (statusEl) statusEl.textContent = list.length
+      ? `${list.length} match${list.length !== 1 ? 'es' : ''}`
+      : 'No matches — relax filters';
+  }
+
+  _scoutResults = list;
+  const existingIds = new Set(_scoutExistingId
+    ? (S.audiences.find(a => a.id === _scoutExistingId)?.company_ids || [])
+    : []);
+
+  if (countEl) countEl.textContent = `(${list.length})`;
+  if (list.length === 0) {
+    bodyEl.innerHTML = '<div class="scout-empty">No companies match — try relaxing filters</div>';
+  } else {
+    bodyEl.innerHTML = list.map(c => {
+      const cid   = c.id || _slug(c.name);
+      const chk   = existingIds.has(cid) ? 'checked' : '';
+      const chips = getCoTags(c).slice(0, 3).map(t => `<span class="scout-tag">${esc(t)}</span>`).join('');
+      const score = c.icp
+        ? `<span class="icp-score ${c.icp >= 7 ? 'hi' : c.icp >= 4 ? 'mid' : 'lo'}">${c.icp}</span>`
+        : '';
+      return `<label class="scout-company-row"><input type="checkbox" class="scout-cb" value="${esc(cid)}" ${chk}/>${score}<span class="icp-name">${esc(c.name)}</span><span class="icp-cat">${esc(tLabel(c.type))}</span>${chips}</label>`;
+    }).join('');
+  }
+
+  // Section B — gaps (fire-and-forget; _renderGaps updates #scout-b-body when ready)
+  _renderGaps(list);
+}
+
+function _scoutToggleAll(checked) {
+  document.querySelectorAll('#scout-a-body .scout-cb').forEach(cb => { cb.checked = checked; });
+}
+
+async function _scoutSave(existingId) {
+  const name  = document.getElementById('scout-name')?.value?.trim();
+  const errEl = document.getElementById('scout-err');
+  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (errEl) errEl.textContent = '';
+
+  const desc      = document.getElementById('scout-desc')?.value?.trim()    || '';
+  const prompt    = document.getElementById('scout-prompt')?.value?.trim()   || '';
+  const hook      = document.getElementById('scout-hook')?.value?.trim()     || '';
+  const sortField = document.getElementById('scout-sort')?.value             || 'updated_at';
+  const type      = document.getElementById('scout-f-type')?.value           || '';
+  const region    = document.getElementById('scout-f-region')?.value         || '';
+  const minIcp    = parseInt(document.getElementById('scout-f-icp')?.value)   || 0;
+  const tags      = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+
+  const checkedIds = [...document.querySelectorAll('#scout-a-body .scout-cb:checked')].map(cb => cb.value);
+  const companyIds = checkedIds.length > 0 ? checkedIds
+    : _scoutResults.length > 0 ? _scoutResults.map(c => c.id || _slug(c.name))
+    : (S.companies || []).map(c => c.id || _slug(c.name));
+
+  const filters = { type: type || null, region: region || null, minIcp: minIcp || null, tags, icp_prompt: prompt || null };
+
+  try {
+    if (existingId) {
+      const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(existingId)}`, {
+        method: 'PATCH',
+        headers: authHdr(),
+        body: JSON.stringify({
+          name, description: desc || null, outreach_hook: hook || null,
+          filters, icp_prompt: prompt || null, sort_field: sortField,
+          company_ids: companyIds, updated_at: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const aud = S.audiences.find(a => a.id === existingId);
+      if (aud) Object.assign(aud, { name, description: desc, outreach_hook: hook || null, filters, icp_prompt: prompt || null, sort_field: sortField, company_ids: companyIds });
+      audCloseModal();
+      await renderAudiencesPanel();
+      if (S.activeAudience?.id === existingId) renderAudienceDetail(existingId);
+      clog('db', `Audience updated: <b>${esc(name)}</b>`);
+    } else {
+      const id = `aud-${Date.now()}`;
+      await sbSaveAudience({ id, name, description: desc || null, company_ids: companyIds, filters, icp_prompt: prompt || null, outreach_hook: hook || null, sort_field: sortField, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      audCloseModal();
+      await renderAudiencesPanel();
+      audOpen(id);
+      const toast = document.createElement('div');
+      toast.className = 'icp-toast';
+      toast.textContent = `✓ ${name} saved — ${companyIds.length} companies`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      clog('db', `Audience saved: <b>${esc(name)}</b> (${companyIds.length} companies)`);
+    }
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+    clog('db', `Audience save error: ${esc(e.message)}`);
+  }
+}
+
+async function _scoutFindSimilar() {
+  const prompt = document.getElementById('scout-prompt')?.value?.trim()
+    || document.getElementById('scout-name')?.value?.trim() || '';
+  const cBody  = document.getElementById('scout-c-body');
+  if (!cBody) return;
+  if (!prompt) {
+    cBody.innerHTML = '<div class="scout-empty">Add a Scout Prompt or Name first</div>';
+    return;
+  }
+
+  cBody.innerHTML = '<div class="scout-running">&#9889; Searching for similar companies&#8230;</div>';
+  const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
+  const exclude = (S.companies || []).slice(0, 40).map(c => c.name).join(', ');
+
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE,
+      max_tokens: 600,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{ role: 'user', content:
+        `Find 8–10 real companies matching: "${prompt}" — for onAudience EU first-party data partnerships (DSPs, SSPs, agencies, data providers).\nExclude these already in CRM: ${exclude}\nReturn JSON array: [{"name":"...","category":"...","hq":"...","why":"..."}]. Real companies only.` }],
+    });
+    const raw  = res.content?.find(b => b.type === 'text')?.text?.trim() || '[]';
+    const m    = raw.match(/\[[\s\S]*\]/);
+    const candidates = m ? JSON.parse(m[0]) : [];
+    if (!candidates.length) {
+      cBody.innerHTML = '<div class="scout-empty">No new candidates found — try a different prompt</div>';
+      return;
+    }
+    cBody.innerHTML = candidates.map(c => {
+      const inDb = existingNames.has((c.name || '').toLowerCase());
+      return `<div class="scout-candidate-row${inDb ? ' scout-candidate-exists' : ''}"><span class="icp-name">${esc(c.name || '?')}${inDb ? ' <span style="color:var(--t4)">(in DB)</span>' : ''}</span><span class="icp-cat">${esc(c.category || '')}${c.hq ? ' \xb7 ' + esc(c.hq) : ''}</span><span class="icp-reason">${esc(c.why || '')}</span></div>`;
+    }).join('');
+  } catch (e) {
+    cBody.innerHTML = `<div class="scout-empty">Search failed: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ── Gap filler ─────────────────────────────────────────────── */
+
+async function _renderGaps(list) {
+  const bBody = document.getElementById('scout-b-body');
+  if (!bBody) return;
+  bBody.innerHTML = '<div class="scout-running">&#9889; Computing gaps&#8230;</div>';
+
+  // Fast local gaps
+  const noDesc  = list.filter(c => !c.description?.trim());
+  const noHq    = list.filter(c => !c.hq_city?.trim());
+  const noAngle = list.filter(c => !c.outreach_angle?.trim());
+
+  // Contacts gap via Supabase for accuracy
+  const allIds = list.map(c => c.id || _slug(c.name)).filter(Boolean);
+  let noContact = list;
+  if (allIds.length) {
+    try {
+      const res = await fetch(
+        `${SB_URL}/rest/v1/contacts?select=company_id&company_id=in.(${allIds.join(',')})`,
+        { headers: authHdr() }
+      );
+      if (res.ok) {
+        const rows = await res.json();
+        const withContact = new Set(rows.map(r => r.company_id));
+        noContact = list.filter(c => !withContact.has(c.id || _slug(c.name)));
+      }
+    } catch {
+      noContact = list.filter(c => !S.contacts?.some(ct => ct.company_id === (c.id || _slug(c.name))));
+    }
+  }
+
+  _gapLists = { noContact, noDesc, noHq, noAngle };
+
+  const row = (icon, label, n, key, btnLabel) =>
+    `<div class="scout-gap-row" style="display:flex;align-items:center;gap:6px">
+      <span>${icon}</span>
+      <span style="flex:1">${label}</span>
+      <span id="scout-gap-cnt-${key}" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);min-width:18px;text-align:right">${n}</span>
+      ${n > 0 ? `<button class="btn sm" id="scout-gap-btn-${key}">${btnLabel}</button>` : `<span style="font-size:9px;color:var(--gr)">&#10003;</span>`}
+      <span id="scout-gap-prog-${key}" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)"></span>
+    </div>`;
+
+  bBody.innerHTML =
+    row('👤', 'No contacts',        noContact.length, 'contact', 'FIND CONTACTS &#9654;') +
+    row('📝', 'No description',     noDesc.length,    'desc',    'ENRICH &#9654;') +
+    row('📍', 'No HQ city',         noHq.length,      'hq',      'GEOCODE &#9654;') +
+    row('💡', 'No outreach angle',  noAngle.length,   'angle',   'GEN ANGLES &#9654;');
+
+  document.getElementById('scout-gap-btn-contact')?.addEventListener('click', _gapFindContacts);
+  document.getElementById('scout-gap-btn-desc')?.addEventListener('click',    _gapEnrichDesc);
+  document.getElementById('scout-gap-btn-hq')?.addEventListener('click',      _gapGeocode);
+  document.getElementById('scout-gap-btn-angle')?.addEventListener('click',   _gapGenAngles);
+}
+
+function _gapFindContacts() {
+  const names = _gapLists.noContact.map(c => c.name).join(', ');
+  const prompt = `Find decision makers at these companies: ${names}. Use the linkedin-lookup skill.`;
+  navigator.clipboard?.writeText(prompt).catch(() => {});
+  window.open('https://claude.ai/new', '_blank');
+  clog('db', `Prompt copied — finding contacts for ${_gapLists.noContact.length} companies`);
+}
+
+function _gapEnrichDesc() {
+  if (!_gapLists.noDesc.length) return;
+  window.enrFilteredIds = new Set(_gapLists.noDesc.map(c => c.id || _slug(c.name)));
+  audCloseModal();
+  window.switchTab?.('enricher');
+  clog('db', `Enricher queued: ${_gapLists.noDesc.length} companies need description`);
+}
+
+function _gapGeocode() {
+  if (!_gapLists.noHq.length) return;
+  window.enrFilteredIds = new Set(_gapLists.noHq.map(c => c.id || _slug(c.name)));
+  audCloseModal();
+  window.switchTab?.('enricher');
+  clog('db', `Enricher queued: ${_gapLists.noHq.length} companies need HQ city`);
+}
+
+async function _gapGenAngles() {
+  const companies = _gapLists.noAngle;
+  if (!companies.length) return;
+  const progEl = document.getElementById('scout-gap-prog-angle');
+  const cntEl  = document.getElementById('scout-gap-cnt-angle');
+  const btn    = document.getElementById('scout-gap-btn-angle');
+  if (btn) btn.disabled = true;
+
+  const BATCH = 3;
+  let done = 0;
+  for (let i = 0; i < companies.length; i += BATCH) {
+    if (progEl) progEl.textContent = `Generating… ${done} / ${companies.length}`;
+    await Promise.all(companies.slice(i, i + BATCH).map(async c => {
+      try {
+        const res = await anthropicFetch({
+          model: MODEL_CREATIVE, max_tokens: 120,
+          messages: [{ role: 'user', content:
+            `Write a 2-sentence outreach angle for selling audience data to ${c.name} (${c.category || 'unknown'}): ${c.description || 'no description'}. Be specific and direct.` }],
+        });
+        const angle = res.content?.[0]?.text?.trim();
+        if (!angle) return;
+        c.outreach_angle = angle;
+        const sc = S.companies.find(co => (co.id || _slug(co.name)) === (c.id || _slug(c.name)));
+        if (sc) sc.outreach_angle = angle;
+        await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(c.id || _slug(c.name))}`, {
+          method: 'PATCH',
+          headers: authHdr({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ outreach_angle: angle }),
+        }).catch(() => {});
+        done++;
+      } catch { /* skip */ }
+    }));
+  }
+
+  _gapLists.noAngle = _scoutResults.filter(c => !c.outreach_angle?.trim());
+  if (cntEl)  cntEl.textContent  = _gapLists.noAngle.length;
+  if (progEl) progEl.textContent = `&#10003; ${done}/${companies.length} done`;
+  if (btn)  { btn.disabled = false; btn.textContent = '&#8635; REGEN &#9654;'; }
+  clog('db', `Generated ${done} outreach angles`);
+}
+
+async function _gapFillAll() {
+  if (_gapLists.noContact.length) _gapFindContacts();
+  if (_gapLists.noAngle.length)   await _gapGenAngles();
+  if (_gapLists.noDesc.length || _gapLists.noHq.length) {
+    const combined = [...new Set(
+      [..._gapLists.noDesc, ..._gapLists.noHq].map(c => c.id || _slug(c.name))
+    )];
+    window.enrFilteredIds = new Set(combined);
+    audCloseModal();
+    window.switchTab?.('enricher');
+  }
+}
+
+
 export function audCloseModal() {
   const modal = document.getElementById('audience-modal');
-  if (modal) modal.innerHTML = '';
+  if (modal) { modal.innerHTML = ''; modal.style.display = ''; }
+}
+
+/* ── Audience map view ────────────────────────────────────── */
+
+export function toggleAudienceMap(view) {
+  const listWrap = document.getElementById('aud-co-list-wrap');
+  const mapWrap  = document.getElementById('aud-map-wrap');
+  const btnList  = document.getElementById('aud-toggle-list');
+  const btnMap   = document.getElementById('aud-toggle-map');
+  if (!listWrap || !mapWrap) return;
+
+  if (view === 'map') {
+    listWrap.style.display = 'none';
+    mapWrap.style.display  = 'flex';
+    btnList?.classList.remove('active');
+    btnMap?.classList.add('active');
+    _initAudMap(_audMapMembers);
+  } else {
+    mapWrap.style.display  = 'none';
+    listWrap.style.display = '';
+    btnList?.classList.add('active');
+    btnMap?.classList.remove('active');
+    if (_audMap) { _audMap.remove(); _audMap = null; }
+  }
+}
+
+function _addAudMarker(cluster, c, lat, lng) {
+  const av = getAv(c.name);
+  const initials = ini(c.name);
+  const slug = c.id || _slug(c.name);
+  const icon = L.divIcon({
+    html: `<div style="background:${av.bg};color:${av.fg};width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;border:1px solid ${av.fg}33;box-shadow:0 1px 4px rgba(0,0,0,.2)">${esc(initials)}</div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+  const marker = L.marker([lat, lng], { icon });
+  const tl = tLabel(c.type);
+  marker.bindPopup(`
+    <div style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;min-width:140px;line-height:1.5">
+      <div style="font-weight:600;margin-bottom:2px">${esc(c.name)}</div>
+      <div style="color:#888;font-size:10px">${esc(tl)}${c.icp ? ` · ICP ${c.icp}` : ''}</div>
+      <a href="#" onclick="event.preventDefault();openCompany(${JSON.stringify(slug)})" style="font-size:10px;color:#178066;text-decoration:none">Open →</a>
+    </div>`);
+  cluster.addLayer(marker);
+}
+
+function _initAudMap(members) {
+  if (_audMap) return;
+
+  _audMap = L.map('aud-map').setView([30, 10], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18,
+  }).addTo(_audMap);
+
+  const cluster = L.markerClusterGroup();
+  _audMap.addLayer(cluster);
+
+  const cityCounts = {};
+  let geocodeDelay = 0;
+
+  members.forEach(c => {
+    if (c.hq_lat && c.hq_lng) {
+      if (c.hq_city) cityCounts[c.hq_city] = (cityCounts[c.hq_city] || 0) + 1;
+      _addAudMarker(cluster, c, c.hq_lat, c.hq_lng);
+    } else if (c.hq_city) {
+      cityCounts[c.hq_city] = (cityCounts[c.hq_city] || 0) + 1;
+      geocodeDelay += 1100;
+      setTimeout(async () => {
+        const coords = await geocodeCity(c.hq_city);
+        if (coords) {
+          c.hq_lat = coords.lat;
+          c.hq_lng = coords.lng;
+          await saveGeocode(c.id || _slug(c.name), coords.lat, coords.lng);
+          _addAudMarker(cluster, c, coords.lat, coords.lng);
+          clog('enrich', 'geocoded: ' + c.name);
+        }
+      }, geocodeDelay);
+    }
+  });
+
+  const geoList = document.getElementById('aud-geo-list');
+  if (geoList) {
+    const sorted = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]);
+    geoList.innerHTML = sorted.map(([city, n]) =>
+      `<div class="aud-map-geo-row"><span>${esc(city)}</span><span>${n}</span></div>`
+    ).join('') || `<div style="color:var(--t4);font-size:8px">No location data</div>`;
+  }
+
+  setTimeout(() => _audMap?.invalidateSize(), 100);
 }
 
 function _audPreviewFilter() {
@@ -634,6 +1085,7 @@ export function audOpen(id) {
 }
 
 export function audCloseDetail() {
+  if (_audMap) { _audMap.remove(); _audMap = null; }
   S.activeAudience = null;
   const wrap = document.getElementById('aud-detail-wrap');
   if (wrap) wrap.style.display = 'none';
@@ -1356,5 +1808,531 @@ export async function icpPatchAudience(id) {
     clog('db', `Audience updated: <b>${esc(name)}</b>`);
   } catch (e) {
     if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+  }
+}
+
+/* ═══ ICP Matching ══════════════════════════════════════════ */
+
+let _icpPrompt = '';
+let _icpResults = [];
+let _icpThreshold = 70;
+
+function _icpModal() {
+  return document.getElementById('audience-modal');
+}
+
+function _icpSetContent(html) {
+  const m = _icpModal();
+  if (m) m.innerHTML = html;
+}
+
+function _icpUpdateSelCount() {
+  let cnt = 0;
+  document.querySelectorAll('.icp-chk').forEach(b => { if (b.checked) cnt++; });
+  const el = document.getElementById('icp-sel-count');
+  if (el) el.textContent = `${cnt} selected`;
+}
+window._icpUpdateSelCount = _icpUpdateSelCount;
+
+/* ── Step 1: Describe modal ─────────────────────────────── */
+export function icpFindByIcp() {
+  const all = S.companies;
+  const n = all.filter(c => c.type !== 'nogo').length;
+  _icpSetContent(`
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head">
+    <span class="aud-modal-title">✦ FIND BY ICP</span>
+    <button class="btn sm" onclick="audCloseModal()">✕</button>
+  </div>
+  <div class="aud-modal-body">
+    <div class="aud-form-row">
+      <label class="aud-label">DESCRIBE YOUR IDEAL COMPANY PROFILE</label>
+      <textarea id="icp-prompt" class="aud-input aud-textarea" rows="4"
+        placeholder="e.g. European DSPs with CTV capabilities, cookieless-ready,&#10;50-500 employees, active in programmatic buying">${esc(_icpPrompt)}</textarea>
+    </div>
+    <div style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:var(--t3);margin-top:6px;line-height:1.5">
+      AI will match against <b>${n}</b> companies.
+    </div>
+    <div class="aud-modal-foot" style="margin-top:16px">
+      <button class="btn p" onclick="icpMatch()">✦ Find Matches</button>
+      <button class="btn" onclick="audCloseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+</div>`);
+}
+
+/* ── Step 2: Run match ──────────────────────────────────── */
+export async function icpMatch() {
+  const promptEl = document.getElementById('icp-prompt');
+  const prompt = promptEl?.value?.trim();
+  if (!prompt) { promptEl?.focus(); return; }
+  _icpPrompt = prompt;
+  _icpThreshold = 70;
+
+  _icpSetContent(`
+<div class="aud-modal-overlay">
+<div class="aud-modal-box icp-modal" style="align-items:center;justify-content:center;min-height:180px;display:flex;flex-direction:column;gap:14px">
+  <div class="icp-spinner"></div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Scoring companies…</div>
+</div>
+</div>`);
+
+  try {
+    const all = S.companies;
+    const candidates = all.filter(c => c.type !== 'nogo').slice(0, 500);
+
+    const coList = candidates.map(c => ({
+      id: c.id || _slug(c.name),
+      name: c.name,
+      category: c.category || '',
+      desc: (c.description || '').slice(0, 120),
+      icp: c.icp || 0,
+      region: c.region || '',
+      size: c.size || '',
+      tags: getCoTags(c).slice(0, 3),
+    }));
+
+    const data = await anthropicFetch({
+      model: MODEL_CREATIVE,
+      max_tokens: 2000,
+      system: `You are a B2B sales analyst. Score each company 0-100 for fit with the given ICP. Return ONLY valid JSON array: [{"id":"...","score":85,"reason":"..."}] sorted desc. reason max 10 words. Include only scores >= 40. No markdown, no explanation.`,
+      messages: [{ role: 'user', content: `ICP: ${prompt}\n\nCompanies: ${JSON.stringify(coList)}` }],
+    });
+
+    const raw = data.content?.[0]?.text || '[]';
+    let scores;
+    try {
+      const match = raw.match(/\[[\s\S]*\]/);
+      scores = JSON.parse(match ? match[0] : raw);
+    } catch { scores = []; }
+
+    _icpResults = scores.map(s => {
+      const co = candidates.find(c => (c.id || _slug(c.name)) === s.id);
+      return co ? { ...s, co } : null;
+    }).filter(Boolean);
+
+    _icpRenderResults();
+  } catch (e) {
+    _icpSetContent(`
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head"><span class="aud-modal-title">✦ FIND BY ICP</span><button class="btn sm" onclick="audCloseModal()">✕</button></div>
+  <div class="aud-modal-body">
+    <div style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:16px 0">Error: ${esc(e.message)}</div>
+    <div class="aud-modal-foot"><button class="btn" onclick="icpFindByIcp()">← Back</button></div>
+  </div>
+</div>
+</div>`);
+    clog('ai', `ICP match error: ${esc(e.message)}`);
+  }
+}
+
+/* ── Step 2 render ──────────────────────────────────────── */
+function _icpRenderResults() {
+  const results = _icpResults;
+  if (!results.length) {
+    _icpSetContent(`
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head"><span class="aud-modal-title">✦ FIND BY ICP</span><button class="btn sm" onclick="audCloseModal()">✕</button></div>
+  <div class="aud-modal-body">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);padding:24px 0;text-align:center">No matches found. Try a broader description.</div>
+    <div class="aud-modal-foot"><button class="btn" onclick="icpFindByIcp()">← Back</button></div>
+  </div>
+</div>
+</div>`);
+    return;
+  }
+
+  const rows = results.map((r, i) => {
+    const sc = r.score;
+    const cls = sc >= 80 ? 'hi' : sc >= 60 ? 'mid' : 'lo';
+    const co = r.co;
+    const presel = sc >= _icpThreshold ? 'checked' : '';
+    const meta = [co.region, co.size].filter(Boolean).join(' · ');
+    return `
+<label class="icp-row">
+  <input type="checkbox" class="icp-chk" data-idx="${i}" ${presel} onchange="window._icpUpdateSelCount()"/>
+  <span class="icp-score ${cls}">${sc}</span>
+  <span class="icp-name">${esc(co.name)}</span>
+  <span class="icp-cat">${esc(co.category || '')}</span>
+  ${meta ? `<span class="icp-cat">${esc(meta)}</span>` : ''}
+  <span class="icp-reason">${esc(r.reason || '')}</span>
+</label>`;
+  }).join('');
+
+  const preselCount = results.filter(r => r.score >= _icpThreshold).length;
+  const threshOpts = [50, 60, 70, 80].map(v =>
+    `<option value="${v}" ${_icpThreshold === v ? 'selected' : ''}>${v}</option>`
+  ).join('');
+
+  _icpSetContent(`
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head">
+    <span class="aud-modal-title">✦ ${results.length} MATCHES</span>
+    <span id="icp-sel-count" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);margin-left:8px">${preselCount} selected</span>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <button class="btn sm" onclick="icpFindByIcp()">← Back</button>
+      <button class="btn sm p" onclick="icpSaveStep()">✦ Save Audience</button>
+      <button class="btn sm" onclick="audCloseModal()">✕</button>
+    </div>
+  </div>
+  <div class="aud-modal-body" style="padding:0">
+    <div class="icp-toolbar">
+      <span onclick="window._icpSelAll(true)" style="cursor:pointer">☑ All</span>
+      <span onclick="window._icpSelAll(false)" style="cursor:pointer">☐ None</span>
+      <span style="color:var(--rule2)">|</span>
+      <span>Score ≥</span>
+      <select class="icp-threshold" onchange="window._icpSetThreshold(this.value)">${threshOpts}</select>
+    </div>
+    <div class="icp-results">${rows}</div>
+  </div>
+</div>
+</div>`);
+}
+window._icpBack = () => _icpRenderResults();
+
+window._icpSelAll = function(sel) {
+  document.querySelectorAll('.icp-chk').forEach(b => { b.checked = sel; });
+  _icpUpdateSelCount();
+};
+window._icpSetThreshold = function(val) {
+  _icpThreshold = parseInt(val) || 70;
+  document.querySelectorAll('.icp-chk').forEach((b, i) => {
+    b.checked = _icpResults[i] && _icpResults[i].score >= _icpThreshold;
+  });
+  _icpUpdateSelCount();
+};
+
+/* ── Step 3: Save modal ─────────────────────────────────── */
+export async function icpSaveStep() {
+  const boxes = document.querySelectorAll('.icp-chk');
+  const selected = [];
+  boxes.forEach((b, i) => { if (b.checked && _icpResults[i]) selected.push(_icpResults[i]); });
+  if (!selected.length) { return; }
+
+  _icpSetContent(`
+<div class="aud-modal-overlay">
+<div class="aud-modal-box icp-modal" style="align-items:center;justify-content:center;min-height:180px;display:flex;flex-direction:column;gap:14px">
+  <div class="icp-spinner"></div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">✦ Generating title & hook…</div>
+</div>
+</div>`);
+
+  let name = '', hook = '';
+  try {
+    const [tRes, hRes] = await Promise.all([
+      anthropicFetch({
+        model: MODEL_CREATIVE, max_tokens: 20,
+        messages: [{ role: 'user', content: `Generate a short 3-5 word audience name for this ICP: "${_icpPrompt}". Only the name, no punctuation. Examples: EU CTV DSPs, Cookieless Mid-Market, DACH Agency Groups` }],
+      }),
+      anthropicFetch({
+        model: MODEL_CREATIVE, max_tokens: 100,
+        messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${_icpPrompt}". Be specific, no fluff.` }],
+      }),
+    ]);
+    name = tRes.content?.[0]?.text?.trim() || '';
+    hook = hRes.content?.[0]?.text?.trim() || '';
+  } catch (e) {
+    clog('ai', `ICP title/hook gen error: ${esc(e.message)}`);
+  }
+
+  const ids = selected.map(r => r.co.id || _slug(r.co.name));
+  _icpSetContent(`
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head">
+    <span class="aud-modal-title">💾 SAVE AUDIENCE</span>
+    <button class="btn sm" onclick="audCloseModal()">✕</button>
+  </div>
+  <div class="aud-modal-body">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">${selected.length} COMPANIES SELECTED</div>
+    <div class="aud-form-row">
+      <label class="aud-label">NAME</label>
+      <input id="icp-save-name" class="aud-input" value="${esc(name)}" placeholder="Audience name"/>
+    </div>
+    <div class="aud-form-row">
+      <label class="aud-label" style="display:flex;align-items:center;gap:6px">✦ HOOK <span style="font-size:7px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">AI-generated, editable</span></label>
+      <textarea id="icp-save-hook" class="aud-input aud-textarea" rows="3">${esc(hook)}</textarea>
+      <div style="font-family:'IBM Plex Sans',sans-serif;font-size:9px;color:var(--t3);margin-top:3px">Use as opener for all companies in this audience</div>
+    </div>
+    <div id="icp-save-err" style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:4px"></div>
+    <div class="aud-modal-foot" style="margin-top:12px">
+      <button class="btn" onclick="window._icpBack()">← Back</button>
+      <button class="btn p" onclick="icpSaveAudience(${JSON.stringify(ids)})">💾 Save</button>
+    </div>
+  </div>
+</div>
+</div>`);
+}
+
+/* ── Final save ─────────────────────────────────────────── */
+export async function icpSaveAudience(ids) {
+  const name = document.getElementById('icp-save-name')?.value?.trim();
+  const hook = document.getElementById('icp-save-hook')?.value?.trim() || '';
+  const errEl = document.getElementById('icp-save-err');
+  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (errEl) errEl.textContent = '';
+
+  const id = `aud-${Date.now()}`;
+  const payload = {
+    id, name,
+    company_ids: ids,
+    filters: { icp_prompt: _icpPrompt, threshold: _icpThreshold },
+    icp_prompt: _icpPrompt,
+    outreach_hook: hook || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    await sbSaveAudience(payload);
+    audCloseModal();
+    await renderAudiencesPanel();
+    const toast = document.createElement('div');
+    toast.className = 'icp-toast';
+    toast.textContent = `✓ ${name} saved — ${ids.length} companies`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+    clog('db', `ICP audience saved: <b>${esc(name)}</b> · ${ids.length} companies`);
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+    clog('db', `ICP save error: ${esc(e.message)}`);
+  }
+}
+
+/* ── ICP audience edit modal ─────────────────────────────── */
+export function icpEditModal(id) {
+  const aud = S.audiences.find(a => a.id === id);
+  if (!aud) return;
+  const modal = document.getElementById('audience-modal');
+  if (!modal) return;
+  const n = Array.isArray(aud.company_ids) ? aud.company_ids.length : 0;
+  modal.innerHTML = `
+<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-box icp-modal">
+  <div class="aud-modal-head">
+    <span class="aud-modal-title">EDIT AUDIENCE</span>
+    <button class="btn sm" onclick="audCloseModal()">✕</button>
+  </div>
+  <div class="aud-modal-body">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">${n} COMPANIES</div>
+    <div class="aud-form-row">
+      <label class="aud-label">NAME</label>
+      <input id="icp-edit-name" class="aud-input" value="${esc(aud.name)}" placeholder="Audience name"/>
+    </div>
+    <div class="aud-form-row">
+      <label class="aud-label" style="display:flex;align-items:center;gap:6px">
+        ✦ HOOK
+        <button class="btn sm" onclick="icpRegenHook('${esc(id)}')">↺ Regen</button>
+        <span id="icp-regen-status" style="font-size:8px;color:var(--t3)"></span>
+      </label>
+      <textarea id="icp-edit-hook" class="aud-input aud-textarea" rows="3">${esc(aud.outreach_hook || '')}</textarea>
+    </div>
+    <div id="icp-edit-err" style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:4px"></div>
+    <div class="aud-modal-foot" style="margin-top:12px">
+      <button class="btn" onclick="audCloseModal()">Cancel</button>
+      <button class="btn" onclick="audDelete('${esc(id)}')" style="color:var(--prc);border-color:var(--prr)">DELETE</button>
+      <button class="btn p" onclick="icpPatchAudience('${esc(id)}')">💾 Save</button>
+    </div>
+  </div>
+</div>
+</div>`;
+}
+
+export async function icpRegenHook(id) {
+  const aud = S.audiences.find(a => a.id === id);
+  const prompt = aud?.filters?.icp_prompt || aud?.icp_prompt || aud?.name || '';
+  const statusEl = document.getElementById('icp-regen-status');
+  if (statusEl) statusEl.textContent = '⟳ generating…';
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 100,
+      messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${prompt}". Be specific, no fluff.` }],
+    });
+    const hook = res.content?.[0]?.text?.trim() || '';
+    const el = document.getElementById('icp-edit-hook');
+    if (el) el.value = hook;
+    if (statusEl) statusEl.textContent = '✓';
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Error';
+  }
+}
+
+export async function icpPatchAudience(id) {
+  const name = document.getElementById('icp-edit-name')?.value?.trim();
+  const hook = document.getElementById('icp-edit-hook')?.value?.trim() || '';
+  const errEl = document.getElementById('icp-edit-err');
+  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (errEl) errEl.textContent = '';
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: authHdr(),
+      body: JSON.stringify({ name, outreach_hook: hook || null, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const aud = S.audiences.find(a => a.id === id);
+    if (aud) { aud.name = name; aud.outreach_hook = hook || null; }
+    audCloseModal();
+    await renderAudiencesPanel();
+    if (S.activeAudience?.id === id) renderAudienceDetail(id);
+    clog('db', `Audience updated: <b>${esc(name)}</b>`);
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Save failed: ' + e.message;
+  }
+}
+
+/* ─── Campaign planning exports ────────────────────────────── */
+
+export function audToggleCoRow(slug) {
+  const exp = document.getElementById(`aud-coe-${slug}`);
+  if (!exp) return;
+  const row = document.getElementById(`aud-cor-${slug}`);
+  const open = exp.style.display !== 'none';
+  exp.style.display = open ? 'none' : '';
+  if (row) row.classList.toggle('expanded', !open);
+}
+
+export function audFilterCoList(q) {
+  const inner = document.getElementById('aud-co-list-inner');
+  if (!inner) return;
+  const term = (q || '').toLowerCase();
+  inner.querySelectorAll('.aud-co-row').forEach(row => {
+    const name = (row.querySelector('.aud-co-name')?.textContent || '').toLowerCase();
+    row.style.display = term && !name.includes(term) ? 'none' : '';
+  });
+}
+
+export function audProviderChange(val) {
+  const btn = document.querySelector('.aud-launch-btn');
+  if (btn) btn.disabled = !val;
+}
+
+export async function generateCampaignHook(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const ta = document.getElementById('aud-hook-ta');
+  if (ta) ta.placeholder = '⟳ generating…';
+  const prompt = aud.filters?.icp_prompt || aud.icp_prompt || aud.name || '';
+  const n = (aud.company_ids || []).length;
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 120,
+      messages: [{ role: 'user', content:
+        `Write a 2–3 sentence outreach hook for a B2B email campaign.\nAudience: "${prompt}" (${n} companies).\nContext: onAudience sells EU first-party audience data to DSPs, SSPs, agencies and data providers.\nBe direct, specific, no buzzwords.` }],
+    });
+    const hook = res.content?.[0]?.text?.trim() || '';
+    if (ta) { ta.value = hook; ta.placeholder = ''; }
+  } catch (e) {
+    if (ta) ta.placeholder = 'Error generating hook';
+    clog('ai', `generateCampaignHook error: ${esc(e.message)}`);
+  }
+}
+
+export async function generateEmailTemplate(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const subjectEl = document.getElementById('aud-tpl-subject');
+  const bodyEl = document.getElementById('aud-tpl-body');
+  if (bodyEl) bodyEl.placeholder = '⟳ generating…';
+  const hook = document.getElementById('aud-hook-ta')?.value?.trim() || aud.outreach_hook || '';
+  const prompt = aud.filters?.icp_prompt || aud.icp_prompt || aud.name || '';
+  const n = (aud.company_ids || []).length;
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 400,
+      messages: [{ role: 'user', content:
+        `Write a cold B2B email template (subject + body) for onAudience EU first-party data partnerships.\nAudience: "${prompt}" (${n} companies).\nHook: "${hook}"\nFormat:\nSUBJECT: <subject line>\n\n<email body — 3–4 short paragraphs, {{first_name}} placeholder, no fluffy sign-off>` }],
+    });
+    const text = res.content?.[0]?.text?.trim() || '';
+    const subjectMatch = text.match(/^SUBJECT:\s*(.+)/im);
+    const body = text.replace(/^SUBJECT:.*\n?/im, '').trim();
+    if (subjectEl && subjectMatch) subjectEl.value = subjectMatch[1].trim();
+    if (bodyEl) { bodyEl.value = body; bodyEl.placeholder = ''; }
+  } catch (e) {
+    if (bodyEl) bodyEl.placeholder = 'Error generating template';
+    clog('ai', `generateEmailTemplate error: ${esc(e.message)}`);
+  }
+}
+
+export async function saveCampaignTemplate(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  const hook    = document.getElementById('aud-hook-ta')?.value?.trim() || null;
+  const subject = document.getElementById('aud-tpl-subject')?.value?.trim() || null;
+  const body    = document.getElementById('aud-tpl-body')?.value?.trim() || null;
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`, {
+      method: 'PATCH',
+      headers: authHdr(),
+      body: JSON.stringify({ outreach_hook: hook, template_subject: subject, template_body: body, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    if (aud) { aud.outreach_hook = hook; aud.template_subject = subject; aud.template_body = body; }
+    clog('db', `Campaign template saved for <b>${esc(aud.name)}</b>`);
+  } catch (e) {
+    clog('db', `saveCampaignTemplate error: ${esc(e.message)}`);
+  }
+}
+
+export async function launchCampaign(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+  await saveCampaignTemplate(audId);
+  clog('info', `Campaign draft saved for <b>${esc(aud.name)}</b> — provider launch coming soon`);
+}
+
+export async function audDraftEmailToCo(audId, coSlug) {
+  const aud = S.audiences.find(a => a.id === audId);
+  const co  = S.companies.find(c => (c.id || _slug(c.name)) === coSlug);
+  if (!aud || !co) return;
+  const ids = aud.company_ids || [];
+  const members = S.companies.filter(c => ids.includes(c.id));
+  const audContacts = S.contacts.filter(ct =>
+    ids.includes(ct.company_id) || members.some(m => _slug(m.name) === _slug(ct.company_name || '')));
+  const coContacts = audContacts.filter(ct =>
+    ct.company_id === co.id || _slug(ct.company_name || '') === _slug(co.name));
+  const contact = coContacts.find(ct => ct.email) || coContacts[0];
+  const hook = aud.outreach_hook || aud.name;
+  const body = aud.template_body || '';
+  const subject = aud.template_subject || `Partnership opportunity — ${co.name}`;
+  const to = contact?.email || '';
+  const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body ? body.replace(/\{\{first_name\}\}/gi, contact?.full_name?.split(' ')[0] || 'there') : hook)}`;
+  window.open(mailto, '_blank');
+}
+
+export async function audGenAngleForCo(audId, coSlug) {
+  const aud = S.audiences.find(a => a.id === audId);
+  const co  = S.companies.find(c => (c.id || _slug(c.name)) === coSlug);
+  if (!aud || !co) return;
+  const expandEl = document.getElementById(`aud-coe-${coSlug}`);
+  let angleEl = expandEl?.querySelector('.aud-co-angle');
+  if (!angleEl) {
+    angleEl = document.createElement('div');
+    angleEl.className = 'aud-co-angle';
+    if (expandEl) expandEl.insertBefore(angleEl, expandEl.firstChild);
+  }
+  angleEl.textContent = '⟳ generating angle…';
+  try {
+    const res = await anthropicFetch({
+      model: MODEL_CREATIVE, max_tokens: 80,
+      messages: [{ role: 'user', content:
+        `Write 1 short outreach angle for approaching ${co.name} (${co.category || co.type || ''}) about onAudience EU first-party audience data partnerships. Audience context: "${aud.name}". 1–2 sentences, very specific.` }],
+    });
+    const angle = res.content?.[0]?.text?.trim() || '';
+    angleEl.textContent = `✦ ${angle}`;
+    // persist to company record
+    fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(co.id)}`, {
+      method: 'PATCH', headers: authHdr(),
+      body: JSON.stringify({ outreach_angle: angle, updated_at: new Date().toISOString() }),
+    }).catch(() => {});
+    co.outreach_angle = angle;
+  } catch (e) {
+    angleEl.textContent = 'Error generating angle';
   }
 }
