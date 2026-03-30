@@ -268,6 +268,7 @@ async function bootHub(session) {
       _lastSync = Date.now();
     }, 1000);
   }
+  setTimeout(() => { if (!S.companies.length) refreshData(true); }, 2000);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
