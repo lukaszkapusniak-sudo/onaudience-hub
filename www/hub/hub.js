@@ -1277,23 +1277,6 @@ export function submitModal(){
 /** Legacy escape hatch — only for truly unroutable actions that have no hub-native equivalent. */
 export function openClaude(p){window.open('https://claude.ai/new?q='+encodeURIComponent(p),'_blank');}
 
-export function openClaudeGmail(type, co, contactEmail, contactName) {
-  const domain = (co.website || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-                 || co.name.toLowerCase().replace(/\s+/g, '') + '.com';
-  let prompt = '';
-  if (type === 'history') {
-    prompt = `Check Gmail for existing contact history with ${co.name} (domain: ${domain}). Show: relationship score (🔥 Hot / ♻️ Warm / 🌡️ Lukewarm / 🧊 Cold), all contacts found with titles and emails, last thread date, topic, outcome, and which onAudience team member owns the relationship. Cross-reference found contacts against LinkedIn to verify current roles.`;
-  } else {
-    const tech = Array.isArray(co.tech_stack)
-      ? co.tech_stack.map(t => t.tool || t).filter(Boolean).join(', ')
-      : '';
-    prompt = `Draft a cold outreach email to ${contactName || 'the relevant contact'}${contactEmail ? ' <' + contactEmail + '>' : ''} at ${co.name}. Context: ${co.description || ''}. Category: ${co.category || ''}. ICP: ${co.icp || ''}. Angle: ${co.outreach_angle || 'data partnership'}. Tech: ${tech}. Rules: under 150 words, specific hook (not a question), one value prop, mention shared platforms. Then save as a Gmail draft using the Gmail connector.`;
-  }
-  window.open('https://claude.ai/new?q=' + encodeURIComponent(prompt), '_blank');
-}
-
-/* ═══ Segment Mapper ════════════════════════════════════════ */
-let _taxData=null;
 let _taxLoading=false;
 
 async function loadTaxonomy(){
