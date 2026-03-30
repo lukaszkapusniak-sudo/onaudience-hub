@@ -483,6 +483,8 @@ function audCoRowHtml(c, aud) {
 let _scoutResults    = [];
 let _scoutExistingId = null;
 let _gapLists        = { noContact: [], noDesc: [], noHq: [], noAngle: [] };
+let _scoutPending    = false;   // Bug 1: gate — only true when SCOUT button fires
+window._setScoutPending = () => { _scoutPending = true; };
 
 export function openAudienceModal(existingId) {
   _scoutExistingId = existingId || null;
@@ -604,7 +606,7 @@ export function openAudienceModal(existingId) {
   // Wire events
   document.getElementById('scout-close-btn')?.addEventListener('click', audCloseModal);
   document.getElementById('scout-cancel-btn')?.addEventListener('click', audCloseModal);
-  document.getElementById('scout-run-btn')?.addEventListener('click', _scoutRun);
+  document.getElementById('scout-run-btn')?.addEventListener('click', () => { _scoutPending = true; _scoutRun(); });
   document.getElementById('scout-save-btn')?.addEventListener('click', () => _scoutSave(existingId));
   document.getElementById('scout-similar-btn')?.addEventListener('click', _scoutFindSimilar);
   document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
@@ -626,19 +628,16 @@ export function openAudienceModal(existingId) {
     document.querySelectorAll('.aud-modal-box input[type=checkbox][value]').forEach(cb => {
       cb.checked = savedTags.includes(cb.value);
     });
-    // auto-run scout if audience has data
-    if ((existing.company_ids?.length > 0) || existing.filters?.type || existing.filters?.region || existing.icp_prompt) {
-      setTimeout(() => {
-        const scoutBtn = [...document.querySelectorAll('#audience-modal button')]
-          .find(b => b.innerText.includes('SCOUT'));
-        scoutBtn?.click();
-      }, 300);
-    }
+    // Bug 1: do NOT auto-run scout on open — user must click SCOUT explicitly
   }
 }
 
 async function _scoutRun() {
-  // Fix 3 — guard: retry if company list not yet loaded
+  // Bug 1: only proceed when triggered by the SCOUT button
+  if (!_scoutPending) return;
+  _scoutPending = false;
+
+  // guard: retry if company list not yet loaded
   if (!S.companies?.length) {
     const statusEl = document.getElementById('scout-status');
     if (statusEl) statusEl.textContent = '⟳ Waiting for data…';
@@ -694,9 +693,12 @@ async function _scoutRun() {
   }
 
   _scoutResults = list;
+
+  // Bug 3: preserve currently-checked boxes across re-runs + seed from saved company_ids on first open
   const existingIds = new Set(_scoutExistingId
     ? (S.audiences.find(a => a.id === _scoutExistingId)?.company_ids || [])
     : []);
+  document.querySelectorAll('#scout-a-body .scout-cb:checked').forEach(cb => existingIds.add(cb.value));
 
   if (countEl) countEl.textContent = `(${list.length})`;
   if (list.length === 0) {
@@ -820,6 +822,23 @@ async function _scoutFindSimilar() {
 
 /* ── Gap filler ─────────────────────────────────────────────── */
 
+// Bug 2: shared wrapper — loading state + success/error feedback for gap buttons
+async function wrapGapAction(btnEl, label, actionFn) {
+  btnEl.disabled = true;
+  btnEl.textContent = 'Working…';
+  try {
+    await actionFn();
+    btnEl.textContent = 'Done ✓';
+    btnEl.style.color = 'var(--g)';
+    audRefreshDetail(_scoutExistingId || S.activeAudience?.id);
+    setTimeout(() => { btnEl.textContent = label; btnEl.style.color = ''; btnEl.disabled = false; }, 2000);
+  } catch(e) {
+    btnEl.textContent = 'Error — retry';
+    btnEl.style.color = 'var(--cr)';
+    setTimeout(() => { btnEl.textContent = label; btnEl.style.color = ''; btnEl.disabled = false; }, 2000);
+  }
+}
+
 async function _renderGaps(list) {
   const bBody = document.getElementById('scout-b-body');
   if (!bBody) return;
@@ -866,10 +885,15 @@ async function _renderGaps(list) {
     row('📍', 'No HQ city',         noHq.length,      'hq',      'GEOCODE &#9654;') +
     row('💡', 'No outreach angle',  noAngle.length,   'angle',   'GEN ANGLES &#9654;');
 
-  document.getElementById('scout-gap-btn-contact')?.addEventListener('click', _gapFindContacts);
-  document.getElementById('scout-gap-btn-desc')?.addEventListener('click',    _gapEnrichDesc);
-  document.getElementById('scout-gap-btn-hq')?.addEventListener('click',      _gapGeocode);
-  document.getElementById('scout-gap-btn-angle')?.addEventListener('click',   _gapGenAngles);
+  // Bug 2: wrap each button with loading state + feedback
+  const btnContact = document.getElementById('scout-gap-btn-contact');
+  const btnDesc    = document.getElementById('scout-gap-btn-desc');
+  const btnHq      = document.getElementById('scout-gap-btn-hq');
+  const btnAngle   = document.getElementById('scout-gap-btn-angle');
+  if (btnContact) btnContact.addEventListener('click', () => wrapGapAction(btnContact, 'FIND CONTACTS &#9654;', _gapFindContacts));
+  if (btnDesc)    btnDesc.addEventListener('click',    () => wrapGapAction(btnDesc,    'ENRICH &#9654;',        _gapEnrichDesc));
+  if (btnHq)      btnHq.addEventListener('click',      () => wrapGapAction(btnHq,      'GEOCODE &#9654;',       _gapGeocode));
+  if (btnAngle)   btnAngle.addEventListener('click',   () => wrapGapAction(btnAngle,   'GEN ANGLES &#9654;',    _gapGenAngles));
 }
 
 function _gapFindContacts() {
@@ -938,16 +962,33 @@ async function _gapGenAngles() {
 }
 
 async function _gapFillAll() {
-  if (_gapLists.noContact.length) _gapFindContacts();
-  if (_gapLists.noAngle.length)   await _gapGenAngles();
-  if (_gapLists.noDesc.length || _gapLists.noHq.length) {
-    const combined = [...new Set(
-      [..._gapLists.noDesc, ..._gapLists.noHq].map(c => c.id || _slug(c.name))
-    )];
-    window.enrFilteredIds = new Set(combined);
-    audCloseModal();
-    window.switchTab?.('enricher');
+  // Bug 2: run each gap action sequentially with per-step status
+  const fillBtn = document.getElementById('scout-fill-all-btn');
+  const steps = [
+    { key: 'contact', label: 'FIND CONTACTS ▶', fn: _gapFindContacts, hasItems: () => _gapLists.noContact.length > 0 },
+    { key: 'desc',    label: 'ENRICH ▶',         fn: _gapEnrichDesc,  hasItems: () => _gapLists.noDesc.length > 0 },
+    { key: 'hq',      label: 'GEOCODE ▶',        fn: _gapGeocode,     hasItems: () => _gapLists.noHq.length > 0 },
+    { key: 'angle',   label: 'GEN ANGLES ▶',     fn: _gapGenAngles,   hasItems: () => _gapLists.noAngle.length > 0 },
+  ].filter(s => s.hasItems());
+
+  if (!steps.length) return;
+
+  if (fillBtn) { fillBtn.disabled = true; fillBtn.textContent = 'Running…'; }
+
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (fillBtn) fillBtn.textContent = `Step ${i + 1}/${steps.length}… ${s.label}`;
+    const btn = document.getElementById(`scout-gap-btn-${s.key}`);
+    try {
+      await s.fn();
+      if (btn) { btn.textContent = 'Done ✓'; btn.style.color = 'var(--g)'; }
+    } catch(e) {
+      if (btn) { btn.textContent = 'Error'; btn.style.color = 'var(--cr)'; }
+    }
   }
+
+  if (fillBtn) { fillBtn.textContent = `✓ Done (${steps.length}/${steps.length})`; fillBtn.disabled = false; }
+  audRefreshDetail(_scoutExistingId || S.activeAudience?.id);
 }
 
 
@@ -1526,7 +1567,7 @@ export function icpFindByIcp() {
       AI will match against <b>${n}</b> companies.
     </div>
     <div class="aud-modal-foot" style="margin-top:16px">
-      <button class="btn p" onclick="icpMatch()">✦ Find Matches</button>
+      <button class="btn p" onclick="window._setScoutPending();icpMatch()">✦ Find Matches</button>
       <button class="btn" onclick="audCloseModal()">Cancel</button>
     </div>
   </div>
@@ -1536,6 +1577,10 @@ export function icpFindByIcp() {
 
 /* ── Step 2: Run match ──────────────────────────────────── */
 export async function icpMatch() {
+  // Bug 1: only proceed when triggered by the Find Matches button
+  if (!_scoutPending) return;
+  _scoutPending = false;
+
   const promptEl = document.getElementById('icp-prompt');
   const prompt = promptEl?.value?.trim();
   if (!prompt) { promptEl?.focus(); return; }
