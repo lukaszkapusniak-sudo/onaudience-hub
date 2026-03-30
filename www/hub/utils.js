@@ -14,6 +14,7 @@ export function tClass(t){return{client:'tc',partner:'tp',prospect:'tpr',nogo:'t
 export function tLabel(t){return{client:'Client',partner:'Partner',prospect:'Prospect',nogo:'No Outreach',poc:'POC'}[t]||t;}
 export function stars(n){if(!n)return'';return'★'.repeat(Math.min(n,5))+'☆'.repeat(Math.max(0,5-n));}
 export function esc(s){if(s===null||s===undefined)return'';if(typeof s!=='string')s=String(s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+export function safeUrl(w){return(!w||/^https?:\/\//i.test(w))?(w||''):'https://'+w;}
 export function relTime(iso){if(!iso)return'—';const d=new Date(iso);const diff=Date.now()-d.getTime();const m=Math.floor(diff/60000);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dy=Math.floor(h/24);if(dy<30)return dy+'d ago';return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}
 
 /* ── authHdr — live JWT header for every Supabase REST call ─────
