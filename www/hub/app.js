@@ -296,6 +296,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const session = await getSession();
   if (session) {
     await bootHub(session);   // no-op if INITIAL_SESSION already triggered it
+    setTimeout(() => {
+      if (!(document.getElementById('listScroll')?.children?.length > 0)) {
+        refreshData(true);
+      }
+    }, 2500);
   } else {
     renderLoginScreen();
   }
