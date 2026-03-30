@@ -1,8 +1,8 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH } from './config.js?v=20260330h';
-import S from './state.js?v=20260330h';
-import { classify, _slug, authHdr } from './utils.js?v=20260330h';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH } from './config.js?v=20260330i';
+import S from './state.js?v=20260330i';
+import { classify, _slug, authHdr } from './utils.js?v=20260330i';
 
 
 
@@ -112,6 +112,35 @@ export async function anthropicFetch(body){
         'Content-Type':'application/json',
         'x-api-key':getApiKey(),
         'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+      },
+      body:JSON.stringify(body),
+    });
+    if(res.status===529||res.status===429){
+      const wait=Math.min(2000*Math.pow(2,attempt),10000);
+      console.warn(`[API] ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
+      await new Promise(r=>setTimeout(r,wait));
+      continue;
+    }
+    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`API ${res.status}: ${txt.slice(0,200)}`);}
+    return res.json();
+  }
+  throw new Error('API overloaded after 3 retries — try again in a minute');
+}
+
+/* ── Anthropic MCP fetch — same as anthropicFetch but adds mcp-client beta header ── */
+export async function anthropicMcpFetch(body){
+  const key=getApiKey();
+  if(!key){if(!promptApiKey())throw new Error('API key required — click 🔑 in the nav bar');}
+  const maxRetries=3;
+  for(let attempt=0;attempt<maxRetries;attempt++){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':getApiKey(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-beta':'mcp-client-2025-04-04',
         'anthropic-dangerous-direct-browser-access':'true',
       },
       body:JSON.stringify(body),
