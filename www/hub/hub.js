@@ -109,7 +109,10 @@ export function renderList(){
     if(c.size)details.push(`<span class="c-detail-item">👥 <b>${esc(c.size)}</b></span>`);
     if(c.category)details.push(`<span class="c-detail-item">${esc(c.category)}</span>`);
     if(c.icp)details.push(`<span class="c-detail-item" style="color:var(--g)">ICP ${c.icp}</span>`);
-    if(c.website)details.push(`<a class="c-detail-item" href="${safeUrl(c.website)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);text-decoration:none">${c.website.replace(/^https?:\/\//i,'')}</a>`);
+    if(ctCount)details.push(`<span class="c-detail-item">🧑‍💼 ${ctCount} contact${ctCount>1?'s':''}</span>`);
+    if(c.relationship_status)details.push(`<span class="c-detail-item" style="color:var(--g);font-weight:600">${esc(c.relationship_status)}</span>`);
+    if(c.website)details.push(`<a class="c-detail-item" href="${safeUrl(c.website)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);text-decoration:none">${esc(c.website.replace(/^https?:\/\//i,''))}</a>`);
+    if(c.updated_at)details.push(`<span class="c-detail-item" style="opacity:.55">${relTime(c.updated_at)}</span>`);
     const detailHtml=details.length?`<div class="c-detail">${details.join('<span class="c-detail-sep"></span>')}</div>`:'';
 
     const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'…':(c.note||''));
@@ -230,7 +233,8 @@ export function openCompany(c){
 
   panel.innerHTML=`<div class="ib">
 <div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
-<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">🔗 Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button><button class="btn sm" title="Check Gmail history" onclick="openClaudeGmail('history',currentCompany)">📬 Gmail</button><button class="btn sm" title="Draft email in Claude" onclick="(()=>{const co=currentCompany;const ct=(S.contacts||[]).find(x=>(x.company_name||'').toLowerCase()===(co.name||'').toLowerCase());openClaudeGmail('draft',co,ct&&ct.email||'',ct&&ct.full_name||'');})()">✉ Draft</button></div>
+<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">🔗 Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button><button class="btn sm" onclick="openClaudeGmail('history',currentCompany)">📬 Gmail History</button>${coCts.length?`<button class="btn sm" onclick="openClaudeGmail('draft',currentCompany,${JSON.stringify(coCts[0]?.email||'')},${JSON.stringify(coCts[0]?.full_name||'')})">✉ Draft Email</button>`:''}</div>
+<div class="ib-status-bar"><span class="ib-status-lbl">&#127991; Mark as:</span>${_statusBtns}</div>
 <div class="ib-top">
   ${sec('ib-company','🏢','Company',
     (facts.length?`<table class="ib-facts">${facts.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`:'<span style="font-size:11px;color:var(--t3)">No details stored</span>')+linksHtml+(c.description?`<div class="ib-desc">${c.description}</div>`:''),
@@ -267,6 +271,23 @@ export function coAction(a){
   if(a==='angle')bgGenerateAngle();
   if(a==='find-contacts')bgFindDMs();
 }
+export function openClaudeGmail(type, company, contactEmail, contactName) {
+  if (!company) return;
+  let prompt;
+  if (type === 'history') {
+    const domain = company.website
+      ? company.website.replace(/^https?:\/\//i,'').split('/')[0]
+      : (company.name||'').toLowerCase().replace(/\s+/g,'') + '.com';
+    prompt = `Check Gmail for existing contact history with ${company.name} (domain: ${domain}). Show: relationship score (🔥/♻️/🌡️/🧊), contacts found with titles and emails, last thread date, topic and outcome, and who from onAudience owns the relationship. Cross-reference any found contacts against web to verify current roles.`;
+  } else if (type === 'draft') {
+    const techStack = (company.tech_stack||[]).map(t=>t.tool||t).filter(Boolean).join(', ');
+    prompt = `Draft a cold outreach email to ${contactName||'the recipient'} <${contactEmail||''}> at ${company.name}. Company: ${company.description||''}. Category: ${company.category||''}. ICP score: ${company.icp||''}. Outreach angle: ${company.outreach_angle||'data partnership'}. Tech stack: ${techStack}. Keep it under 150 words, specific hook, one clear value prop. Then use Gmail connector to save it as a draft.`;
+  } else {
+    return;
+  }
+  window.open('https://claude.ai/new?q=' + encodeURIComponent(prompt), '_blank');
+}
+
 export async function setCompanyStatus(id,status){
   const co=S.companies.find(c=>(c.id||_slug(c.name))===id);
   if(!co)return;
@@ -1209,7 +1230,11 @@ export function showCtx(e,slugOrName){
 }
 
 /* ═══ Contact Drawer ═════════════════════════════════════════ */
-export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'—';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' · '+ct.company_name:'');const flds=[[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.email}</a>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.linkedin_url}</a>`],[ct.notes,'Notes',ct.notes]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');}
+export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'—';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' · '+ct.company_name:'');const flds=[[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.email}</a>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.linkedin_url}</a>`],[ct.notes,'Notes',ct.notes]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');
+  // Inject / update "Draft in Claude" button in drawer actions
+  const _drAct=document.querySelector('#ctDrawer .dr-actions');
+  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='✉ Draft in Claude';_cb.onclick=()=>openClaudeGmail('draft',_co2,ct.email,ct.full_name);_drAct.appendChild(_cb);}}
+}
 export function closeDrawer(){document.getElementById('ctDrawer').classList.remove('open');document.getElementById('ctDrawerOverlay').classList.remove('vis');S.currentContact=null;}
 export function drEmail(){if(S.currentContact)window.openComposer({company:S.currentContact.company_name,contactName:S.currentContact.full_name,contactTitle:S.currentContact.title,linkedin:S.currentContact.linkedin_url});}
 export function drLinkedIn(){if(S.currentContact?.linkedin_url)window.open(S.currentContact.linkedin_url,'_blank');}
