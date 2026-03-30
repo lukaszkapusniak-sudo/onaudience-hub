@@ -1,10 +1,10 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260330g';
-import S from './state.js?v=20260330g';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260330g';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache } from './api.js?v=20260330g';
-import { resolveAlias } from './merge.js?v=20260330g';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260330h';
+import S from './state.js?v=20260330h';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260330h';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache } from './api.js?v=20260330h';
+import { resolveAlias } from './merge.js?v=20260330h';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
@@ -132,7 +132,7 @@ export function renderList(){
 }
 
 /* ═══ Company Detail Panel ═══════════════════════════════════ */
-function ibToggle(id){const b=document.getElementById(id);if(!b)return;const closed=b.style.display==='none';b.style.display=closed?'':'none';const arrow=document.getElementById(id+'-arrow');if(arrow)arrow.textContent=closed?'▾':'▸';if(closed&&id==='ib-segments-body'&&b.querySelector('#ib-seg-loading'))mapSegments();}
+function ibToggle(id){const b=document.getElementById(id);if(!b)return;const closed=b.style.display==='none';b.style.display=closed?'':'none';const arrow=document.getElementById(id+'-arrow');if(arrow)arrow.textContent=closed?'▾':'▸';if(closed&&id==='ib-segments-body'&&b.querySelector('#ib-seg-loading'))mapSegments();if(closed&&id==='ib-email-body')loadEmailHistory(S.currentCompany?.id||_slug(S.currentCompany?.name||''));}
 window.ibToggle=ibToggle;
 
 export function openCompany(c){
@@ -249,7 +249,9 @@ ${privacyHtml}
 ${sec('ib-ct-body','👤','Contacts',ctGridHtml,
   `${coCts.length?`<span class="ib-sh-cnt">${coCts.length}</span>`:''}<span class="ib-sh-act" onclick="event.stopPropagation();bgFindDMs()">✨ Find DMs</span>`,true)}
 ${sec('ib-intel-body','📰','Intelligence','<div class="ib-loading">Loading…</div>',
-  `<span class="ib-sh-cnt" id="ib-intel-cnt"></span><span id="ib-intel-live" style="display:none" class="live-label"><span class="live-dot"></span>Live</span><span class="ib-sh-act" id="ib-intel-refresh" onclick="event.stopPropagation();bgRefreshIntel()">↺ Refresh</span>`,true)}
+  `<span class="ib-sh-cnt" id="ib-intel-cnt"></span><span id="ib-intel-live" style="display:none" class="live-label"><span class="live-dot"></span>Live</span><span class="ib-sh-act" id="ib-intel-refresh" onclick="event.stopPropagation();bgRefreshIntel()">↺ Refresh</span>`,false)}
+${sec('ib-email-body','📧','Email History','<div class="ib-loading">Loading…</div>',
+  `<span class="ib-sh-cnt" id="ib-email-cnt"></span>`,false)}
 ${prodsHtml?sec('ib-prods-body','📦','Products',prodsHtml,`<span class="ib-sh-cnt">${prods.length}</span>`,false):''}
 ${sec('ib-segments-body','🎯','Segment Mapper','<div class="ib-loading" id="ib-seg-loading">Loading taxonomy…</div>',
   `<span class="ib-sh-cnt" id="ib-seg-cnt"></span><span class="ib-sh-act" onclick="event.stopPropagation();mapSegments()">↺ Remap</span>`,false)}
@@ -623,6 +625,37 @@ export async function bgRefreshIntel(){
     if(allArticles.length>=2)setTimeout(()=>extractIntelRelations(slug,c.name,allArticles),500);
   }
   if(btn)btn.textContent='↺ Refresh';
+}
+
+export async function loadEmailHistory(slug){
+  const body=document.getElementById('ib-email-body');if(!body||body.dataset.loaded==='1')return;
+  body.dataset.loaded='1';
+  body.innerHTML='<div class="ib-loading">Loading…</div>';
+  const gmailBtn=`<div style="margin-top:8px"><button class="btn sm" onclick="openClaudeGmail('history',currentCompany)">📬 Open Gmail History</button></div>`;
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/email_history?company_id=eq.${encodeURIComponent(slug)}&order=sent_at.desc&limit=20`,{headers:authHdr()});
+    const emails=await res.json();
+    const cnt=document.getElementById('ib-email-cnt');
+    if(Array.isArray(emails)&&emails.length){
+      if(cnt)cnt.textContent=emails.length;
+      body.innerHTML=emails.map(e=>{
+        const dir=e.direction==='in'?'IN':'OUT';
+        const bg=e.direction==='in'?'var(--cc)':'var(--pb)';
+        return`<div style="padding:5px 0;border-bottom:1px solid var(--rule2)"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font:600 7px 'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px;background:${bg};color:#fff;flex-shrink:0">${dir}</span><span style="font:500 10px 'IBM Plex Mono',monospace;color:var(--t1);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.subject||'(no subject)')}</span>${e.contact_id?`<span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);flex-shrink:0">${esc(e.contact_id)}</span>`:''}<span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t4);flex-shrink:0">${relTime(e.sent_at)}</span></div>${e.snippet?`<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.snippet)}</div>`:''}</div>`;
+      }).join('')+gmailBtn;
+    }else{
+      const intelRes=await fetch(`${SB_URL}/rest/v1/intelligence?company_id=eq.${encodeURIComponent(slug)}&type=eq.gmail_history&limit=1`,{headers:authHdr()});
+      const intel=await intelRes.json();
+      if(Array.isArray(intel)&&intel.length&&intel[0].content){
+        body.innerHTML=`<div style="font:400 10px 'IBM Plex Sans',sans-serif;color:var(--t2);line-height:1.6;white-space:pre-wrap">${esc(intel[0].content)}</div>`+gmailBtn;
+      }else{
+        body.innerHTML=`<div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--t4)">No email history found.</div>`+gmailBtn;
+      }
+    }
+  }catch(e){
+    body.innerHTML=`<div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--t4)">Error loading: ${esc(e.message)}</div>`+gmailBtn;
+    body.dataset.loaded='0';
+  }
 }
 
 export async function loadIntelligence(slug,name){
