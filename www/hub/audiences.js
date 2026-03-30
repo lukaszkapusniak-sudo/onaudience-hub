@@ -9,7 +9,7 @@ import { SB_URL, MODEL_CREATIVE } from './config.js';
 import { authHdr } from './utils.js';
 import S from './state.js';
 import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js';
-import { anthropicFetch, geocodeCity, saveGeocode } from './api.js?v=20260330a';
+import { anthropicFetch, geocodeCity, saveGeocode } from './api.js?v=20260330b';
 import { clog } from './hub.js';
 
 /* ── Map state ─────────────────────────────────────────────── */
