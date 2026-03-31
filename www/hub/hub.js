@@ -1,10 +1,10 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260330i';
-import S from './state.js?v=20260330i';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260330i';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact } from './api.js?v=20260330i';
-import { resolveAlias } from './merge.js?v=20260330i';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260330j';
+import S from './state.js?v=20260330j';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260330j';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact } from './api.js?v=20260330j';
+import { resolveAlias } from './merge.js?v=20260330j';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
@@ -660,47 +660,11 @@ export function oaGmailDisconnect(){
   _refreshEmailSection(window._currentEmailSlug);
 }
 
-export async function oaEmailScan(slug,companyName){
+export function oaEmailScan(slug,companyName){
   const gmailEmail=localStorage.getItem('oaGmailEmail');if(!gmailEmail)return;
   const results=document.getElementById('ib-email-results');
-  const strip=document.getElementById('ib-email-contacts-strip');
-  if(results)results.innerHTML='<div class="ib-loading">Scanning Gmail via AI…</div>';
-  if(strip)strip.style.display='none';
-  try{
-    const data=await anthropicMcpFetch({
-      model:MODEL_RESEARCH,
-      max_tokens:2000,
-      system:'You are a B2B CRM assistant. Search Gmail for email history with a specific company. Extract contact details from email signatures. Return only valid JSON.',
-      mcp_servers:[{type:'url',url:'https://mcp.gmail.com',name:'gmail',authorization_token:gmailEmail}],
-      messages:[{role:'user',content:`Search my Gmail for all emails to/from people at ${companyName}. Return JSON with this exact shape:\n{"summary":"short plain-text summary of relationship","last_contact":"ISO date or null","email_count":0,"emails":[{"subject":"","date":"","from":"","direction":"in|out","snippet":""}],"contacts":[{"full_name":"","email":"","title":""}]}`}]
-    });
-    _renderEmailResults(slug,companyName,data);
-  }catch(e){
-    if(results)results.innerHTML=`<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">Scan failed: ${esc(e.message)}</div>`;
-  }
-}
-
-function _renderEmailResults(slug,companyName,data){
-  const results=document.getElementById('ib-email-results');if(!results)return;
-  const raw=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
-  let parsed=null;
-  try{const m=raw.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);}catch(e){}
-  if(!parsed){results.innerHTML=`<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t2);line-height:1.5;white-space:pre-wrap">${esc(raw)}</div>`;return;}
-  _saveEmailIntelligence(slug,parsed.summary||raw);
-  const emails=parsed.emails||[];
-  const emailsHtml=emails.length?emails.map(e=>{
-    const dir=e.direction==='in'?'IN':'OUT';const bg=e.direction==='in'?'var(--cc)':'var(--pb)';
-    return`<div style="padding:5px 0;border-bottom:1px solid var(--rule2)"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font:600 7px 'IBM Plex Mono',monospace;padding:1px 5px;border-radius:2px;background:${bg};color:#fff;flex-shrink:0">${dir}</span><span style="font:500 10px 'IBM Plex Mono',monospace;color:var(--t1);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.subject||'(no subject)')}</span><span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t4);flex-shrink:0">${esc(e.date||'')}</span></div>${e.snippet?`<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.snippet)}</div>`:''}</div>`;
-  }).join(''):'<div style="font:400 9px \'IBM Plex Mono\',monospace;color:var(--t4)">No emails found.</div>';
-  results.innerHTML=(parsed.summary?`<div style="font:400 10px 'IBM Plex Sans',sans-serif;color:var(--t2);line-height:1.5;margin-bottom:8px;padding:6px 8px;background:var(--surf3);border-radius:3px">${esc(parsed.summary)}</div>`:'')+emailsHtml;
-  if(parsed.contacts?.length)_showContactsStrip(companyName,parsed.contacts);
-}
-
-function _showContactsStrip(companyName,contacts){
-  const strip=document.getElementById('ib-email-contacts-strip');if(!strip)return;
-  S.emailScanContacts=contacts.map(ct=>({...ct,company_name:companyName}));
-  strip.style.display='block';
-  strip.innerHTML=`<div style="font:600 9px 'IBM Plex Mono',monospace;color:var(--t2);margin-bottom:6px">📇 ${contacts.length} contact${contacts.length===1?'':'s'} found in signatures</div>${contacts.map(ct=>`<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t2)">${esc(ct.full_name||'—')}${ct.title?` · ${esc(ct.title)}`:''}${ct.email?` <span style="color:var(--t3)">${esc(ct.email)}</span>`:''}</div>`).join('')}<button class="btn sm primary" onclick="oaEmailSaveContacts()" style="margin-top:8px">💾 Save Contacts to CRM</button>`;
+  openClaude(`Search my Gmail for all emails to/from anyone at ${companyName}. Summarise: who I've contacted (name, email, job title from signatures), email dates, subjects, and overall relationship status. Gmail search: from:${companyName} OR to:${companyName}`);
+  if(results)results.innerHTML=`<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--poc)">→ Gmail scan sent to Claude — check the new tab</div>`;
 }
 
 export async function oaEmailSaveContacts(){
