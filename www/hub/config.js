@@ -79,3 +79,4 @@ export const TCF_F={1:'Match offline data sources',2:'Link different devices',3:
 export const TCF_SF={1:'Precise geolocation data',2:'Active device scanning'};
 
 export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+export const LEMLIST_PROXY = 'https://nyzkkqqjnkctcmxoirdj.supabase.co/functions/v1/lemlist-proxy';

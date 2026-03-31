@@ -1,8 +1,8 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH } from './config.js?v=20260330j';
-import S from './state.js?v=20260330j';
-import { classify, _slug, authHdr } from './utils.js?v=20260330j';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260331b';
+import S from './state.js?v=20260331b';
+import { classify, _slug, authHdr } from './utils.js?v=20260331b';
 
 
 
@@ -444,4 +444,55 @@ export async function saveIntelligence(slug,items){
       await fetch(`${SB_URL}/rest/v1/intelligence`,{method:'POST',headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({company_id:slug,type:'press_links',content:merged})});
     }
   }catch(e){console.warn('Intel save',e);}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ── Lemlist integration — proxy-based helpers ────────────────
+   Key stored in localStorage under 'oaLemlistKey'.
+   All calls go via Supabase Edge Function (avoids CORS + exposes no key).
+   ══════════════════════════════════════════════════════════════ */
+export function lemlistKey(){
+  let k=localStorage.getItem('oaLemlistKey');
+  if(!k){k=prompt('lemlist API key:');if(k)localStorage.setItem('oaLemlistKey',k.trim());}
+  return k?.trim()||null;
+}
+
+export async function lemlistFetch(path,method='GET',body=null){
+  const apiKey=lemlistKey();
+  if(!apiKey)throw new Error('No lemlist key');
+  const r=await fetch(LEMLIST_PROXY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path,method,body,apiKey}),
+  });
+  if(!r.ok)throw new Error('lemlist '+r.status+': '+await r.text());
+  return r.json();
+}
+
+export async function lemlistCampaigns(){
+  const d=await lemlistFetch('/campaigns');
+  return Array.isArray(d)?d:(d.campaigns??[]);
+}
+
+export async function lemlistAddLead(campaignId,contact){
+  const parts=(contact.name||'').split(' ');
+  return lemlistFetch('/campaigns/'+campaignId+'/leads/','POST',{
+    email:      contact.email||'',
+    firstName:  parts[0]||'',
+    lastName:   parts.slice(1).join(' ')||'',
+    companyName:contact.company_name||'',
+    jobTitle:   contact.title||'',
+    linkedinUrl:contact.linkedin||'',
+  });
+}
+
+export async function lemlistWriteBack(contactIds,campaignId,campaignName){
+  const now=new Date().toISOString();
+  await Promise.all(contactIds.map(id=>
+    fetch(SB_URL+'/rest/v1/contacts?id=eq.'+id,{
+      method:'PATCH',
+      headers:{...HDR,'Prefer':'return=minimal'},
+      body:JSON.stringify({lemlist_campaign_id:campaignId,lemlist_campaign_name:campaignName,lemlist_pushed_at:now}),
+    })
+  ));
 }

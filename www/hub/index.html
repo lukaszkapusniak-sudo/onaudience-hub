@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>onAudience — Sales Intelligence Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=20260330j"/>
+<link rel="stylesheet" href="style.css?v=20260331b"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
@@ -23,6 +23,7 @@
   <div class="nav-right">
     <span id="nav-user-badge" style="display:flex;align-items:center"></span>
     <button class="btn sm" onclick="promptApiKey()" id="keyBtn">&#128273;</button>
+    <button class="btn sm" id="llKeyBtn" title="lemlist key" onclick="localStorage.removeItem('oaLemlistKey');lemlistKey()">&#128279;</button>
     <button class="btn sm" onclick="openProspectFinder('')" title="Find Companies by criteria">&#8853; Find</button>
     <button class="btn sm" onclick="openComposer(null)">&#9993; Compose</button>
     <button class="btn sm p" onclick="promptResearch()">+ Research</button>
@@ -196,6 +197,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script type="module" src="app.js?v=20260330j"></script>
+<script type="module" src="app.js?v=20260331b"></script>
 </body>
 </html>

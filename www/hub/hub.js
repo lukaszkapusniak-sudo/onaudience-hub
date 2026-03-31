@@ -1,10 +1,10 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260330j';
-import S from './state.js?v=20260330j';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260330j';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact } from './api.js?v=20260330j';
-import { resolveAlias } from './merge.js?v=20260330j';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260331b';
+import S from './state.js?v=20260331b';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260331b';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260331b';
+import { resolveAlias } from './merge.js?v=20260331b';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
@@ -172,7 +172,7 @@ export function openCompany(c){
   const signalHtml=[semnTags.length?`<span class="ib-sig-lbl">Signals</span>${semnTags.map(t=>`<span class="ib-sig-tag">${t}</span>`).join('')}`:'',semnTags.length&&techArr.length?'<span class="ib-sig-div"></span>':'',techArr.length?`<span class="ib-sig-lbl">Tech</span>${techArr.slice(0,8).map(t=>`<span class="ib-tech-pill">${esc(techName(t))}</span>`).join('')}`:''].filter(Boolean).join('');
 
   const coCts=S.contacts.filter(ct=>(ct.company_name||'').toLowerCase()===(c.name||"").toLowerCase());
-  const ctGridHtml=coCts.length?`<div class="ib-cts-grid">${coCts.map(ct=>{const a2=getAv(ct.full_name||''),n2=ini(ct.full_name||'');const ctSlug=ct.id||_slug(ct.full_name||'');return`<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}')"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg}">${n2}</div><div><div class="ib-ct-name">${ct.full_name||'—'}</div><div class="ib-ct-title">${ct.title||''}</div></div></div>${ct.email?`<div class="ib-ct-email">${ct.email}</div>`:''}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('email','${ctSlug}')">✉ Email</button>${ct.linkedin_url?`<button class="ib-ct-btn" onclick="event.stopPropagation();window.open('${ct.linkedin_url}','_blank')">LI ↗</button>`:''}<button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('research','${ctSlug}')">Research ↗</button>${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openClaudeGmail('draft',currentCompany,'${esc(ct.email)}','${esc(ct.full_name||'')}')">✉ Draft</button>`:''}</div></div>`;}).join('')}</div>`:`<div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;color:var(--t3)">No contacts stored</div><button class="ib-cta-btn" onclick="bgFindDMs()" style="margin-left:auto">✨ Find DMs</button></div>`;
+  const ctGridHtml=coCts.length?`<div class="ib-cts-grid">${coCts.map(ct=>{const a2=getAv(ct.full_name||''),n2=ini(ct.full_name||'');const ctSlug=ct.id||_slug(ct.full_name||'');return`<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}')"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg}">${n2}</div><div><div class="ib-ct-name">${ct.full_name||'—'}</div><div class="ib-ct-title">${ct.title||''}</div></div></div>${ct.email?`<div class="ib-ct-email">${ct.email}</div>`:''}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('email','${ctSlug}')">✉ Email</button>${ct.linkedin_url?`<button class="ib-ct-btn" onclick="event.stopPropagation();window.open('${ct.linkedin_url}','_blank')">LI ↗</button>`:''}<button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('research','${ctSlug}')">Research ↗</button>${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openClaudeGmail('draft',currentCompany,'${esc(ct.email)}','${esc(ct.full_name||'')}')">✉ Draft</button>`:''}${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openLemlistModal([{id:'${ctSlug}',email:'${esc(ct.email||'')}',name:'${esc(ct.full_name||'')}',company_name:'${esc(ct.company_name||'')}',title:'${esc(ct.title||'')}',linkedin:'${esc(ct.linkedin_url||'')}'}])">📤</button>`:''}</div></div>`;}).join('')}</div>`:`<div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;color:var(--t3)">No contacts stored</div><button class="ib-cta-btn" onclick="bgFindDMs()" style="margin-left:auto">✨ Find DMs</button></div>`;
 
   const prods=c.products?.products||[];
   const prodsHtml=prods.length?prods.map(p=>`<div class="ib-prod-row"><div class="ib-prod-name">${p.name||''}</div><div class="ib-prod-desc">${p.description||''}${p.target_user?` <span style="color:var(--t3)">· ${p.target_user}</span>`:''}</div></div>`).join(''):'';
@@ -1343,6 +1343,107 @@ export function submitModal(){
 
 /** Legacy escape hatch — only for truly unroutable actions that have no hub-native equivalent. */
 export function openClaude(p){window.open('https://claude.ai/new?q='+encodeURIComponent(p),'_blank');}
+
+/* ══════════════════════════════════════════════════════════════
+   ── Lemlist campaign push modal ──────────────────────────────
+   initLemlistModal()   — creates DOM once on boot
+   openLemlistModal(contacts)  — contacts = [{id,email,name,company_name,title,linkedin}]
+   closeLemlistModal()
+   lemlistPush()        — pushes leads, writes back to DB
+   audPushLemlist(audId) — audience-level helper
+   ══════════════════════════════════════════════════════════════ */
+let _llContacts=[];
+
+export function initLemlistModal(){
+  if(document.getElementById('llModal'))return;
+  const d=document.createElement('div');
+  d.innerHTML=`<div id="llModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeLemlistModal()">
+    <div class="modal" style="width:460px">
+      <div class="modal-header">
+        <span class="modal-title">📤 Push to lemlist</span>
+        <button class="btn sm" onclick="closeLemlistModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:16px 20px">
+        <div id="llStatus" style="font-size:11px;color:var(--t3);margin-bottom:10px">Loading campaigns…</div>
+        <select id="llCampaignSel" class="inp" style="display:none;width:100%;margin-bottom:10px"></select>
+        <div id="llPreview" style="font-size:11px;color:var(--t3)"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeLemlistModal()">Cancel</button>
+        <button class="btn p" id="llPushBtn" onclick="lemlistPush()" style="pointer-events:none;opacity:.5">📤 Push</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(d.firstElementChild);
+}
+
+export async function openLemlistModal(contacts){
+  _llContacts=(contacts||[]).filter(c=>c.email);
+  let modal=document.getElementById('llModal');
+  if(!modal){initLemlistModal();modal=document.getElementById('llModal');}
+  const status=document.getElementById('llStatus');
+  const sel=document.getElementById('llCampaignSel');
+  const preview=document.getElementById('llPreview');
+  const btn=document.getElementById('llPushBtn');
+  modal.style.display='flex';
+  status.textContent='Loading campaigns…';
+  status.style.display='block';
+  sel.style.display='none';
+  btn.style.opacity='.5';
+  btn.style.pointerEvents='none';
+  preview.textContent=_llContacts.length+' contact(s) with email selected.';
+  try{
+    const campaigns=await lemlistCampaigns();
+    if(!campaigns.length){status.textContent='No campaigns found in lemlist. Create one first.';return;}
+    status.style.display='none';
+    sel.innerHTML=campaigns.map(c=>'<option value="'+esc(c._id)+'">'+esc(c.name)+(c.status?' ['+esc(c.status)+']':'')+'</option>').join('');
+    sel.style.display='block';
+    if(_llContacts.length>0){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+  }catch(e){
+    status.textContent='Error: '+esc(String(e.message));
+  }
+}
+
+export function closeLemlistModal(){
+  const m=document.getElementById('llModal');
+  if(m)m.style.display='none';
+  const btn=document.getElementById('llPushBtn');
+  if(btn){btn.textContent='📤 Push';btn.style.opacity='.5';btn.style.pointerEvents='none';}
+}
+
+export async function lemlistPush(){
+  const sel=document.getElementById('llCampaignSel');
+  const btn=document.getElementById('llPushBtn');
+  const prev=document.getElementById('llPreview');
+  const campaignId=sel?.value;
+  const campaignName=sel?.options[sel.selectedIndex]?.text?.replace(/\s*\[.*\]$/,'')||'';
+  if(!campaignId||!_llContacts.length)return;
+  btn.textContent='Pushing…';
+  btn.style.pointerEvents='none';
+  let ok=0,fail=0;
+  for(const ct of _llContacts){
+    try{await lemlistAddLead(campaignId,ct);ok++;}
+    catch(e){fail++;clog('info','lemlist skip '+esc(ct.email)+': '+e.message);}
+  }
+  const ids=_llContacts.map(c=>c.id).filter(Boolean);
+  if(ids.length){
+    try{await lemlistWriteBack(ids,campaignId,campaignName);}
+    catch(e){clog('info','lemlist writeback error: '+e.message);}
+  }
+  clog('db','📤 lemlist: '+ok+'/'+_llContacts.length+' pushed → '+campaignName);
+  prev.textContent='✓ '+ok+' pushed'+(fail?', '+fail+' skipped':'')+' → '+campaignName;
+  btn.textContent='✓ Done';
+  setTimeout(closeLemlistModal,2000);
+}
+
+export async function audPushLemlist(audId){
+  const aud=S.audiences?.find(a=>a.id===audId);
+  if(!aud)return;
+  const coIds=aud.company_ids||[];
+  const contacts=(S.contacts||[]).filter(c=>coIds.includes(c.company_id)&&c.email);
+  if(!contacts.length){alert('No contacts with email found for this audience.');return;}
+  openLemlistModal(contacts);
+}
 
 let _taxLoading=false;
 
