@@ -1,12 +1,12 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260331b';
-import { _slug } from './utils.js?v=20260331b';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260331b';
-import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist } from './hub.js?v=20260331b';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260331b';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260331b';
-import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260331b';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260331b';
+import S from './state.js?v=20260331d';
+import { _slug } from './utils.js?v=20260331d';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260331d';
+import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead } from './hub.js?v=20260331d';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260331d';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260331d';
+import { renderAudiencesPanel, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260331d';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260331d';
 import {
   getSession, getAuthToken, getCurrentUser,
   signOut, onAuthStateChange,
@@ -15,7 +15,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doSignIn,
   renderUserBadge,
-} from './auth.js?v=20260331b';
+} from './auth.js?v=20260331d';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -70,33 +70,33 @@ function oaLogAudience(action, audience, diff=null) {
 function switchTab(t) {
   _switchTab(t);
   const audPanel   = document.getElementById('audiencesPanel');
+  const coPanel    = document.getElementById('coPanel');
   const listScroll = document.getElementById('listScroll');
   const leftSearch = document.getElementById('leftSearch');
-  const filtersRow = document.getElementById('filtersRow');
   const listMeta   = document.getElementById('listMeta');
   const sortBar    = document.getElementById('sortBar');
-  const aiBar      = document.getElementById('aiBar');
-  const tagPanel   = document.getElementById('tagPanel');
   const tabAud     = document.getElementById('tabAud');
 
-  if (t==='audiences') {
+  /* Reset audiences panel & its active tab */
+  if (audPanel) audPanel.style.display = 'none';
+  if (tabAud)   tabAud.classList.remove('active');
+
+  /* Hide coPanel campaign detail when leaving lemlist */
+  if (t !== 'lemlist' && coPanel?.querySelector('.ll-detail')) coPanel.style.display = 'none';
+
+  if (t === 'audiences') {
     if (audPanel)   audPanel.style.display   = 'flex';
     if (listScroll) listScroll.style.display = 'none';
     if (leftSearch) leftSearch.style.display = 'none';
-    if (filtersRow) filtersRow.style.display = 'none';
     if (listMeta)   listMeta.style.display   = 'none';
     if (sortBar)    sortBar.style.display    = 'none';
-    if (aiBar)      aiBar.style.display      = 'none';
-    if (tagPanel)   tagPanel.style.display   = 'none';
     if (tabAud)     tabAud.classList.add('active');
     renderAudiencesPanel();
-  } else {
-    if (audPanel)   audPanel.style.display   = 'none';
+  } else if (t !== 'lemlist') {
     if (listScroll) listScroll.style.display = '';
     if (leftSearch) leftSearch.style.display = '';
     if (listMeta)   listMeta.style.display   = '';
     if (sortBar)    sortBar.style.display    = '';
-    if (tabAud)     tabAud.classList.remove('active');
   }
 }
 
@@ -202,9 +202,13 @@ Object.assign(window, {
   /* API key */
   promptApiKey, toggleKeyPanel, saveKeyPanel, clearKeyPanel,
 
-  /* Lemlist */
+  /* Lemlist push modal */
   lemlistKey,
   openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist,
+
+  /* Lemlist campaigns tab */
+  renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail,
+  llSearchLeads, llPushFromAudience, llUnsubLead,
 
   /* Meeseeks */
   openComposer, closeComposer, mcOpenPanel,
