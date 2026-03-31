@@ -1529,13 +1529,16 @@ export async function selectLemlistCampaign(campaignId){
     _llLeads=Array.isArray(d)?d:(d.leads??[]);
   }catch(e){
     _llLeads=[];
+    clog('info','lemlist leads error: '+e.message);
   }
+  _llLeadSearch='';
   _renderCampaignDetail();
 }
 
 export function clearCampaignDetail(){
   _llSelCampaign=null;
   _llLeads=[];
+  _llLeadSearch='';
   renderLemlistPanel();
   const center=document.getElementById('coPanel');
   if(center)center.style.display='none';
@@ -1547,7 +1550,7 @@ function _renderCampaignDetail(){
   const c=_llSelCampaign;
   const leads=_llLeads;
   const filtered=_llLeadSearch
-    ?leads.filter(l=>(l.email+l.firstName+l.lastName+l.companyName).toLowerCase().includes(_llLeadSearch.toLowerCase()))
+    ?leads.filter(l=>((l.email||'')+(l.firstName||'')+(l.lastName||'')+(l.companyName||'')).toLowerCase().includes(_llLeadSearch.toLowerCase()))
     :leads;
   const audOptions=(S.audiences||[])
     .filter(a=>!a.is_system)
@@ -1582,7 +1585,7 @@ function _renderCampaignDetail(){
       :`<div style="overflow-y:auto;flex:1;min-height:0">
           <table class="ll-table">
             <thead><tr>
-              <th>NAME</th><th>EMAIL</th><th>COMPANY</th><th>STATUS</th><th>PUSHED</th><th></th>
+              <th>NAME</th><th>EMAIL</th><th>COMPANY</th><th>STATUS</th><th>ADDED</th><th></th>
             </tr></thead>
             <tbody>
               ${filtered.map(l=>_renderLeadRow(l,c._id)).join('')}
@@ -1616,7 +1619,7 @@ export function llSearchLeads(q){
 export async function llPushFromAudience(){
   const sel=document.getElementById('llAudSel');
   const audId=sel?.value;
-  if(!audId||!_llSelCampaign)return;
+  if(!audId||!_llSelCampaign){alert('Select an audience first.');return;}
   const aud=(S.audiences||[]).find(a=>a.id===audId);
   if(!aud)return;
   const coIds=aud.company_ids||[];
