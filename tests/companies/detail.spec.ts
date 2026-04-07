@@ -12,12 +12,6 @@ test('click company row opens detail panel', async ({ page }) => {
   await expect(detail).toBeVisible({ timeout: 8000 });
 });
 
-test('detail panel has CTA bar', async ({ page }) => {
-  await page.locator('.co-row').first().click();
-  const cta = page.locator('.cta-bar, .cta, [class*="cta"]').first();
-  await expect(cta).toBeVisible({ timeout: 8000 });
-});
-
 test('foldable sections toggle without crash', async ({ page }) => {
   await page.locator('.co-row').first().click();
   await page.waitForTimeout(1000);

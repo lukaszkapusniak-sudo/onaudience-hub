@@ -6,14 +6,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('compose button opens meeseeks drawer', async ({ page }) => {
-  await page.locator('button:has-text("Compose"), button[onclick*="openComposer"]').first().click();
+  await page.locator('button[onclick*="openComposer"]').first().click();
   await page.waitForTimeout(1000);
-  const drawer = page.locator('.mc-drawer, [class*="mc-drawer"]').first();
+  const drawer = page.locator('.mc-drawer').first();
   await expect(drawer).toBeVisible({ timeout: 8000 });
 });
 
 test('meeseeks drawer has persona nav', async ({ page }) => {
-  await page.locator('button:has-text("Compose"), button[onclick*="openComposer"]').first().click();
-  const personaNav = page.locator('.mc-nav, [class*="mc-nav"]').first();
+  await page.locator('button[onclick*="openComposer"]').first().click();
+  const personaNav = page.locator('.mc-nav').first();
   await expect(personaNav).toBeVisible({ timeout: 8000 });
 });

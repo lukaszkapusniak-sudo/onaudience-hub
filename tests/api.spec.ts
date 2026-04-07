@@ -15,7 +15,7 @@ test('merge_suggestions 403 does not crash hub', async ({ page }) => {
 test('AI bar accepts input', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 15000 });
-  const aiInput = page.locator('input[placeholder*="EU DSPs"], .ai-input, [class*="ai-bar"] input').first();
+  const aiInput = page.locator('input[placeholder*="EU DSPs"]').first();
   if (await aiInput.isVisible()) {
     await aiInput.fill('EU DSPs with CTV');
     await expect(aiInput).toHaveValue('EU DSPs with CTV');
