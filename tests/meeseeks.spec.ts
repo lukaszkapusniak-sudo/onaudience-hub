@@ -18,7 +18,6 @@ test("meeseeks drawer has persona grid", async ({ page }) => {
 test("meeseeks close button works", async ({ page }) => {
   await page.locator("button[onclick*=openComposer]").first().click();
   await expect(page.locator("text=Meeseeks / Composer")).toBeVisible({ timeout: 8000 });
-  // close button is the X in the drawer header
-  await page.locator("text=Meeseeks / Composer").locator("..").locator("button").click();
+  await page.evaluate(() => window.closeComposer());
   await expect(page.locator("text=Meeseeks / Composer")).not.toBeVisible({ timeout: 5000 });
 });

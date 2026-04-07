@@ -1,17 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.removeItem("oaSearch");
-    localStorage.removeItem("oaFilter");
-    localStorage.removeItem("oaActiveFilter");
-    localStorage.removeItem("oaTags");
-    localStorage.removeItem("oaAIResult");
-  });
   await page.goto("./");
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 20000 });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => {
+    window.setFilter("all", document.querySelector("#sbAll"));
+  });
+  await page.waitForTimeout(1500);
   await expect(page.locator(".co-row").first()).toBeVisible({ timeout: 20000 });
 });
 
