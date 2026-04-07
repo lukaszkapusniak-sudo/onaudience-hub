@@ -6,6 +6,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 20000 });
   await page.waitForTimeout(2000);
   await page.evaluate(() => {
+    window.clearAI();
     window.setFilter("all", document.querySelector("#sbAll"));
   });
   await page.waitForTimeout(1500);

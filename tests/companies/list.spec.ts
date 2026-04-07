@@ -5,8 +5,8 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 20000 });
   await page.waitForTimeout(2000);
-  // use hub own setFilter to reset list
   await page.evaluate(() => {
+    window.clearAI();
     window.setFilter("all", document.querySelector("#sbAll"));
   });
   await page.waitForTimeout(1500);
