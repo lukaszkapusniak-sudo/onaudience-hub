@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 
 test('dump page content', async ({ page }) => {
-  await page.goto('https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/');
+  await page.goto('./');
   await page.waitForTimeout(4000);
   const html = await page.content();
   console.log(html.substring(0, 3000));
