@@ -1,3 +1,8 @@
 www/files*.zip
 www/files/
 node_modules/
+www/files*/
+www/*.zip
+www/hub/*.zip
+playwright-report/
+test-results/
