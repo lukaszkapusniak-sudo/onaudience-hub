@@ -10,16 +10,16 @@ test.beforeEach(async ({ page }) => {
     window.setFilter("all", document.querySelector("#sbAll"));
   });
   await page.waitForTimeout(1500);
-  await expect(page.locator(".co-row").first()).toBeVisible({ timeout: 20000 });
+  await expect(page.locator(".c-row").first()).toBeVisible({ timeout: 20000 });
 });
 
 test("click company row opens detail panel", async ({ page }) => {
-  await page.locator(".co-row").first().click();
+  await page.locator(".c-row").first().click();
   await expect(page.locator("button:has-text(\"Draft Email\")")).toBeVisible({ timeout: 8000 });
 });
 
 test("foldable sections toggle without crash", async ({ page }) => {
-  await page.locator(".co-row").first().click();
+  await page.locator(".c-row").first().click();
   await page.waitForTimeout(1000);
   await expect(page.locator("nav.nav")).toBeVisible();
 });
