@@ -7,7 +7,6 @@ test.beforeEach(async ({ page }) => {
 
 test("compose button opens meeseeks drawer", async ({ page }) => {
   await page.locator("button[onclick*=openComposer]").first().click();
-  await page.waitForTimeout(1000);
   await expect(page.locator("text=Meeseeks / Composer")).toBeVisible({ timeout: 8000 });
 });
 
@@ -19,7 +18,7 @@ test("meeseeks drawer has persona grid", async ({ page }) => {
 test("meeseeks close button works", async ({ page }) => {
   await page.locator("button[onclick*=openComposer]").first().click();
   await expect(page.locator("text=Meeseeks / Composer")).toBeVisible({ timeout: 8000 });
-  await page.locator("button:has-text(\'✕\')").last().click();
-  await page.waitForTimeout(500);
-  await expect(page.locator("text=Meeseeks / Composer")).not.toBeVisible({ timeout: 3000 });
+  // close button is the X in the drawer header
+  await page.locator("text=Meeseeks / Composer").locator("..").locator("button").click();
+  await expect(page.locator("text=Meeseeks / Composer")).not.toBeVisible({ timeout: 5000 });
 });

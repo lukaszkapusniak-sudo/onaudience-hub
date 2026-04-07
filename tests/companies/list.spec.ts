@@ -1,18 +1,19 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("./");
-  await expect(page.locator("nav.nav")).toBeVisible({ timeout: 15000 });
-  // clear any saved search/filter state from localStorage
-  await page.evaluate(() => {
+  // clear BEFORE page boots so hub reads clean state
+  await page.addInitScript(() => {
     localStorage.removeItem("oaSearch");
     localStorage.removeItem("oaFilter");
     localStorage.removeItem("oaActiveFilter");
     localStorage.removeItem("oaTags");
+    localStorage.removeItem("oaAIResult");
   });
-  // click All filter chip to reset list
-  await page.locator("text=All").first().click();
-  await page.waitForTimeout(1500);
+  await page.goto("./");
+  await expect(page.locator("nav.nav")).toBeVisible({ timeout: 15000 });
+  // wait for data to load fully
+  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 20000 });
+  await page.waitForTimeout(3000);
 });
 
 test("company list renders rows", async ({ page }) => {
