@@ -27,16 +27,16 @@ test("search filters companies", async ({ page }) => {
 
 test("client filter chip works", async ({ page }) => {
   await expect(page.locator(".c-row").first()).toBeVisible({ timeout: 20000 });
-  await page.locator(".filter-chips").locator("text=Clients").click();
+  await page.locator(".f-chip", { hasText: "Clients" }).click();
   await page.waitForTimeout(500);
   await expect(page.locator("#sbClient")).toHaveClass(/active/);
 });
 
 test("all filter resets list", async ({ page }) => {
   await expect(page.locator(".c-row").first()).toBeVisible({ timeout: 20000 });
-  await page.locator(".filter-chips").locator("text=Clients").click();
+  await page.locator(".f-chip", { hasText: "Clients" }).click();
   await page.waitForTimeout(300);
-  await page.locator(".filter-chips").locator("text=All").click();
+  await page.locator(".f-chip", { hasText: "All" }).click();
   await page.waitForTimeout(300);
   await expect(page.locator("#sbAll")).toHaveClass(/active/);
 });
