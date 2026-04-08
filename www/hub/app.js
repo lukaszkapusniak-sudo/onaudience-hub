@@ -10,11 +10,12 @@ import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260408
 import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260408a';
 import {
   getSession, getAuthToken, getCurrentUser,
+  signIn, signInWithGoogle,
   signOut, onAuthStateChange,
   getUserProfile,
   logActivity,
   renderLoginScreen, hideLoginScreen,
-  doSignIn,
+  doGoogleSignIn,
   renderUserBadge,
 } from './auth.js?v=20260408a';
 
@@ -200,7 +201,8 @@ Object.assign(window, {
   toggleTheme,
 
   /* auth */
-  oaSignIn: doSignIn,
+  oaSignIn: doGoogleSignIn,
+  oaGoogleSignIn: doGoogleSignIn,
   oaSignOut,
 
   /* audit (callable from hub.js, api.js, meeseeks etc.) */
