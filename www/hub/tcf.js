@@ -2,7 +2,7 @@
 
 import { SB_URL, OA_GVL, TCF_P, TCF_SP, TCF_F, TCF_SF } from './config.js?v=20260330j';
 import { authHdr } from './utils.js?v=20260330j';
-import S from './state.js?v=20260330j';
+import S from './state.js?v=20260331d';
 import { _slug, getAv, ini, tClass, tLabel, esc } from './utils.js?v=20260330j';
 
 /* ── GVL loader ─────────────────────────────────────────────── */
