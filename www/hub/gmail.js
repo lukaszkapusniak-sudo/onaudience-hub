@@ -99,12 +99,15 @@ export async function gmailSearchCompany(companyName, domain) {
     var hh = {}; ((r.value.payload && r.value.payload.headers) || []).forEach(function(x){ hh[x.name] = x.value; });
     var from = hh['From'] || '', subject = hh['Subject'] || '(no subject)';
     var date = hh['Date'] ? new Date(hh['Date']).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '';
-    threads.push({ from:from, subject:subject, date:date, id:r.value.id });
+    threads.push({ from:from, subject:subject, date:date, id:r.value.id, threadId:r.value.threadId||r.value.id });
     var m2 = from.match(/^(.+?)\s*<(.+?)>/) || from.match(/^(.+)$/);
     if (m2) {
       var name = (m2[1]||'').trim().replace(/^["']|["']$/g,'');
       var email = (m2[2]||m2[1]||'').trim().toLowerCase();
-      if (email.indexOf('@') !== -1 && !cmap[email]) cmap[email] = { name:name, email:email };
+      // Only suggest contacts from the company domain
+      if (email.indexOf('@') !== -1 && dc && email.indexOf('@' + dc) !== -1 && !cmap[email]) {
+        cmap[email] = { name:name, email:email };
+      }
     }
   });
   return { threads:threads, contacts:Object.values(cmap), query:query, total:list.resultSizeEstimate||msgs.length };
@@ -172,7 +175,7 @@ export async function gmailScanCompany(slug, companyName) {
           return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3)">'
             + '<div style="width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div>'
             + '<div style="flex:1;min-width:0">'
-            + '<div style="font:500 11px monospace;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.subject) + '</div>'
+            + '<a href="https://mail.google.com/mail/u/0/#all/' + (t.threadId||t.id||'') + '" target="_blank" style="font:500 11px monospace;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:block" title="Open in Gmail">' + esc(t.subject) + ' ↗</a>'
             + '<div style="font:400 8px monospace;color:var(--t3);margin-top:2px;display:flex;gap:8px">'
             + '<span>' + esc(t.from.slice(0,40)) + (t.from.length>40?'...':'') + '</span>'
             + '<span style="color:var(--t4)">' + t.date + '</span>'
