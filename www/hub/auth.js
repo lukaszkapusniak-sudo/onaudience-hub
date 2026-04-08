@@ -1,5 +1,5 @@
 /* ═══ auth.js — onAudience Hub v2.4 ═══
-   Google OAuth (onaudience.pl domain) + CI email/password fallback.
+   Google OAuth (onaudience.pl + cloudtechnologies.pl) + CI email/password fallback.
    ════════════════════════════════════════════════════ */
 
 import { SB_URL, SB_KEY } from './config.js?v=20260408a';
@@ -52,7 +52,8 @@ export async function signInWithGoogle() {
   const { error } = await sb().auth.signInWithOAuth({
     provider: 'google',
     options: {
-      hd:          'onaudience.pl',   // restrict to onaudience.pl Google Workspace
+      // hd hint removed — supports both onaudience.pl + cloudtechnologies.pl
+      // domain enforcement happens post-sign-in (see app.js bootHub)
       redirectTo:  'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
     },
   });
@@ -179,7 +180,7 @@ export function renderLoginScreen() {
     </svg>
     Sign in with Google
   </button>
-  <div class="oa-domain">onaudience.pl accounts only</div>
+  <div class="oa-domain">onaudience.pl · cloudtechnologies.pl</div>
   <div class="oa-err" id="oa-err"></div>
   <div class="oa-ver">Hub v2.4 · onAudience</div>
 </div>`;
