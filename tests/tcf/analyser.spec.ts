@@ -10,15 +10,11 @@ test.beforeEach(async ({ page }) => {
   });
   await expect(page.locator(".c-row").first()).toBeVisible({ timeout: 20000 });
   await page.locator("#tab-tcf").click();
-  await page.waitForTimeout(300);
-  await page.evaluate(() => {
-    window.renderTCFList();
-    const bar = document.getElementById("tcf-sel-bar");
-    if (bar) bar.style.display = "flex";
-    const scroll = document.getElementById("listScroll");
-    if (scroll) scroll.style.display = "";
-  });
   await page.waitForTimeout(500);
+});
+
+test("TCF tab is active after click", async ({ page }) => {
+  await expect(page.locator("#tab-tcf")).toHaveClass(/active/);
 });
 
 test("TCF list renders company rows", async ({ page }) => {
