@@ -149,7 +149,7 @@ export function openCompany(c){
   if(typeof c==='string'){resolveAlias(c).then(rid=>{const found=S.companies.find(x=>x.id===rid);if(found)openCompany(found);});return;}
   S.currentCompany=c;window.currentCompany=c;
   document.getElementById('emptyState').style.display='none';
-  const panel=document.getElementById('coPanel');panel.style.display='block';
+  const panel=document.getElementById('coPanel');panel.style.display='block';const _ap=document.getElementById('audiencesPanel');if(_ap)_ap.style.display='none';
   const av=getAv(c.name),n=ini(c.name),tc=tClass(c.type),tl=tLabel(c.type),st=stars(c.icp);
 
   const liSlug=c.linkedin_slug||_slug(c.name);
