@@ -191,6 +191,14 @@ export async function gmailScanCompany(slug, companyName) {
           }).join('')
         + '<button class="btn sm p" onclick="window.gmailSaveContacts()" style="margin-top:6px">Save ' + contacts.length + ' to CRM</button>';
     } else { strip.style.display = 'none'; }
+    // Add Summarize button at the bottom of results
+    var existingResults = el.innerHTML;
+    el.innerHTML = existingResults
+      + '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--rule3)">'
+      + '<button class="btn sm" onclick="window.gmailShowSummarizePrompt(' + JSON.stringify(slug) + ',' + JSON.stringify(companyName) + ',' + JSON.stringify(threads) + ')" style="width:100%">'
+      + 'Summarize relationship with Claude</button>'
+      + '</div>';
+
     if (window.clog) window.clog('info', 'Gmail: ' + threads.length + ' emails, ' + contacts.length + ' contacts');
   } catch(e) {
     el.innerHTML = '<div style="font-size:9px;color:var(--prc)">Error: ' + esc(e.message) + '</div>';
@@ -412,4 +420,177 @@ export async function gmailSaveAndEnrichContacts(enriched) {
   if (strip) strip.innerHTML = '<div style="font-size:9px;color:var(--g)">Saved ' + saved + ' new + ' + patched + ' emails added to CRM</div>';
   window._gmailFoundContacts = [];
   if (window.clog) window.clog('db', 'Gmail enrich done: ' + saved + ' new, ' + patched + ' emails patched');
+}
+
+/* ── Summarize email relationship with Claude ────────────────── */
+
+function _estimateTokens(threads) {
+  // ~80 tokens per email metadata entry + 300 system prompt
+  var inputTokens = 300 + threads.length * 80;
+  var outputTokens = 450;
+  return { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens };
+}
+
+function _formatCost(tokens) {
+  // Sonnet 4: $3/MTok input, $15/MTok output
+  var cost = (tokens.input * 3 + tokens.output * 15) / 1_000_000;
+  return cost < 0.01 ? '<$0.01' : '$' + cost.toFixed(3);
+}
+
+export function gmailShowSummarizePrompt(slug, companyName, threads) {
+  // Store threads for use after confirm
+  window._gmailSumThreads = threads;
+  window._gmailSumSlug = slug;
+  window._gmailSumName = companyName;
+
+  var est = _estimateTokens(threads);
+  var cost = _formatCost(est);
+
+  var el = document.getElementById('ib-email-results');
+  if (!el) return;
+
+  // Append confirm box below existing results
+  var existing = el.innerHTML;
+  el.innerHTML = existing + '<div id="gmail-sum-confirm" style="margin-top:12px;padding:10px 12px;background:var(--surf2);border:1px solid var(--rule);border-radius:2px">'
+    + '<div style="font:600 9px monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin-bottom:6px">Summarize with Claude?</div>'
+    + '<div style="font:400 9px monospace;color:var(--t3);margin-bottom:8px;line-height:1.6">'
+    + 'Analyzes ' + threads.length + ' email' + (threads.length > 1 ? 's' : '') + ' (subjects, dates, contacts) to generate a relationship summary.<br>'
+    + '<span style="color:var(--t2)">Est. ' + est.total + ' tokens &middot; ' + cost + '</span><br>'
+    + '<span style="color:var(--t4);font-size:8px">Uses your Anthropic API key. Metadata only &mdash; no email bodies sent.</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:6px">'
+    + '<button class="btn sm p" onclick="window.gmailRunSummarize()">Run Summary</button>'
+    + '<button class="btn sm" onclick="document.getElementById(\'gmail-sum-confirm\').remove()">Cancel</button>'
+    + '</div></div>';
+}
+
+export async function gmailRunSummarize() {
+  var threads = window._gmailSumThreads || [];
+  var slug = window._gmailSumSlug || '';
+  var companyName = window._gmailSumName || '';
+
+  var confirm = document.getElementById('gmail-sum-confirm');
+  if (confirm) confirm.innerHTML = '<div style="font-size:9px;color:var(--t3);animation:pulse 1.4s infinite">Summarizing with Claude...</div>';
+
+  if (!threads.length) {
+    if (confirm) confirm.innerHTML = '<div style="font-size:9px;color:var(--prc)">No email data to summarize.</div>';
+    return;
+  }
+
+  if (!window.anthropicFetch && !window.getApiKey) {
+    if (confirm) confirm.innerHTML = '<div style="font-size:9px;color:var(--prc)">Anthropic API key required — click the key icon in nav.</div>';
+    return;
+  }
+
+  // Build prompt from thread metadata
+  var emailList = threads.map(function(t, i) {
+    return (i+1) + '. [' + t.date + '] From: ' + t.from.slice(0,60) + ' | Subject: ' + t.subject;
+  }).join('\n');
+
+  var systemPrompt = 'You are a B2B sales analyst for onAudience (EU first-party data company). Analyze these email metadata entries and summarize the relationship with the company. Be concise and specific. Format as JSON only.';
+
+  var userPrompt = 'Company: ' + companyName + '\n\nEmail history (metadata only):\n' + emailList + '\n\nReturn JSON: {"relationship_status":"warm/cold/active/dormant","last_contact_date":"...","main_topics":["..."],"relationship_owner":"name if apparent, else unknown","tone":"positive/neutral/negative","recommended_action":"1 sentence","summary":"2-3 sentence overview"}';
+
+  try {
+    var key = window.getApiKey ? window.getApiKey() : localStorage.getItem('oaAnthropicKey');
+    if (!key) throw new Error('No Anthropic API key set');
+
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error('API ' + res.status);
+    var data = await res.json();
+    var text = (data.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+
+    var parsed;
+    try {
+      var match = text.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : null;
+    } catch(e2) { parsed = null; }
+
+    // Actual tokens used
+    var inputUsed = data.usage && data.usage.input_tokens || 0;
+    var outputUsed = data.usage && data.usage.output_tokens || 0;
+    var actualCost = _formatCost({ input: inputUsed, output: outputUsed });
+
+    // Render result
+    if (confirm) {
+      if (parsed) {
+        var statusColor = { warm: 'var(--cc)', cold: 'var(--t3)', active: 'var(--g)', dormant: 'var(--prc)' }[parsed.relationship_status] || 'var(--t2)';
+        confirm.innerHTML = '<div style="font:600 9px monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+          + 'Relationship Summary'
+          + '<span style="font-size:8px;color:var(--t4);font-weight:400;text-transform:none;margin-left:auto">' + inputUsed + '+' + outputUsed + ' tokens &middot; ' + actualCost + '</span>'
+          + '</div>'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">'
+          + _sumField('Status', '<span style="color:' + statusColor + ';font-weight:600;text-transform:uppercase">' + esc(parsed.relationship_status||'?') + '</span>')
+          + _sumField('Last contact', esc(parsed.last_contact_date||'?'))
+          + _sumField('Owner', esc(parsed.relationship_owner||'unknown'))
+          + _sumField('Tone', esc(parsed.tone||'?'))
+          + '</div>'
+          + (parsed.main_topics && parsed.main_topics.length ? '<div style="font:400 9px monospace;color:var(--t3);margin-bottom:6px">Topics: ' + parsed.main_topics.map(function(t){ return esc(t); }).join(', ') + '</div>' : '')
+          + (parsed.summary ? '<div style="font:400 10px IBM Plex Sans,sans-serif;color:var(--t2);line-height:1.55;margin-bottom:6px;font-style:italic">' + esc(parsed.summary) + '</div>' : '')
+          + (parsed.recommended_action ? '<div style="padding:6px 8px;background:var(--gb);border-left:2px solid var(--g);font:400 10px IBM Plex Sans,sans-serif;color:var(--t1)">'
+            + '<span style="font:600 8px monospace;color:var(--g);text-transform:uppercase;letter-spacing:.05em">Recommended: </span>'
+            + esc(parsed.recommended_action) + '</div>' : '')
+          + '<div style="display:flex;gap:5px;margin-top:8px">'
+          + '<button class="btn sm" onclick="window.gmailSaveRelationshipSummary(' + JSON.stringify(slug) + ',' + JSON.stringify(parsed) + ')">Save to Intelligence</button>'
+          + '<button class="btn sm" onclick="document.getElementById(\'gmail-sum-confirm\').remove()">Close</button>'
+          + '</div>';
+      } else {
+        confirm.innerHTML = '<div style="font-size:9px;color:var(--t2);white-space:pre-wrap">' + esc(text.slice(0, 400)) + '</div>'
+          + '<button class="btn sm" style="margin-top:6px" onclick="document.getElementById(\'gmail-sum-confirm\').remove()">Close</button>';
+      }
+    }
+
+    if (window.clog) window.clog('ai', 'Gmail summary: ' + inputUsed + '+' + outputUsed + ' tokens (' + actualCost + ') for ' + esc(companyName));
+
+  } catch(e) {
+    if (confirm) confirm.innerHTML = '<div style="font-size:9px;color:var(--prc)">Error: ' + esc(e.message) + '</div>'
+      + '<button class="btn sm" style="margin-top:5px" onclick="document.getElementById(\'gmail-sum-confirm\').remove()">Close</button>';
+    if (window.clog) window.clog('info', 'Gmail summarize error: ' + esc(e.message));
+  }
+}
+
+function _sumField(label, value) {
+  return '<div style="padding:5px 7px;background:var(--surf);border:1px solid var(--rule);border-radius:2px">'
+    + '<div style="font:600 7px monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t4);margin-bottom:2px">' + label + '</div>'
+    + '<div style="font:400 10px monospace;color:var(--t1)">' + value + '</div>'
+    + '</div>';
+}
+
+export async function gmailSaveRelationshipSummary(slug, parsed) {
+  if (!slug || !parsed) return;
+  var btn = document.querySelector('[onclick*="gmailSaveRelationshipSummary"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/intelligence', {
+      method: 'POST',
+      headers: authHdr({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({
+        company_id: slug,
+        type: 'gmail_summary',
+        content: parsed,
+        updated_at: new Date().toISOString()
+      })
+    });
+    if (res.ok) {
+      if (btn) { btn.textContent = 'Saved'; btn.style.color = 'var(--g)'; }
+      if (window.clog) window.clog('db', 'Gmail summary saved for ' + esc(slug));
+    }
+  } catch(e2) {
+    if (btn) { btn.textContent = 'Error'; }
+  }
 }
