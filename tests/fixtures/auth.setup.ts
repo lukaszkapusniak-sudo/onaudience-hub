@@ -1,14 +1,31 @@
+/**
+ * auth.setup.ts
+ *
+ * The hub is a static GitHub Pages site — no login wall.
+ * Just navigate, wait for boot, save storage state so downstream
+ * tests inherit any localStorage tokens set by api.js.
+ */
 import { test as setup, expect } from '@playwright/test';
-import dotenv from 'dotenv';
-dotenv.config();
+
+const HUB = 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/';
 
 setup('authenticate', async ({ page }) => {
-  await page.goto('https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/');
+  await page.goto(HUB);
 
-  await page.locator('input[type="email"]').fill(process.env.OA_EMAIL!);
-  await page.locator('input[type="password"]').fill(process.env.OA_PASSWORD!);
-  await page.locator('button', { hasText: /sign in/i }).click();
+  // Hub boots without credentials — just wait for nav
+  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 20000 });
 
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 15000 });
+  // Wait for Supabase connection ("Live" in status)
+  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+
+  // Ensure data loaded
+  await page.evaluate(() => {
+    window.clearAI?.();
+    window.setFilter?.('all', document.querySelector('#sbAll'));
+  });
+  await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 20000 });
+
+  // Save storage state (Supabase anon token in localStorage)
   await page.context().storageState({ path: 'tests/fixtures/.auth.json' });
+  console.log('✓ Auth setup complete');
 });
