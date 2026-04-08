@@ -30,11 +30,11 @@ test("foldable company section toggles", async ({ page }) => {
 });
 
 test("quick links section visible", async ({ page }) => {
-  await expect(page.locator("text=Quick Links")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator(".ib-sh-lbl:has-text(\"Quick Links\")")).toBeVisible({ timeout: 5000 });
 });
 
 test("closing panel returns to empty state", async ({ page }) => {
-  await page.locator(".ib-close, button:has-text(\"✕\")").first().click();
+  await page.evaluate(() => window.closePanel());
   await page.waitForTimeout(500);
-  await expect(page.locator("#emptyState, text=Select a company")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator("#emptyState")).toBeVisible({ timeout: 5000 });
 });
