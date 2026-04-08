@@ -378,7 +378,7 @@ document.addEventListener('keydown', (e) => {
       if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
       if (mcDrawer && mcDrawer.classList.contains('open')) { window.closeComposer?.(); return; }
       if (drawer && drawer.classList.contains('open')) { window.closeDrawer?.(); return; }
-      if (window.S?.currentCompany) { window.closePanel?.(); _focusIdx = -1; return; }
+      if (document.getElementById("coPanel")?.style.display !== "none") { window.closePanel?.(); _focusIdx = -1; return; }
       return;
     }
 
