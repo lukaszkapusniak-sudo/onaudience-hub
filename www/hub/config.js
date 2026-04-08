@@ -1,11 +1,11 @@
-/* âââ config.js â constants, SEED, TAG_RULES, personas, TCF data âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ config.js Ã¢ÂÂ constants, SEED, TAG_RULES, personas, TCF data Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 export const SB_URL='https://nyzkkqqjnkctcmxoirdj.supabase.co';
 export const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
 export const HDR={apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
 
-/* ââ Model tiers âââââââââââââââââââââââââââââââââââââââââââ */
-export const MODEL_RESEARCH = 'claude-opus-4-20250514';     // factual tasks â contacts, relations, company data
+/* Ã¢ÂÂÃ¢ÂÂ Model tiers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+export const MODEL_RESEARCH = 'claude-opus-4-20250514';     // factual tasks Ã¢ÂÂ contacts, relations, company data
 export const MODEL_CREATIVE = 'claude-sonnet-4-20250514';   // emails, angles, filtering, creative writing
 
 export const TAG_RULES=[
@@ -27,28 +27,28 @@ export const TAG_RULES=[
 ];
 
 export const SEED_RAW=[
-  ['6sense','POC client'],['Adform','integrated partner / DSP Europe'],['Admixer','no outreach'],['Adobe','partner â DMP integration'],
-  ['Adtonos','client'],['Alikeaudience','client'],['Aniview','no outreach â failed deal'],['Anzu','POC client'],
-  ['Amazon','partner'],['Audience Network','internal â group company'],['Audigent','partner / curation'],['Bango','prospect â via LiveRamp'],
-  ['Beintoo','prospect â to continue'],['Belogic TR','partner'],['Bidberry / Carbon / Clickso','partner'],['Bidscube','no outreach â former client'],
-  ['Bidtheatre','partner / DSP Scandinavia'],['Big Village','to check'],['Bright Mountain Media','prospect â to continue'],['Bytedance (TikTok)','client â APAC only'],
-  ['Captify UK','client'],['Claritas','prospect â to continue'],['Clue','prospect â to continue'],['Criteo','partner â contact: Adrian'],
-  ['Datonics','client'],['Dynata','no outreach â former client'],['Echo Analytics','POC client'],['Entity X','client â Adrian'],
-  ['Epsilon','partner â Matt deal'],['Equativ','partner / SSP curation'],['Eskimi','no outreach â bad timing'],['Experian','prospect â Karo/Maciek'],
-  ['Eyeota','partner'],['Foursquare','partner'],['Fyllo','partner'],['Synthesi','partner â to be'],
-  ['GlobalDataResources','partner â NDR acquisition'],['Google','partner'],['Havas PL','client / agency'],['Hybrid','partner'],
-  ['ID5','partner / cookieless product'],['Intuizi','client â Adrian'],['Kochava','partner / data provider'],['Lifesight','no outreach â unwanted'],
-  ['LiveRamp','partner / marketplace'],['Lotame','no outreach â contract ended'],['Madhive','prospect / DSP â Karolina'],['Mastercard','partner'],
-  ['Medianation','no outreach'],['Mediasmart','no outreach â low revenue'],['MediaWallah','partner / data exchange'],['MeMob','client'],
-  ['Meta','no outreach â via LiveRamp only'],['Microsoft Advertising (Xandr)','partner'],['Mindvalley','POC client â no renewal'],['MNTN','partner / DSP'],
-  ['Mobilewalla','client'],['Moboost','client'],['Multilocal','client â Adrian'],['National Research Group','to check'],
+  ['6sense','POC client'],['Adform','integrated partner / DSP Europe'],['Admixer','no outreach'],['Adobe','partner Ã¢ÂÂ DMP integration'],
+  ['Adtonos','client'],['Alikeaudience','client'],['Aniview','no outreach Ã¢ÂÂ failed deal'],['Anzu','POC client'],
+  ['Amazon','partner'],['Audience Network','internal Ã¢ÂÂ group company'],['Audigent','partner / curation'],['Bango','prospect Ã¢ÂÂ via LiveRamp'],
+  ['Beintoo','prospect Ã¢ÂÂ to continue'],['Belogic TR','partner'],['Bidberry / Carbon / Clickso','partner'],['Bidscube','no outreach Ã¢ÂÂ former client'],
+  ['Bidtheatre','partner / DSP Scandinavia'],['Big Village','to check'],['Bright Mountain Media','prospect Ã¢ÂÂ to continue'],['Bytedance (TikTok)','client Ã¢ÂÂ APAC only'],
+  ['Captify UK','client'],['Claritas','prospect Ã¢ÂÂ to continue'],['Clue','prospect Ã¢ÂÂ to continue'],['Criteo','partner Ã¢ÂÂ contact: Adrian'],
+  ['Datonics','client'],['Dynata','no outreach Ã¢ÂÂ former client'],['Echo Analytics','POC client'],['Entity X','client Ã¢ÂÂ Adrian'],
+  ['Epsilon','partner Ã¢ÂÂ Matt deal'],['Equativ','partner / SSP curation'],['Eskimi','no outreach Ã¢ÂÂ bad timing'],['Experian','prospect Ã¢ÂÂ Karo/Maciek'],
+  ['Eyeota','partner'],['Foursquare','partner'],['Fyllo','partner'],['Synthesi','partner Ã¢ÂÂ to be'],
+  ['GlobalDataResources','partner Ã¢ÂÂ NDR acquisition'],['Google','partner'],['Havas PL','client / agency'],['Hybrid','partner'],
+  ['ID5','partner / cookieless product'],['Intuizi','client Ã¢ÂÂ Adrian'],['Kochava','partner / data provider'],['Lifesight','no outreach Ã¢ÂÂ unwanted'],
+  ['LiveRamp','partner / marketplace'],['Lotame','no outreach Ã¢ÂÂ contract ended'],['Madhive','prospect / DSP Ã¢ÂÂ Karolina'],['Mastercard','partner'],
+  ['Medianation','no outreach'],['Mediasmart','no outreach Ã¢ÂÂ low revenue'],['MediaWallah','partner / data exchange'],['MeMob','client'],
+  ['Meta','no outreach Ã¢ÂÂ via LiveRamp only'],['Microsoft Advertising (Xandr)','partner'],['Mindvalley','POC client Ã¢ÂÂ no renewal'],['MNTN','partner / DSP'],
+  ['Mobilewalla','client'],['Moboost','client'],['Multilocal','client Ã¢ÂÂ Adrian'],['National Research Group','to check'],
   ['Nexxen','prospect'],['Nielsen','no outreach'],['OpenSignal','client'],['OpenX','prospect'],
-  ['Oracle','no outreach â closed ad division'],['Permutive','client'],['Pubmatic','partner'],['Precisely','no outreach'],
-  ['Razorpod','no outreach'],['Roq Ad','no outreach â cross-device'],['RTB House','no business'],['Samba TV','prospect'],
-  ['Scoota','prospect'],['Semantec','client'],['Semasio','partner â acquired by Fyllo'],['Sharethrough','partner / data exchange'],
-  ['Sovrn','client â Adrian'],['Sportradar','prospect â Karolina'],['Taboola','prospect â via MSFT Curate'],['Tapad','no fit'],
-  ['TheTradeDesk','partner'],['TikTok','partner â via Bytedance'],['TL1','internal â our company'],['True Data','client'],
-  ['Twitch','no fit'],['Twitter','no fit'],['VentiveIQ','prospect â Maciek + Adrian'],['VistarMedia (T-Mobile)','prospect'],
+  ['Oracle','no outreach Ã¢ÂÂ closed ad division'],['Permutive','client'],['Pubmatic','partner'],['Precisely','no outreach'],
+  ['Razorpod','no outreach'],['Roq Ad','no outreach Ã¢ÂÂ cross-device'],['RTB House','no business'],['Samba TV','prospect'],
+  ['Scoota','prospect'],['Semantec','client'],['Semasio','partner Ã¢ÂÂ acquired by Fyllo'],['Sharethrough','partner / data exchange'],
+  ['Sovrn','client Ã¢ÂÂ Adrian'],['Sportradar','prospect Ã¢ÂÂ Karolina'],['Taboola','prospect Ã¢ÂÂ via MSFT Curate'],['Tapad','no fit'],
+  ['TheTradeDesk','partner'],['TikTok','partner Ã¢ÂÂ via Bytedance'],['TL1','internal Ã¢ÂÂ our company'],['True Data','client'],
+  ['Twitch','no fit'],['Twitter','no fit'],['VentiveIQ','prospect Ã¢ÂÂ Maciek + Adrian'],['VistarMedia (T-Mobile)','prospect'],
   ['Wowcher','client'],['Zeotap','client'],['Beklever','prospect'],['Havas Spain','prospect'],
   ['Dentsu Thailand','prospect'],['OMD Thailand','prospect'],['Splicky DSP','prospect'],['Traveldesk Global','prospect'],
   ['Liquid Advertising','prospect'],['Stackadapt','prospect'],['Weborama','prospect'],['Memob','client']
@@ -57,16 +57,16 @@ export const SEED_RAW=[
 export const PAL=[{bg:'rgba(23,128,102,0.1)',fg:'#0F6E56'},{bg:'rgba(26,79,138,0.1)',fg:'#1A4F8A'},{bg:'rgba(122,66,0,0.1)',fg:'#7A4200'},{bg:'rgba(75,45,158,0.1)',fg:'#4B2D9E'},{bg:'rgba(107,107,100,0.1)',fg:'#6B6B64'}];
 
 export const MC_PERSONAS=[
-  {id:'steve',   emoji:'ð',name:'Steve',   vibe:'Visionary',  color:'#1d1d1f',system:'Write emails like Steve Jobs presenting â visionary, minimal, magnetic. One bold idea per paragraph. Short, declarative sentences. No filler. End with a quiet, confident invitation. Never say "I hope this email finds you well."'},
-  {id:'barack',  emoji:'ð¤',name:'Barack',  vibe:'Inspiring',  color:'#1a3a5c',system:'Write emails like an inspiring leader â warm, purposeful, building toward a clear point. Use "we" and shared purpose. One strong image or analogy. Close with conviction.'},
-  {id:'margaret',emoji:'âï¸',name:'Margaret',vibe:'Conviction', color:'#2c2c54',system:'Write with iron conviction â direct, factual, no hedging. Lead with the strongest argument. Short assertive sentences. No pleasantries.'},
-  {id:'winston', emoji:'ðï¸',name:'Winston', vibe:'Rallying',   color:'#7b341e',system:'Write with Churchillian flair â rallying, bold, dramatic rhythm. Short punchy lines alternating with a sweeping sentence. Make the close memorable.'},
-  {id:'david',   emoji:'ðï¸',name:'David',   vibe:'Research',   color:'#2d6a4f',system:'Write analytical, research-driven emails. Reference specific signals. Back claims with data points. Subject line = a hypothesis.'},
-  {id:'jeff',    emoji:'â¡',name:'Jeff',    vibe:'Metrics',    color:'#1a4b6e',system:'Write crisp metrics-first emails. Open with a number or result. No story â just outcome, mechanism, ask. Three paragraphs max.'},
-  {id:'gary',    emoji:'ð¦',name:'Gary',    vibe:'No-BS',      color:'#c05621',system:'Write raw and direct. Use "here\'s the thing:" or "real talk". Short sharp paragraphs. No fluff. End with urgency.'},
-  {id:'maya',    emoji:'ð',name:'Maya',    vibe:'Story',      color:'#553c9a',system:'Write emails that tell a micro-story. Open with a scene or image. Build tension toward the solution. Close with emotional resonance.'},
-  {id:'elon',    emoji:'ð',name:'Elon',    vibe:'Disruptive', color:'#000000',system:'Write blunt, bold, contrarian. One punchy paragraph. Maybe two. Challenge assumptions. End with a direct binary question: "Worth a call?" Nothing more.'},
-  {id:'oprah',   emoji:'â¨',name:'Oprah',   vibe:'Authentic',  color:'#8b4513',system:'Write warm, authentic, deeply human. Open with acknowledgment. Build genuine curiosity. Close with an open invitation, not a demand.'},
+  {id:'steve',   emoji:'Ã°ÂÂÂ',name:'Steve',   vibe:'Visionary',  color:'#1d1d1f',system:'Write emails like Steve Jobs presenting Ã¢ÂÂ visionary, minimal, magnetic. One bold idea per paragraph. Short, declarative sentences. No filler. End with a quiet, confident invitation. Never say "I hope this email finds you well."'},
+  {id:'barack',  emoji:'Ã°ÂÂÂ¤',name:'Barack',  vibe:'Inspiring',  color:'#1a3a5c',system:'Write emails like an inspiring leader Ã¢ÂÂ warm, purposeful, building toward a clear point. Use "we" and shared purpose. One strong image or analogy. Close with conviction.'},
+  {id:'margaret',emoji:'Ã¢ÂÂÃ¯Â¸Â',name:'Margaret',vibe:'Conviction', color:'#2c2c54',system:'Write with iron conviction Ã¢ÂÂ direct, factual, no hedging. Lead with the strongest argument. Short assertive sentences. No pleasantries.'},
+  {id:'winston', emoji:'Ã°ÂÂÂÃ¯Â¸Â',name:'Winston', vibe:'Rallying',   color:'#7b341e',system:'Write with Churchillian flair Ã¢ÂÂ rallying, bold, dramatic rhythm. Short punchy lines alternating with a sweeping sentence. Make the close memorable.'},
+  {id:'david',   emoji:'Ã°ÂÂÂÃ¯Â¸Â',name:'David',   vibe:'Research',   color:'#2d6a4f',system:'Write analytical, research-driven emails. Reference specific signals. Back claims with data points. Subject line = a hypothesis.'},
+  {id:'jeff',    emoji:'Ã¢ÂÂ¡',name:'Jeff',    vibe:'Metrics',    color:'#1a4b6e',system:'Write crisp metrics-first emails. Open with a number or result. No story Ã¢ÂÂ just outcome, mechanism, ask. Three paragraphs max.'},
+  {id:'gary',    emoji:'Ã°ÂÂÂ¦',name:'Gary',    vibe:'No-BS',      color:'#c05621',system:'Write raw and direct. Use "here\'s the thing:" or "real talk". Short sharp paragraphs. No fluff. End with urgency.'},
+  {id:'maya',    emoji:'Ã°ÂÂÂ',name:'Maya',    vibe:'Story',      color:'#553c9a',system:'Write emails that tell a micro-story. Open with a scene or image. Build tension toward the solution. Close with emotional resonance.'},
+  {id:'elon',    emoji:'Ã°ÂÂÂ',name:'Elon',    vibe:'Disruptive', color:'#000000',system:'Write blunt, bold, contrarian. One punchy paragraph. Maybe two. Challenge assumptions. End with a direct binary question: "Worth a call?" Nothing more.'},
+  {id:'oprah',   emoji:'Ã¢ÂÂ¨',name:'Oprah',   vibe:'Authentic',  color:'#8b4513',system:'Write warm, authentic, deeply human. Open with acknowledgment. Build genuine curiosity. Close with an open invitation, not a demand.'},
 ];
 
 export const OA_GVL={id:716,name:'OnAudience Ltd',purposes:[1,2,3,4,5,6,7,8,9,10],legIntPurposes:[],
@@ -79,5 +79,5 @@ export const TCF_F={1:'Match offline data sources',2:'Link different devices',3:
 export const TCF_SF={1:'Precise geolocation data',2:'Active device scanning'};
 
 export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-export const GMAIL_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // replace after Google Cloud setup
+export const GMAIL_CLIENT_ID = '1019948080263-r3jeqca1h0olmkjkid128d7vq7m5pusi.apps.googleusercontent.com'; // replace after Google Cloud setup
 export const LEMLIST_PROXY = 'https://nyzkkqqjnkctcmxoirdj.supabase.co/functions/v1/lemlist-proxy';
