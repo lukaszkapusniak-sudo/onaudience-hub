@@ -463,3 +463,10 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
 .scout-footer-bar{display:flex;align-items:center;gap:7px;padding-top:10px;border-top:1px solid var(--rule);flex-shrink:0;flex-wrap:wrap;margin-top:auto}
 .scout-empty{font:400 9px 'IBM Plex Mono',monospace;color:var(--t4);padding:10px 4px;line-height:1.5}
 .scout-running{font:400 9px 'IBM Plex Mono',monospace;color:var(--g);padding:8px 4px;font-style:italic}
+
+/* ── Keyboard navigation focus ─────────────────────────────── */
+.c-row.kb-focus {
+  outline: 1px solid var(--g);
+  outline-offset: -1px;
+  background: var(--surf2);
+}

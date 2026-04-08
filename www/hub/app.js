@@ -336,3 +336,93 @@ document.addEventListener('keydown', (e) => {
     if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
   }
 });
+
+/* ── Keyboard navigation ─────────────────────────────────────
+   j/↓  — next company row
+   k/↑  — previous company row
+   Enter — open focused row
+   Escape — close panel / drawer / context menu
+   /    — focus search input
+   ──────────────────────────────────────────────────────────── */
+(function initKeyNav() {
+  let _focusIdx = -1;
+
+  function getRows() {
+    return Array.from(document.querySelectorAll('#listScroll .c-row'));
+  }
+
+  function setFocus(idx) {
+    const rows = getRows();
+    if (!rows.length) return;
+    // clamp
+    idx = Math.max(0, Math.min(idx, rows.length - 1));
+    // remove previous highlight
+    rows.forEach(r => r.classList.remove('kb-focus'));
+    rows[idx].classList.add('kb-focus');
+    rows[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    _focusIdx = idx;
+  }
+
+  function isTyping() {
+    const el = document.activeElement;
+    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    const menu = document.getElementById('ctxMenu');
+    const drawer = document.getElementById('ctDrawer');
+    const mcDrawer = document.getElementById('mcDrawer');
+
+    // Escape — priority chain
+    if (e.key === 'Escape') {
+      if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
+      if (mcDrawer && mcDrawer.classList.contains('open')) { window.closeComposer?.(); return; }
+      if (drawer && drawer.classList.contains('open')) { window.closeDrawer?.(); return; }
+      if (window.S?.currentCompany) { window.closePanel?.(); _focusIdx = -1; return; }
+      return;
+    }
+
+    // / — focus search (don't interfere if already typing)
+    if (e.key === '/' && !isTyping()) {
+      e.preventDefault();
+      document.getElementById('searchInput')?.focus();
+      return;
+    }
+
+    // Skip nav keys if user is typing in an input
+    if (isTyping()) return;
+
+    // Skip if any drawer/modal is open
+    if (mcDrawer?.classList.contains('open')) return;
+    if (drawer?.classList.contains('open')) return;
+
+    const rows = getRows();
+    if (!rows.length) return;
+
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocus(_focusIdx < 0 ? 0 : _focusIdx + 1);
+      return;
+    }
+
+    if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocus(_focusIdx <= 0 ? 0 : _focusIdx - 1);
+      return;
+    }
+
+    if (e.key === 'Enter' && _focusIdx >= 0) {
+      e.preventDefault();
+      const slug = rows[_focusIdx]?.dataset?.slug;
+      if (slug) window.openBySlug?.(slug);
+      return;
+    }
+  });
+
+  // Reset focus index when list re-renders
+  const listScroll = document.getElementById('listScroll');
+  if (listScroll) {
+    new MutationObserver(() => { _focusIdx = -1; })
+      .observe(listScroll, { childList: true });
+  }
+})();
