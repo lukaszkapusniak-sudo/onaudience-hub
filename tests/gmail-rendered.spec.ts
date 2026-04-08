@@ -223,3 +223,67 @@ test.describe('Gmail connection state transitions', () => {
     await expect(page.locator('#ib-email-body button', { hasText: /summarize/i })).toBeVisible();
   });
 });
+
+// ── SUITE: Gmail scan results persist on section toggle ──────────
+test.describe('Gmail scan results — persistence on toggle', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+    await fakeConnect(page);
+    await openFirstCompany(page);
+    await expandEmailHistory(page);
+    // Inject mock scan results
+    await injectAndRender(page, [
+      { from: 'piotr@company.com', subject: 'Partnership', date: '8 Apr 25', id: 'a', threadId: 'ta' },
+      { from: 'anna@company.com',  subject: 'Follow up',   date: '7 Apr 25', id: 'b', threadId: 'tb' },
+    ]);
+  });
+
+  test.afterEach(async ({ page }) => { await fakeDisconnect(page); });
+
+  test('email results visible after scan', async ({ page }) => {
+    await expect(page.locator('#ib-email-results .gmail-row')).toHaveCount(2, { timeout: 3000 });
+  });
+
+  test('email results persist after collapsing and re-expanding section', async ({ page }) => {
+    // Confirm results are there
+    await expect(page.locator('#ib-email-results .gmail-row')).toHaveCount(2, { timeout: 3000 });
+
+    // Collapse the section
+    const hdr = page.locator('.ib-sh', { hasText: /email history/i }).first();
+    await hdr.click(); // collapse
+    await page.waitForTimeout(300);
+    await expect(page.locator('#ib-email-body')).toBeHidden({ timeout: 2000 });
+
+    // Re-expand
+    await hdr.click();
+    await expect(page.locator('#ib-email-body')).toBeVisible({ timeout: 2000 });
+
+    // Results should still be there (regression: _refreshEmailSection used to wipe them)
+    await expect(page.locator('#ib-email-results .gmail-row')).toHaveCount(2, { timeout: 3000 });
+  });
+
+  test('contacts strip persists after collapsing and re-expanding section', async ({ page }) => {
+    // Inject contacts into strip
+    await page.evaluate(() => {
+      const strip = document.getElementById('ib-email-contacts-strip');
+      if (strip) {
+        strip.style.display = 'block';
+        strip.innerHTML = '<label><input type="checkbox" checked data-i="0"/> test@company.com</label>';
+      }
+      window._gmailFoundContacts = [{ full_name: 'Test', email: 'test@company.com', company_id: 'test' }];
+    });
+
+    // Collapse + expand
+    const hdr = page.locator('.ib-sh', { hasText: /email history/i }).first();
+    await hdr.click();
+    await page.waitForTimeout(300);
+    await hdr.click();
+    await page.waitForTimeout(300);
+
+    // Strip should still be visible with checkbox (regression: save showed 0 contacts)
+    const strip = page.locator('#ib-email-contacts-strip');
+    await expect(strip).toBeVisible({ timeout: 2000 });
+    await expect(strip.locator('input[type="checkbox"]')).toHaveCount(1);
+  });
+});

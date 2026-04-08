@@ -40,3 +40,47 @@ test('meeseeks close button works', async ({ page }) => {
   await page.evaluate(() => window.closeComposer?.());
   await expect(page.locator('#mcDrawer')).not.toHaveClass(/open/, { timeout: 5000 });
 });
+
+test.describe('Meeseeks drawer — full width layout', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('./');
+    await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
+    await page.locator('button[onclick*=openComposer]').first().click();
+    await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 8000 });
+  });
+
+  test('drawer fills at least 70% of viewport width when open', async ({ page }) => {
+    const drawerWidth = await page.evaluate(() =>
+      document.getElementById('mcDrawer')?.getBoundingClientRect().width || 0
+    );
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    expect(drawerWidth).toBeGreaterThan(viewportWidth * 0.7);
+  });
+
+  test('drawer right edge is at viewport right when open', async ({ page }) => {
+    const rect = await page.evaluate(() => {
+      const r = document.getElementById('mcDrawer')?.getBoundingClientRect();
+      return r ? { right: r.right, viewW: window.innerWidth } : null;
+    });
+    if (rect) {
+      expect(rect.right).toBeCloseTo(rect.viewW, -1); // within 10px
+    }
+  });
+
+  test('mc-left panel has adequate width', async ({ page }) => {
+    const leftWidth = await page.evaluate(() =>
+      document.querySelector('.mc-left')?.getBoundingClientRect().width || 0
+    );
+    expect(leftWidth).toBeGreaterThanOrEqual(290);
+  });
+
+  test('mc-right output area is wider than mc-left', async ({ page }) => {
+    const [leftW, rightW] = await page.evaluate(() => [
+      document.querySelector('.mc-left')?.getBoundingClientRect().width || 0,
+      document.querySelector('.mc-right')?.getBoundingClientRect().width || 0,
+    ]);
+    expect(rightW).toBeGreaterThan(leftW);
+  });
+});
