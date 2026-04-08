@@ -32,8 +32,10 @@ export function updateKeyBtn(){
   const btn=document.getElementById('apiKeyBtn');
   if(!btn)return;
   const has=hasApiKey();
-  btn.style.color=has?'var(--cc)':'var(--prc)';
-  btn.title=has?'Anthropic key set — click to change':'Set Anthropic API key';
+  // Proxy always available — green either way.
+  btn.style.color='var(--cc)';
+  btn.style.opacity=has?'1':'0.55';
+  btn.title=has?'Using your API key — click to change or remove':'AI via shared proxy · click to use your own key';
 }
 
 export function promptApiKey(){
@@ -50,13 +52,16 @@ export function toggleKeyPanel(forceOpen){
     panel.innerHTML=`
 <div id="keyPanelInner">
   <div class="kp-head">
-    <span class="kp-title">🔑 Anthropic API Key</span>
+    <span class="kp-title">🔑 API Key Override</span>
     <button class="btn sm" onclick="toggleKeyPanel(false)" style="margin-left:auto">✕</button>
   </div>
   <div class="kp-body">
-    <div class="kp-desc">Used for AI features (Find DMs, Gen Angle, AI filter). Stored in your browser only — never sent to any server except Anthropic.</div>
+    <div class="kp-desc" style="margin-bottom:6px">
+      <span style="color:var(--cc);font-weight:600">✓ AI runs via shared proxy — no key needed.</span><br/>
+      Optionally enter your own Anthropic key to use your personal quota / billing instead.
+    </div>
     <div class="kp-row">
-      <input id="keyPanelInp" class="kp-inp" type="password" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false"/>
+      <input id="keyPanelInp" class="kp-inp" type="password" placeholder="sk-ant-api03-… (optional)" autocomplete="off" spellcheck="false"/>
       <button class="btn sm p" onclick="saveKeyPanel()">Save</button>
       <button class="btn sm" onclick="clearKeyPanel()" title="Remove key" style="color:var(--prc)">✕</button>
     </div>
@@ -100,61 +105,70 @@ export function clearKeyPanel(){
   if(st){st.textContent='Key removed';st.style.color='var(--t3)';}
 }
 
-/* ── Anthropic fetch helper (retries on 429/529) ──────────── */
-export async function anthropicFetch(body){
-  const key=getApiKey();
-  if(!key){if(!promptApiKey())throw new Error('API key required — click 🔑 in the nav bar');}
-  const maxRetries=3;
+/* ── Anthropic proxy URL ───────────────────────────────────────
+   All AI calls go through the Supabase edge function so no user-
+   supplied API key is needed.  If the user has set their own key
+   (via 🔑 nav button) that key is used directly instead — useful
+   for higher rate limits or personal billing.
+   ─────────────────────────────────────────────────────────── */
+const CLAUDE_PROXY = `${SB_URL}/functions/v1/claude-proxy`;
+
+/* Core fetch — proxy-first, direct fallback if personal key set */
+async function _anthropicCall(body, beta){
+  const key = getApiKey();
+  const maxRetries = 3;
+
+  /* ── Personal key path (direct to Anthropic) ── */
+  if(key){
+    const headers = {
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    };
+    if(beta) headers['anthropic-beta'] = beta;
+    for(let attempt=0;attempt<maxRetries;attempt++){
+      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)});
+      if(res.status===529||res.status===429){
+        const wait=Math.min(2000*Math.pow(2,attempt),10000);
+        console.warn(`[API] direct ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
+        await new Promise(r=>setTimeout(r,wait));
+        continue;
+      }
+      if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`API ${res.status}: ${txt.slice(0,200)}`);}
+      return res.json();
+    }
+    throw new Error('API overloaded after 3 retries — try again in a minute');
+  }
+
+  /* ── Proxy path (no key needed) ── */
+  const sbHdr = authHdr();  // Supabase anon JWT for edge function auth
   for(let attempt=0;attempt<maxRetries;attempt++){
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch(CLAUDE_PROXY,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true',
-      },
-      body:JSON.stringify(body),
+      headers:{'Content-Type':'application/json',...sbHdr},
+      body:JSON.stringify({body, ...(beta ? {beta} : {})}),
     });
     if(res.status===529||res.status===429){
       const wait=Math.min(2000*Math.pow(2,attempt),10000);
-      console.warn(`[API] ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
+      console.warn(`[API] proxy ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
       await new Promise(r=>setTimeout(r,wait));
       continue;
     }
-    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`API ${res.status}: ${txt.slice(0,200)}`);}
+    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`Proxy ${res.status}: ${txt.slice(0,200)}`);}
     return res.json();
   }
   throw new Error('API overloaded after 3 retries — try again in a minute');
 }
 
-/* ── Anthropic MCP fetch — same as anthropicFetch but adds mcp-client beta header ── */
+/* ── Anthropic fetch helper (retries on 429/529) ──────────── */
+export async function anthropicFetch(body){
+  return _anthropicCall(body, null);
+}
+
+/* ── Anthropic MCP fetch — adds mcp-client beta header ──────── */
 export async function anthropicMcpFetch(body){
-  const key=getApiKey();
-  if(!key){if(!promptApiKey())throw new Error('API key required — click 🔑 in the nav bar');}
-  const maxRetries=3;
-  for(let attempt=0;attempt<maxRetries;attempt++){
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-beta':'mcp-client-2025-04-04',
-        'anthropic-dangerous-direct-browser-access':'true',
-      },
-      body:JSON.stringify(body),
-    });
-    if(res.status===529||res.status===429){
-      const wait=Math.min(2000*Math.pow(2,attempt),10000);
-      console.warn(`[API] ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
-      await new Promise(r=>setTimeout(r,wait));
-      continue;
-    }
-    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`API ${res.status}: ${txt.slice(0,200)}`);}
-    return res.json();
-  }
-  throw new Error('API overloaded after 3 retries — try again in a minute');
+  return _anthropicCall(body, 'mcp-client-2025-04-04');
 }
 
 /* ── Research fetch — Opus + web_search, extracts text from multi-block responses ── */
