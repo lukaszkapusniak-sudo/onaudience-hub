@@ -124,6 +124,7 @@ export function gmailSectionHTML(slug, companyName) {
     + '<div style="display:flex;gap:6px;margin-bottom:4px">'
     + '<button class="btn sm p" onclick="window.gmailScanCompany(\'' + s + '\',\'' + n + '\')">Scan Gmail</button>'
     + '<button class="btn sm" onclick="window.gmailEnrichContacts(\'' + s + '\',\'' + n + '\')">Update Contacts</button>'
+    + '<button class="btn sm" onclick="window.gmailShowSummarizePrompt(null,null,null)" title="Summarize email relationship">&#10022; Summarize</button>'
     + '</div>'
     + '<div id="ib-email-results" style="margin-top:8px"></div>'
     + '<div id="ib-email-contacts-strip" style="display:none;margin-top:8px;padding:8px;background:var(--surf3);border:1px solid var(--rule)"></div>'
@@ -183,21 +184,20 @@ export async function gmailScanCompany(slug, companyName) {
         return { full_name:c.name, email:c.email, company_name:companyName, company_id:slug, source:'gmail_scan' };
       });
       strip.innerHTML = '<div style="font:600 8px monospace;text-transform:uppercase;color:var(--t3);margin-bottom:6px">'
-        + contacts.length + ' contact' + (contacts.length>1?'s':'') + ' found</div>'
-        + contacts.map(function(c){
-            return '<div style="display:flex;gap:6px;padding:3px 0;font-size:10px">'
-              + '<span style="color:var(--t1)">' + esc(c.name||c.email) + '</span>'
-              + '<span style="color:var(--t4)">' + esc(c.email) + '</span></div>';
+        + contacts.length + ' contact' + (contacts.length>1?'s':'') + ' found &mdash; select to save:</div>'
+        + contacts.map(function(c, i){
+            return '<label style="display:flex;align-items:center;gap:7px;padding:4px 2px;cursor:pointer;border-bottom:1px solid var(--rule3)">'
+              + '<input type="checkbox" checked data-i="' + i + '" style="accent-color:var(--g);cursor:pointer"/>'
+              + '<span style="flex:1;font:500 10px monospace;color:var(--t1)">' + esc(c.name||c.email) + '</span>'
+              + '<span style="font:400 9px monospace;color:var(--t4)">' + esc(c.email) + '</span>'
+              + '</label>';
           }).join('')
-        + '<button class="btn sm p" onclick="window.gmailSaveContacts()" style="margin-top:6px">Save ' + contacts.length + ' to CRM</button>';
+        + '<button class="btn sm p" onclick="window.gmailSaveSelectedContacts()" style="margin-top:6px;width:100%">Save selected to CRM</button>';
     } else { strip.style.display = 'none'; }
-    // Add Summarize button at the bottom of results
-    var existingResults = el.innerHTML;
-    el.innerHTML = existingResults
-      + '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--rule3)">'
-      + '<button class="btn sm" onclick="window.gmailShowSummarizePrompt(' + JSON.stringify(slug) + ',' + JSON.stringify(companyName) + ',' + JSON.stringify(threads) + ')" style="width:100%">'
-      + 'Summarize relationship with Claude</button>'
-      + '</div>';
+    // Store threads for summarize access
+    window._gmailLastThreads = threads;
+    window._gmailLastSlug = slug;
+    window._gmailLastName = companyName;
 
     if (window.clog) window.clog('info', 'Gmail: ' + threads.length + ' emails, ' + contacts.length + ' contacts');
   } catch(e) {
@@ -438,10 +438,19 @@ function _formatCost(tokens) {
 }
 
 export function gmailShowSummarizePrompt(slug, companyName, threads) {
-  // Store threads for use after confirm
+  // Use passed params or fall back to last scan data
+  threads = threads || window._gmailLastThreads || [];
+  slug = slug || window._gmailLastSlug || window._currentEmailSlug || '';
+  companyName = companyName || window._gmailLastName || (window.currentCompany && window.currentCompany.name) || '';
   window._gmailSumThreads = threads;
   window._gmailSumSlug = slug;
   window._gmailSumName = companyName;
+
+  if (!threads.length) {
+    var el2 = document.getElementById('ib-email-results');
+    if (el2) el2.innerHTML = '<div style="font-size:9px;color:var(--prc)">Scan Gmail first to load emails before summarizing.</div>';
+    return;
+  }
 
   var est = _estimateTokens(threads);
   var cost = _formatCost(est);
@@ -593,4 +602,26 @@ export async function gmailSaveRelationshipSummary(slug, parsed) {
   } catch(e2) {
     if (btn) { btn.textContent = 'Error'; }
   }
+}
+
+export function gmailSaveSelectedContacts() {
+  var strip = document.getElementById('ib-email-contacts-strip');
+  if (!strip) return;
+  var checkboxes = strip.querySelectorAll('input[type=checkbox]');
+  var allContacts = window._gmailFoundContacts || [];
+  var selected = [];
+  checkboxes.forEach(function(cb) {
+    var i = parseInt(cb.getAttribute('data-i'));
+    if (cb.checked && allContacts[i]) selected.push(allContacts[i]);
+  });
+  if (!selected.length) {
+    alert('No contacts selected.');
+    return;
+  }
+  // Temporarily override _gmailFoundContacts with selection
+  var orig = window._gmailFoundContacts;
+  window._gmailFoundContacts = selected;
+  gmailSaveContacts().then(function() {
+    window._gmailFoundContacts = [];
+  });
 }
