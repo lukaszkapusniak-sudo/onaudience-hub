@@ -3,8 +3,8 @@
    Audit trail via logActivity().
    ════════════════════════════════════════════════════ */
 
-import { SB_URL, SB_KEY } from './config.js?v=20260331d';
-import { authHdr } from './utils.js?v=20260331d';
+import { SB_URL, SB_KEY } from './config.js?v=20260408a';
+import { authHdr } from './utils.js?v=20260408a';
 
 /* ── JS mutex — replaces navigator.locks to avoid the
    "lock:oaHubSession was released because another request stole it"
