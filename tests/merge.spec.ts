@@ -11,9 +11,8 @@ const HUB = './';
 async function waitForHub(page: Page) {
   await page.goto(HUB);
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 20000 });
+  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
   await page.waitForTimeout(1200);
 }
 

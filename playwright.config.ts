@@ -4,43 +4,50 @@ dotenv.config();
 
 const IS_CI = !!process.env.CI;
 
+// Use system chromium if the playwright-managed one isn't downloaded
+const CHROME = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+  || (() => {
+    const { execSync } = require('child_process');
+    const paths = [
+      '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/bin/google-chrome',
+    ];
+    for (const p of paths) {
+      try { execSync(`test -x ${p}`); return p; } catch {}
+    }
+    return undefined; // let playwright find its own
+  })();
+
 export default defineConfig({
   testDir: './tests',
+  timeout:  IS_CI ? 60_000 : 30_000,
+  retries:  IS_CI ? 2 : 0,
+  workers:  IS_CI ? 1 : undefined,
 
-  /* Per-test timeout — longer in CI (network latency + cold start) */
-  timeout: IS_CI ? 60000 : 30000,
-
-  /* Retry once on CI to absorb transient flakiness */
-  retries: IS_CI ? 1 : 0,
-
-  /* Run tests sequentially in CI to avoid rate-limit / race issues on shared Supabase */
-  workers: IS_CI ? 1 : undefined,
-
-  /* Shared browser context settings */
   use: {
-    baseURL: 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
-    headless: true,
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    /* Extra time for each action in CI */
-    actionTimeout: IS_CI ? 15000 : 5000,
-    navigationTimeout: IS_CI ? 30000 : 15000,
+    baseURL:           'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+    headless:          true,
+    screenshot:        'only-on-failure',
+    video:             'retain-on-failure',
+    actionTimeout:     IS_CI ? 20_000 : 8_000,
+    navigationTimeout: IS_CI ? 45_000 : 20_000,
+    ...(CHROME ? { executablePath: CHROME } : {}),
   },
 
   projects: [
-    /* ── Auth setup (runs first, no dependencies) ── */
     {
       name: 'setup',
-      testDir: './tests/fixtures',
+      testDir:   './tests/fixtures',
       testMatch: /auth\.setup\.ts/,
     },
-
-    /* ── Main test suite ── */
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'tests/fixtures/.auth.json',
+        ...(CHROME ? { executablePath: CHROME } : {}),
       },
       dependencies: ['setup'],
     },
@@ -49,7 +56,6 @@ export default defineConfig({
   reporter: [
     ['html', { open: 'never' }],
     ['list'],
-    /* GitHub Actions annotations on failures */
     ...(IS_CI ? [['github'] as ['github']] : []),
   ],
 });

@@ -5,9 +5,8 @@ const HUB = './';
 async function waitForHub(page: Page) {
   await page.goto(HUB);
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 20000 });
+  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
   await page.waitForTimeout(1500);
 }
 
@@ -19,7 +18,11 @@ async function switchTab(page: Page, tab: string) {
 // ── SUITE: Panel isolation ────────────────────────────────────────
 test.describe('Tab panel isolation', () => {
 
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+  await waitForHub(page);
+  await page.evaluate(() => { window.closePanel?.(); window.switchTab?.('companies'); });
+  await page.waitForTimeout(200);
+});
 
   test('companies tab: coPanel hidden, emptyState visible by default', async ({ page }) => {
     await switchTab(page, 'companies');

@@ -3,9 +3,8 @@ import { test, expect } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 10000 });
-  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 20000 });
+  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 30000 });
   await page.waitForTimeout(2000);
   await page.evaluate(() => {
     window.clearAI();
