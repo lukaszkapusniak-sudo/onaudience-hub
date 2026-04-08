@@ -155,6 +155,29 @@ export function gmailDisconnectUI() {
   if (body && slug) body.innerHTML = gmailSectionHTML(slug, name);
   if (window.clog) window.clog('info', 'Gmail disconnected');
 }
+
+/** Render a list of threads into #ib-email-results (also used by tests). */
+export function gmailRenderResults(threads, companyName) {
+  var el = document.getElementById('ib-email-results');
+  if (!el) return;
+  if (!threads || !threads.length) {
+    el.innerHTML = '<div style="font-size:9px;color:var(--t3);padding:4px 0">No emails found' + (companyName ? ' for <b>' + esc(companyName) + '</b>' : '') + '</div>';
+    return;
+  }
+  el.innerHTML = '<div style="font:600 8px monospace;text-transform:uppercase;color:var(--t3);margin-bottom:6px">'
+    + threads.length + ' email' + (threads.length !== 1 ? 's' : '') + '</div>'
+    + threads.map(function(t){
+        return '<div class="gmail-row" style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3)">'
+          + '<div style="width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div>'
+          + '<div style="flex:1;min-width:0">'
+          + '<a href="https://mail.google.com/mail/u/0/#all/' + (t.threadId||t.id||'') + '" target="_blank" style="font:500 11px monospace;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:block" title="Open in Gmail">' + esc(t.subject) + ' ↗</a>'
+          + '<div style="font:400 8px monospace;color:var(--t3);margin-top:2px;display:flex;gap:8px">'
+          + '<span>' + esc((t.from||'').slice(0,40)) + ((t.from||'').length>40?'...':'') + '</span>'
+          + '<span style="color:var(--t4)">' + (t.date||'') + '</span>'
+          + '</div></div></div>';
+      }).join('');
+}
+
 export async function gmailScanCompany(slug, companyName) {
   var el = document.getElementById('ib-email-results');
   var strip = document.getElementById('ib-email-contacts-strip');
@@ -169,18 +192,7 @@ export async function gmailScanCompany(slug, companyName) {
       el.innerHTML = '<div style="font-size:9px;color:var(--t3);padding:4px 0">No emails found for <b>' + esc(companyName) + '</b></div>';
       return;
     }
-    el.innerHTML = '<div style="font:600 8px monospace;text-transform:uppercase;color:var(--t3);margin-bottom:6px">'
-      + threads.length + ' emails' + (total > threads.length ? ' (~' + total + ' total)' : '') + '</div>'
-      + threads.map(function(t){
-          return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3)">'
-            + '<div style="width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div>'
-            + '<div style="flex:1;min-width:0">'
-            + '<a href="https://mail.google.com/mail/u/0/#all/' + (t.threadId||t.id||'') + '" target="_blank" style="font:500 11px monospace;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:block" title="Open in Gmail">' + esc(t.subject) + ' ↗</a>'
-            + '<div style="font:400 8px monospace;color:var(--t3);margin-top:2px;display:flex;gap:8px">'
-            + '<span>' + esc(t.from.slice(0,40)) + (t.from.length>40?'...':'') + '</span>'
-            + '<span style="color:var(--t4)">' + t.date + '</span>'
-            + '</div></div></div>';
-        }).join('');
+    gmailRenderResults(threads, companyName);
     if (contacts.length) {
       strip.style.display = 'block';
       window._gmailFoundContacts = contacts.map(function(c){
