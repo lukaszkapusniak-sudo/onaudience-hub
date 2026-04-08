@@ -1,4 +1,4 @@
-/* âââ hub.js â main hub logic âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ hub.js Ã¢ÂÂ main hub logic Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260331d';
 import S from './state.js?v=20260331d';
@@ -6,7 +6,7 @@ import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, rel
 import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260331d';
 import { resolveAlias } from './merge.js?v=20260331d';
 
-/* âââ Tag helpers ââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Tag helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
 export function countPool(){const t30=Date.now()-30*24*60*60*1000;const cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));return S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ))return false;return true;});}
 export function matchTags(c){if(!S.activeTags.size)return true;const t=getCoTags(c);return S.tagLogic==='and'?[...S.activeTags].every(x=>t.includes(x)):[...S.activeTags].some(x=>t.includes(x));}
@@ -18,14 +18,14 @@ export function toggleTagEl(el){toggleTag(el.dataset.tag);}
 export function clearTags(){S.activeTags.clear();renderTagPanel();renderList();}
 export function setTagLogic(l){S.tagLogic=l;document.getElementById('tlOr').className='tp-logic-btn'+(l==='or'?' active':'');document.getElementById('tlAnd').className='tp-logic-btn'+(l==='and'?' active':'');if(S.activeTags.size)renderList();}
 
-/* âââ AI Bar âââââââââââââââââââââââââââââââââââââââââââââââââ */
-export async function runAI(){const q=document.getElementById('aiInp').value.trim();if(!q)return;const btn=document.getElementById('aiBtn'),stat=document.getElementById('aiStat'),dot=document.getElementById('aiDot'),txt=document.getElementById('aiTxt');btn.disabled=true;stat.className='ai-stat vis';dot.className='ai-dot';dot.style.background='';txt.textContent='Thinkingâ¦';clog('ai',`Query: <b>${esc(q)}</b>`);const list=S.companies.map(c=>`${c.name} (${c.type}${c.category?' / '+c.category:''}${c.hq_city?' / '+c.hq_city:''}${c.note?' â '+c.note.slice(0,40):''})`).join('\n');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:800,system:'You are a B2B sales filter for onAudience. Given a company list and a query, return ONLY a raw JSON array of matching company names. No markdown, no explanation. Return [] if nothing matches.',messages:[{role:'user',content:`Query: "${q}"\n\nCompany list:\n${list}`}]});const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();const names=JSON.parse(raw);if(!Array.isArray(names))throw new Error('not array');S.aiSet=new Set(names);dot.className='ai-dot done';txt.textContent=`${names.length} matches â "${q.length>30?q.slice(0,30)+'â¦':q}"`;clog('ai',`â Found <b>${names.length}</b> matches for "${esc(q.slice(0,30))}"`);renderList();}catch(e){dot.className='ai-dot err';txt.textContent='Error â try again';clog('ai',`â Error: ${esc(e.message)}`);console.error(e);}btn.disabled=false;}
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ AI Bar Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+export async function runAI(){const q=document.getElementById('aiInp').value.trim();if(!q)return;const btn=document.getElementById('aiBtn'),stat=document.getElementById('aiStat'),dot=document.getElementById('aiDot'),txt=document.getElementById('aiTxt');btn.disabled=true;stat.className='ai-stat vis';dot.className='ai-dot';dot.style.background='';txt.textContent='ThinkingÃ¢ÂÂ¦';clog('ai',`Query: <b>${esc(q)}</b>`);const list=S.companies.map(c=>`${c.name} (${c.type}${c.category?' / '+c.category:''}${c.hq_city?' / '+c.hq_city:''}${c.note?' Ã¢ÂÂ '+c.note.slice(0,40):''})`).join('\n');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:800,system:'You are a B2B sales filter for onAudience. Given a company list and a query, return ONLY a raw JSON array of matching company names. No markdown, no explanation. Return [] if nothing matches.',messages:[{role:'user',content:`Query: "${q}"\n\nCompany list:\n${list}`}]});const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();const names=JSON.parse(raw);if(!Array.isArray(names))throw new Error('not array');S.aiSet=new Set(names);dot.className='ai-dot done';txt.textContent=`${names.length} matches Ã¢ÂÂ "${q.length>30?q.slice(0,30)+'Ã¢ÂÂ¦':q}"`;clog('ai',`Ã¢ÂÂ Found <b>${names.length}</b> matches for "${esc(q.slice(0,30))}"`);renderList();}catch(e){dot.className='ai-dot err';txt.textContent='Error Ã¢ÂÂ try again';clog('ai',`Ã¢ÂÂ Error: ${esc(e.message)}`);console.error(e);}btn.disabled=false;}
 export function clearAI(){S.aiSet=null;document.getElementById('aiStat').className='ai-stat';document.getElementById('aiInp').value='';renderList();}
 export function aiQuick(q){document.getElementById('aiInp').value=q;runAI();}
 
 function renderMetaPills(){const el=document.getElementById('metaPills');const parts=[];S.activeTags.forEach(t=>{parts.push(`<span class="m-pill tag" data-tag="${t.replace(/"/g,'&quot;')}" onclick="toggleTagEl(this)" title="Remove">${t}</span>`);});if(S.aiSet){parts.push(`<span class="m-pill ai" onclick="clearAI()" title="Clear AI">AI: ${S.aiSet.size}</span>`);}el.innerHTML=parts.join('');}
 
-/* âââ Tabs / Filter / Search âââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Tabs / Filter / Search Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function switchTab(t){
   S.activeTab=t;
   document.getElementById('tabComp').className='left-tab'+(t==='companies'?' active':'');
@@ -48,13 +48,13 @@ export function switchTab(t){
 export function setFilter(f,el){S.activeFilter=f;document.querySelectorAll('.f-chip').forEach(c=>c.classList.remove('active'));if(el&&el.classList)el.classList.add('active');const sm={all:'sbAll',client:'sbClient',poc:'sbPoc',partner:'sbPartner',prospect:'sbProspect',nogo:'sbNogo',fresh:'sbFresh'};document.querySelectorAll('.sb-col').forEach(c=>c.classList.remove('active'));const s=document.getElementById(sm[f]);if(s)s.classList.add('active');if(S.tagPanelOpen)renderTagPanel();renderList();}
 export function onSearch(){S.searchQ=document.getElementById('searchInput').value.toLowerCase().trim();if(S.tagPanelOpen)renderTagPanel();renderList();}
 
-/* âââ Console ââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Console Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function clog(type,msg){S.consoleLog.unshift({ts:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),type,msg});if(S.consoleLog.length>100)S.consoleLog.length=100;renderConsole();}
 function renderConsole(){const el=document.getElementById('consoleScroll');const cnt=document.getElementById('consoleCnt');if(!el)return;if(cnt)cnt.textContent=S.consoleLog.length;el.innerHTML=S.consoleLog.map(l=>`<div class="console-line"><span class="console-ts">${l.ts}</span><span class="console-type ${l.type}">${l.type}</span><span class="console-msg">${l.msg}</span></div>`).join('');}
 export function toggleConsole(){const p=document.getElementById('consolePanel');if(p)p.classList.toggle('open');}
 export function clearConsole(){S.consoleLog=[];renderConsole();}
 
-/* âââ Sort âââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Sort Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function setSort(v){S.sortBy=v;renderList();}
 function sortCompanies(arr){
   if(S.sortBy==='recent')return[...arr].sort((a,b)=>{const ta=a.updated_at?new Date(a.updated_at).getTime():0;const tb=b.updated_at?new Date(b.updated_at).getTime():0;return tb-ta;});
@@ -62,46 +62,46 @@ function sortCompanies(arr){
   return[...arr].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 }
 
-/* âââ Bold keywords helper âââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Bold keywords helper Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 function boldKw(text){
-  if(!text)return'â';
+  if(!text)return'Ã¢ÂÂ';
   const kw=['client','partner','prospect','poc','dsp','ssp','agency','data','identity','cookieless','ctv','mobile','marketplace','programmatic','eu','emea','us','apac','integrated','active','expired','failed','no outreach','via','contact'];
   let s=esc(text);
   kw.forEach(k=>{const re=new RegExp('\\b('+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')\\b','gi');s=s.replace(re,'<b>$1</b>');});
   return s;
 }
 
-/* âââ One-click enrich âââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ One-click enrich Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export async function quickEnrich(slug){
   const c=S.companies.find(x=>(x.id||_slug(x.name))===slug);if(!c)return;
-  clog('enrich',`Opening research panel for <b>${c.name}</b>â¦`);
+  clog('enrich',`Opening research panel for <b>${c.name}</b>Ã¢ÂÂ¦`);
   openCompany(c);
   setTimeout(promptResearch,60);
 }
 
-/* âââ Completeness indicator âââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Completeness indicator Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 function completeness(c){
   const fields=[c.description,c.category,c.region||c.hq_city,c.size,c.website,c.icp,c.outreach_angle,c.tech_stack?.length,c.dsps?.length];
   const filled=fields.filter(Boolean).length;
   return Math.round(filled/fields.length*100);
 }
 
-/* âââ Tech name/cat helpers (module-level â used in openCompany) ââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Tech name/cat helpers (module-level Ã¢ÂÂ used in openCompany) Ã¢ÂÂÃ¢ÂÂ
    NOTE: declared with var to avoid Temporal Dead Zone errors when
    referenced inside openCompany before the const would be initialized.
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 var techName=(t)=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):(t&&t.name)?String(t.name):typeof t==='object'?JSON.stringify(t):'?';
 var techCat=(t)=>typeof t==='object'&&t?t.category||'':'';
 
-/* âââ List Rendering âââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ List Rendering Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function renderList(){
   const scroll=document.getElementById('listScroll'),meta=document.getElementById('metaTxt');
   if(S.activeTab==='tcf'){window.renderTCFList?.();return;}
-  if(S.activeTab==='contacts'){const filt=S.contacts.filter(c=>{if(!S.searchQ)return true;return(c.full_name||'').toLowerCase().includes(S.searchQ)||(c.company_name||'').toLowerCase().includes(S.searchQ)||(c.title||'').toLowerCase().includes(S.searchQ);});meta.textContent=`${filt.length} of ${S.contacts.length} contacts`;if(!filt.length){scroll.innerHTML='<div style="padding:20px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--t3);text-transform:uppercase">No contacts</div>';return;}scroll.innerHTML=filt.map(ct=>{const av=getAv(ct.full_name||'');const n=ini(ct.full_name||'');return`<div class="ct-row" onclick="openContactFull('${ct.id||_slug(ct.full_name||'')}')"><div class="ct-av" style="background:${av.bg};color:${av.fg}">${n}</div><div class="ct-info"><div class="ct-name">${ct.full_name||'â'}</div><div class="ct-sub">${ct.title||''}${ct.company_name?' Â· '+ct.company_name:''}</div></div></div>`;}).join('');return;}
+  if(S.activeTab==='contacts'){const filt=S.contacts.filter(c=>{if(!S.searchQ)return true;return(c.full_name||'').toLowerCase().includes(S.searchQ)||(c.company_name||'').toLowerCase().includes(S.searchQ)||(c.title||'').toLowerCase().includes(S.searchQ);});meta.textContent=`${filt.length} of ${S.contacts.length} contacts`;if(!filt.length){scroll.innerHTML='<div style="padding:20px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--t3);text-transform:uppercase">No contacts</div>';return;}scroll.innerHTML=filt.map(ct=>{const av=getAv(ct.full_name||'');const n=ini(ct.full_name||'');return`<div class="ct-row" onclick="openContactFull('${ct.id||_slug(ct.full_name||'')}')"><div class="ct-av" style="background:${av.bg};color:${av.fg}">${n}</div><div class="ct-info"><div class="ct-name">${ct.full_name||'Ã¢ÂÂ'}</div><div class="ct-sub">${ct.title||''}${ct.company_name?' ÃÂ· '+ct.company_name:''}</div></div></div>`;}).join('');return;}
   const t30=Date.now()-30*24*60*60*1000,cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));
   let filt=S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ)&&!(c.category||'').toLowerCase().includes(S.searchQ)&&!(c.hq_city||'').toLowerCase().includes(S.searchQ)&&!(c.region||'').toLowerCase().includes(S.searchQ))return false;if(!matchTags(c))return false;if(S.aiSet&&!S.aiSet.has(c.name))return false;return true;});
   filt=sortCompanies(filt);
-  const parts=[`${filt.length} of ${S.companies.length}`];if(S.activeTags.size)parts.push(`Â· ${S.activeTags.size} tag${S.activeTags.size>1?'s':''} ${S.tagLogic.toUpperCase()}`);if(S.aiSet)parts.push('Â· AI');meta.textContent=parts.join(' ');renderMetaPills();
+  const parts=[`${filt.length} of ${S.companies.length}`];if(S.activeTags.size)parts.push(`ÃÂ· ${S.activeTags.size} tag${S.activeTags.size>1?'s':''} ${S.tagLogic.toUpperCase()}`);if(S.aiSet)parts.push('ÃÂ· AI');meta.textContent=parts.join(' ');renderMetaPills();
   if(!filt.length){scroll.innerHTML='<div style="padding:20px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--t3);text-transform:uppercase">No results</div>';return;}
 
   scroll.innerHTML=filt.map(c=>{
@@ -114,19 +114,19 @@ export function renderList(){
 
     const ctCount=S.contacts.filter(ct=>ct.company_id===(c.id||slug)||_slug(ct.company_name||'')===slug).length;
     const details=[];
-    if(c.hq_city||c.region)details.push(`<span class="c-detail-item">ð <b>${esc(c.hq_city||c.region)}</b></span>`);
-    if(c.size)details.push(`<span class="c-detail-item">ð¥ <b>${esc(c.size)}</b></span>`);
+    if(c.hq_city||c.region)details.push(`<span class="c-detail-item">Ã°ÂÂÂ <b>${esc(c.hq_city||c.region)}</b></span>`);
+    if(c.size)details.push(`<span class="c-detail-item">Ã°ÂÂÂ¥ <b>${esc(c.size)}</b></span>`);
     if(c.category)details.push(`<span class="c-detail-item">${esc(c.category)}</span>`);
     if(c.icp)details.push(`<span class="c-detail-item" style="color:var(--g)">ICP ${c.icp}</span>`);
-    if(ctCount)details.push(`<span class="c-detail-item">ð§âð¼ ${ctCount} contact${ctCount>1?'s':''}</span>`);
+    if(ctCount)details.push(`<span class="c-detail-item">Ã°ÂÂ§ÂÃ¢ÂÂÃ°ÂÂÂ¼ ${ctCount} contact${ctCount>1?'s':''}</span>`);
     if(c.relationship_status)details.push(`<span class="c-detail-item" style="color:var(--g);font-weight:600">${esc(c.relationship_status)}</span>`);
     if(c.website)details.push(`<a class="c-detail-item" href="${safeUrl(c.website)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);text-decoration:none">${esc(c.website.replace(/^https?:\/\//i,''))}</a>`);
     if(c.updated_at)details.push(`<span class="c-detail-item" style="opacity:.55">${relTime(c.updated_at)}</span>`);
     const detailHtml=details.length?`<div class="c-detail">${details.join('<span class="c-detail-sep"></span>')}</div>`:'';
 
-    const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'â¦':(c.note||''));
+    const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'Ã¢ÂÂ¦':(c.note||''));
     const tagRow=coTags.length?`<div class="c-tags-row">${coTags.slice(0,6).map(t=>`<span class="c-tag-micro${S.activeTags.has(t)?' hit':''}" onclick="event.stopPropagation();toggleTag('${t}')">${t}</span>`).join('')}</div>`:'';
-    const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}')" title="${pct}% complete â click to research">â¦ enrich</span>`:'';
+    const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}')" title="${pct}% complete Ã¢ÂÂ click to research">Ã¢ÂÂ¦ enrich</span>`:'';
 
     return`<div class="c-row${sel}" data-slug="${slug}" onclick="openBySlug(this.dataset.slug)" oncontextmenu="showCtxSlug(event,this);return false;">
       <div class="c-av" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}33">${n}</div>
@@ -140,8 +140,8 @@ export function renderList(){
   }).join('');
 }
 
-/* âââ Company Detail Panel âââââââââââââââââââââââââââââââââââ */
-function ibToggle(id){const b=document.getElementById(id);if(!b)return;const closed=b.style.display==='none';b.style.display=closed?'':'none';const arrow=document.getElementById(id+'-arrow');if(arrow)arrow.textContent=closed?'â¾':'â¸';if(closed&&id==='ib-segments-body'&&b.querySelector('#ib-seg-loading'))mapSegments();if(closed&&id==='ib-email-body')_refreshEmailSection(window._currentEmailSlug);}
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Company Detail Panel Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+function ibToggle(id){const b=document.getElementById(id);if(!b)return;const closed=b.style.display==='none';b.style.display=closed?'':'none';const arrow=document.getElementById(id+'-arrow');if(arrow)arrow.textContent=closed?'Ã¢ÂÂ¾':'Ã¢ÂÂ¸';if(closed&&id==='ib-segments-body'&&b.querySelector('#ib-seg-loading'))mapSegments();if(closed&&id==='ib-email-body')_refreshEmailSection(window._currentEmailSlug);}
 window.ibToggle=ibToggle;
 
 export function openCompany(c){
@@ -162,35 +162,35 @@ export function openCompany(c){
     c.tcf_vendor_id&&['GVL/TCF',`<span style="color:var(--g)">${c.tcf_vendor_id}</span>`],
     c.dsps&&c.dsps.length&&['DSPs',esc((Array.isArray(c.dsps)?c.dsps:c.dsps.split(',')).join(', '))],
     c.company_number&&['#',`<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--t2)">#${c.company_number}</span>`],
-    c.data_richness!=null&&['Richness',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${'â'.repeat(Math.min(c.data_richness,11))}${'â'.repeat(Math.max(0,11-c.data_richness))}</span> <span style="color:var(--t3)">${c.data_richness}/11</span>`],
+    c.data_richness!=null&&['Richness',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${'Ã¢ÂÂ'.repeat(Math.min(c.data_richness,11))}${'Ã¢ÂÂ'.repeat(Math.max(0,11-c.data_richness))}</span> <span style="color:var(--t3)">${c.data_richness}/11</span>`],
     c.updated_at&&['Updated',new Date(c.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})],
     c.updated_by_name&&['Edited by',`<span style="color:var(--g)">${esc(c.updated_by_name)}</span>`],
     c.relationship_owner&&['Owner',`<span style="color:var(--poc)">${esc(c.relationship_owner)}</span>`]
   ].filter(Boolean);
 
   const links=[];
-  if(c.website)links.push(`<a href="${safeUrl(c.website)}" target="_blank" class="ib-fact-link" title="${esc(c.website.replace(/^https?:\/\//i,''))}">ð ${esc(c.website.replace(/^https?:\/\//i,''))}</a>`);
-  links.push(`<a href="https://www.linkedin.com/company/${liSlug}" target="_blank" class="ib-fact-link" title="LinkedIn company page">LI Company â</a>`);
-  links.push(`<a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" class="ib-fact-link" title="LinkedIn people search">LI People â</a>`);
-  if(c.website)links.push(`<a href="https://www.crunchbase.com/organization/${_slug(c.name)}" target="_blank" class="ib-fact-link" title="Crunchbase">Crunchbase â</a>`);
-  if(c.website)links.push(`<a href="${safeUrl(c.website)+'/privacy'}" target="_blank" class="ib-fact-link" title="Privacy policy">Privacy â</a>`);
-  links.push(`<a href="https://news.google.com/search?q=${encodeURIComponent(c.name)}" target="_blank" class="ib-fact-link" title="Google News">News â</a>`);
+  if(c.website)links.push(`<a href="${safeUrl(c.website)}" target="_blank" class="ib-fact-link" title="${esc(c.website.replace(/^https?:\/\//i,''))}">Ã°ÂÂÂ ${esc(c.website.replace(/^https?:\/\//i,''))}</a>`);
+  links.push(`<a href="https://www.linkedin.com/company/${liSlug}" target="_blank" class="ib-fact-link" title="LinkedIn company page">LI Company Ã¢ÂÂ</a>`);
+  links.push(`<a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" class="ib-fact-link" title="LinkedIn people search">LI People Ã¢ÂÂ</a>`);
+  if(c.website)links.push(`<a href="https://www.crunchbase.com/organization/${_slug(c.name)}" target="_blank" class="ib-fact-link" title="Crunchbase">Crunchbase Ã¢ÂÂ</a>`);
+  if(c.website)links.push(`<a href="${safeUrl(c.website)+'/privacy'}" target="_blank" class="ib-fact-link" title="Privacy policy">Privacy Ã¢ÂÂ</a>`);
+  links.push(`<a href="https://news.google.com/search?q=${encodeURIComponent(c.name)}" target="_blank" class="ib-fact-link" title="Google News">News Ã¢ÂÂ</a>`);
   const linksHtml=`<div class="ib-fact-links">${links.join('')}</div>`;
 
   const semnTags=getCoTags(c);const techArr=Array.isArray(c.tech_stack)?c.tech_stack:[];
   const signalHtml=[semnTags.length?`<span class="ib-sig-lbl">Signals</span>${semnTags.map(t=>`<span class="ib-sig-tag">${t}</span>`).join('')}`:'',semnTags.length&&techArr.length?'<span class="ib-sig-div"></span>':'',techArr.length?`<span class="ib-sig-lbl">Tech</span>${techArr.slice(0,8).map(t=>`<span class="ib-tech-pill">${esc(techName(t))}</span>`).join('')}`:''].filter(Boolean).join('');
 
   const coCts=S.contacts.filter(ct=>(ct.company_name||'').toLowerCase()===(c.name||"").toLowerCase());
-  const ctGridHtml=coCts.length?`<div class="ib-cts-grid">${coCts.map(ct=>{const a2=getAv(ct.full_name||''),n2=ini(ct.full_name||'');const ctSlug=ct.id||_slug(ct.full_name||'');return`<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}')"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg}">${n2}</div><div><div class="ib-ct-name">${ct.full_name||'â'}</div><div class="ib-ct-title">${ct.title||''}</div></div></div>${ct.email?`<div class="ib-ct-email">${ct.email}</div>`:''}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('email','${ctSlug}')">â Email</button>${ct.linkedin_url?`<button class="ib-ct-btn" onclick="event.stopPropagation();window.open('${ct.linkedin_url}','_blank')">LI â</button>`:''}<button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('research','${ctSlug}')">Research â</button>${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openClaudeGmail('draft',currentCompany,'${esc(ct.email)}','${esc(ct.full_name||'')}')">â Draft</button>`:''}${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openLemlistModal([{id:'${ctSlug}',email:'${esc(ct.email||'')}',name:'${esc(ct.full_name||'')}',company_name:'${esc(ct.company_name||'')}',title:'${esc(ct.title||'')}',linkedin:'${esc(ct.linkedin_url||'')}'}])">ð¤</button>`:''}</div></div>`;}).join('')}</div>`:`<div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;color:var(--t3)">No contacts stored</div><button class="ib-cta-btn" onclick="bgFindDMs()" style="margin-left:auto">â¨ Find DMs</button></div>`;
+  const ctGridHtml=coCts.length?`<div class="ib-cts-grid">${coCts.map(ct=>{const a2=getAv(ct.full_name||''),n2=ini(ct.full_name||'');const ctSlug=ct.id||_slug(ct.full_name||'');return`<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}')"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg}">${n2}</div><div><div class="ib-ct-name">${ct.full_name||'Ã¢ÂÂ'}</div><div class="ib-ct-title">${ct.title||''}</div></div></div>${ct.email?`<div class="ib-ct-email">${ct.email}</div>`:''}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('email','${ctSlug}')">Ã¢ÂÂ Email</button>${ct.linkedin_url?`<button class="ib-ct-btn" onclick="event.stopPropagation();window.open('${ct.linkedin_url}','_blank')">LI Ã¢ÂÂ</button>`:''}<button class="ib-ct-btn" onclick="event.stopPropagation();ctAction('research','${ctSlug}')">Research Ã¢ÂÂ</button>${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openClaudeGmail('draft',currentCompany,'${esc(ct.email)}','${esc(ct.full_name||'')}')">Ã¢ÂÂ Draft</button>`:''}${ct.email?`<button class="ib-ct-btn" onclick="event.stopPropagation();openLemlistModal([{id:'${ctSlug}',email:'${esc(ct.email||'')}',name:'${esc(ct.full_name||'')}',company_name:'${esc(ct.company_name||'')}',title:'${esc(ct.title||'')}',linkedin:'${esc(ct.linkedin_url||'')}'}])">Ã°ÂÂÂ¤</button>`:''}</div></div>`;}).join('')}</div>`:`<div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;color:var(--t3)">No contacts stored</div><button class="ib-cta-btn" onclick="bgFindDMs()" style="margin-left:auto">Ã¢ÂÂ¨ Find DMs</button></div>`;
 
   const prods=c.products?.products||[];
-  const prodsHtml=prods.length?prods.map(p=>`<div class="ib-prod-row"><div class="ib-prod-name">${p.name||''}</div><div class="ib-prod-desc">${p.description||''}${p.target_user?` <span style="color:var(--t3)">Â· ${p.target_user}</span>`:''}</div></div>`).join(''):'';
+  const prodsHtml=prods.length?prods.map(p=>`<div class="ib-prod-row"><div class="ib-prod-name">${p.name||''}</div><div class="ib-prod-desc">${p.description||''}${p.target_user?` <span style="color:var(--t3)">ÃÂ· ${p.target_user}</span>`:''}</div></div>`).join(''):'';
 
   let techBlock='';
   if(techArr.length){
     const cats={};techArr.forEach(t=>{const c2=techCat(t)||'Other';if(!cats[c2])cats[c2]=[];cats[c2].push(t);});
     techBlock=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--rule2)">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px">Tech Stack Â· ${techArr.length}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px">Tech Stack ÃÂ· ${techArr.length}</div>
       ${Object.entries(cats).map(([cat,items])=>`<div style="margin-bottom:6px">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:6px;text-transform:uppercase;letter-spacing:.05em;color:var(--t4);margin-bottom:3px">${esc(cat)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:2px">${items.map(t=>{
@@ -215,20 +215,20 @@ export function openCompany(c){
       purposeGrid='<div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:8px">'+[1,2,3,4,5,6,7,8,9,10].map(id=>{
         const inC=co.indexOf(id)!==-1,inLI=li.indexOf(id)!==-1;
         const bg=inC?'#4ADE80':inLI?'#F87171':'var(--surf4)';
-        const label=inC?'Consent':inLI?'Leg.Int.':'â';
+        const label=inC?'Consent':inLI?'Leg.Int.':'Ã¢ÂÂ';
         return`<span title="P${id}: ${pLabels[id]} (${label})" style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;cursor:default"><span style="display:block;width:14px;height:10px;border-radius:1px;background:${bg}"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--t3)">${id}</span></span>`;
       }).join('')+'</div><div style="display:flex;gap:8px;margin-bottom:8px;font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:var(--t3)"><span><span style="display:inline-block;width:8px;height:6px;border-radius:1px;background:#4ADE80;margin-right:2px"></span>Consent</span><span><span style="display:inline-block;width:8px;height:6px;border-radius:1px;background:#F87171;margin-right:2px"></span>Leg. Interest</span><span><span style="display:inline-block;width:8px;height:6px;border-radius:1px;background:var(--surf4);margin-right:2px"></span>Not declared</span></div>';
     }else if(c.tcf_vendor_id&&!vendor&&gvl){
       purposeGrid='<div style="font-size:10px;color:var(--t3);margin-bottom:8px">GVL ID '+c.tcf_vendor_id+' not found in vendor list</div>';
     }else if(c.tcf_vendor_id&&!gvl){
-      purposeGrid='<div style="font-size:10px;color:var(--t3);margin-bottom:8px">GVL loadingâ¦ <span style="cursor:pointer;color:var(--g)" onclick="loadGVL().then(()=>openCompany(currentCompany))">âº retry</span></div>';
+      purposeGrid='<div style="font-size:10px;color:var(--t3);margin-bottom:8px">GVL loadingÃ¢ÂÂ¦ <span style="cursor:pointer;color:var(--g)" onclick="loadGVL().then(()=>openCompany(currentCompany))">Ã¢ÂÂº retry</span></div>';
     }
     const tagPills=semnTags.length?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--rule2)"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:5px">Tags</div><div style="display:flex;flex-wrap:wrap;gap:3px">'+semnTags.map(t=>`<span class="ib-sig-tag">${t}</span>`).join('')+'</div></div>':'';
-    privacyHtml=`<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-privacy-body')"><span id="ib-privacy-body-arrow" style="font-size:9px;color:var(--t3)">â¾</span><span class="ib-sh-lbl">ð¡ï¸ Privacy / TCF / CCPA</span>${c.tcf_vendor_id?`<span class="tag tc" style="cursor:default;margin-left:4px">GVL ${c.tcf_vendor_id}</span>`:'<span class="tag tn" style="cursor:default;margin-left:4px">No GVL</span>'}<span class="ib-sh-act" onclick="event.stopPropagation();switchTab('tcf')">TCF Analyser â</span></div><div class="ib-body" id="ib-privacy-body">${purposeGrid}<table class="ib-facts">${c.tcf_vendor_id?`<tr><td>TCF v2.0</td><td>Vendor ID ${c.tcf_vendor_id} â registered in IAB GVL</td></tr>`:''}<tr><td>GDPR</td><td>${c.tcf_vendor_id?'TCF certified â consent-based processing':'No TCF registration found'}</td></tr><tr><td>CCPA</td><td>${c.website?`Check <a href="${safeUrl(c.website)+'/privacy'}" target="_blank" style="color:var(--g)">privacy policy â</a> for CCPA/CPRA disclosures`:'Unknown â no website stored'}</td></tr></table>${tagPills}</div></div>`;
+    privacyHtml=`<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-privacy-body')"><span id="ib-privacy-body-arrow" style="font-size:9px;color:var(--t3)">Ã¢ÂÂ¾</span><span class="ib-sh-lbl">Ã°ÂÂÂ¡Ã¯Â¸Â Privacy / TCF / CCPA</span>${c.tcf_vendor_id?`<span class="tag tc" style="cursor:default;margin-left:4px">GVL ${c.tcf_vendor_id}</span>`:'<span class="tag tn" style="cursor:default;margin-left:4px">No GVL</span>'}<span class="ib-sh-act" onclick="event.stopPropagation();switchTab('tcf')">TCF Analyser Ã¢ÂÂ</span></div><div class="ib-body" id="ib-privacy-body">${purposeGrid}<table class="ib-facts">${c.tcf_vendor_id?`<tr><td>TCF v2.0</td><td>Vendor ID ${c.tcf_vendor_id} Ã¢ÂÂ registered in IAB GVL</td></tr>`:''}<tr><td>GDPR</td><td>${c.tcf_vendor_id?'TCF certified Ã¢ÂÂ consent-based processing':'No TCF registration found'}</td></tr><tr><td>CCPA</td><td>${c.website?`Check <a href="${safeUrl(c.website)+'/privacy'}" target="_blank" style="color:var(--g)">privacy policy Ã¢ÂÂ</a> for CCPA/CPRA disclosures`:'Unknown Ã¢ÂÂ no website stored'}</td></tr></table>${tagPills}</div></div>`;
   }
 
   const sec=(id,icon,label,body,extra,startOpen)=>{
-    const arrow=startOpen!==false?'â¾':'â¸';
+    const arrow=startOpen!==false?'Ã¢ÂÂ¾':'Ã¢ÂÂ¸';
     const disp=startOpen!==false?'':'display:none';
     return`<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('${id}')"><span id="${id}-arrow" style="font-size:9px;color:var(--t3)">${arrow}</span><span class="ib-sh-lbl">${icon} ${label}</span>${extra||''}</div><div class="ib-body" id="${id}" style="${disp}">${body}</div></div>`;
   };
@@ -236,9 +236,9 @@ export function openCompany(c){
   // System audience membership chips
   const _sysMap={client:'Clients',partner:'Partners',nogo:'NoOutreach'};
   const _coSlug=esc(c.id||_slug(c.name));
-  const _memberChip=_sysMap[c.type]?`<span class="sys-chip" onclick="sysCoSetType('${_coSlug}','prospect')" title="Remove from ${_sysMap[c.type]}">â ${_sysMap[c.type]} â</span>`:'';
+  const _memberChip=_sysMap[c.type]?`<span class="sys-chip" onclick="sysCoSetType('${_coSlug}','prospect')" title="Remove from ${_sysMap[c.type]}">Ã¢ÂÂ ${_sysMap[c.type]} Ã¢ÂÂ</span>`:'';
   const _addOpts=Object.entries(_sysMap).filter(([t])=>t!==c.type).map(([t,l])=>`<div class="sys-dd-item" onclick="sysCoSetType('${_coSlug}','${t}')">${l}</div>`).join('');
-  const sysSection=`<div class="ib-sys-row">${_memberChip}<div style="position:relative;display:inline-block"><span class="sys-chip sys-chip-add" onclick="this.nextElementSibling.classList.toggle('open')">+ List â¾</span><div class="sys-dd">${_addOpts}</div></div></div>`;
+  const sysSection=`<div class="ib-sys-row">${_memberChip}<div style="position:relative;display:inline-block"><span class="sys-chip sys-chip-add" onclick="this.nextElementSibling.classList.toggle('open')">+ List Ã¢ÂÂ¾</span><div class="sys-dd">${_addOpts}</div></div></div>`;
 
   const _rs=c.relationship_status||'';
   const _statusBtns=['Contacted','Meeting','Proposal','Partner','Paused'].map(s=>`<button class="btn sm${_rs===s?' on':''}" onclick="setCompanyStatus('${_coSlug}','${s}')">${s}</button>`).join('');
@@ -247,35 +247,35 @@ export function openCompany(c){
   window._currentEmailSlug=slug;
 
   panel.innerHTML=`<div class="ib">
-<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">â</div></div>
-<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">â Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">ð¤ Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">ð¡ Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">ð° Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">ð Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn â</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">â Merge</button><button class="btn sm" onclick="openClaudeGmail('history',currentCompany)">ð¬ Gmail History</button>${coCts.length?`<button class="btn sm" onclick="openClaudeGmail('draft',currentCompany,${JSON.stringify(coCts[0]?.email||'')},${JSON.stringify(coCts[0]?.full_name||'')})">â Draft Email</button>`:''}</div>
+<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">Ã¢ÂÂ</div></div>
+<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">Ã¢ÂÂ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">Ã°ÂÂÂ¤ Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">Ã°ÂÂÂ¡ Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">Ã°ÂÂÂ° Refresh News</button><button class="ib-cta-btn" onclick="coAction('similar')">Ã°ÂÂÂ Find Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn Ã¢ÂÂ</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">Ã¢ÂÂ Merge</button><button class="btn sm" onclick="openClaudeGmail('history',currentCompany)">Ã°ÂÂÂ¬ Gmail History</button>${coCts.length?`<button class="btn sm" onclick="openClaudeGmail('draft',currentCompany,${JSON.stringify(coCts[0]?.email||'')},${JSON.stringify(coCts[0]?.full_name||'')})">Ã¢ÂÂ Draft Email</button>`:''}</div>
 <div class="ib-status-bar"><span class="ib-status-lbl">&#127991; Mark as:</span>${_statusBtns}</div>
 <div class="ib-top">
-  ${sec('ib-company','ð¢','Company',
+  ${sec('ib-company','Ã°ÂÂÂ¢','Company',
     (facts.length?`<table class="ib-facts">${facts.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`:'<span style="font-size:11px;color:var(--t3)">No details stored</span>')+linksHtml+(c.description?`<div class="ib-desc">${c.description}</div>`:''),
     null,true)}
-  <div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-angle-wrap')"><span id="ib-angle-wrap-arrow" style="font-size:9px;color:var(--t3)">â¾</span><span class="ib-sh-lbl">ð¡ Outreach Angle</span><span class="ib-sh-act" id="ib-angle-btn" onclick="event.stopPropagation();bgGenerateAngle()">${c.outreach_angle?'âº Regen':'â¨ Generate'}</span></div><div class="ib-body" id="ib-angle-wrap" style="padding:0"><div class="ib-angle${c.outreach_angle?'':' empty'}" id="ib-angle-card" style="border:none;border-radius:0;min-height:60px"><div class="ib-angle-lbl">${c.outreach_angle?'Recommended positioning':'No angle stored yet'}</div>${c.outreach_angle?`<div class="ib-angle-text">${c.outreach_angle}</div>`:`<div class="ib-angle-text" style="color:var(--t3);font-size:10px">Click "â¨ Generate" to create a personalised positioning.</div>`}</div>${techBlock}${integBlock}</div></div>
+  <div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-angle-wrap')"><span id="ib-angle-wrap-arrow" style="font-size:9px;color:var(--t3)">Ã¢ÂÂ¾</span><span class="ib-sh-lbl">Ã°ÂÂÂ¡ Outreach Angle</span><span class="ib-sh-act" id="ib-angle-btn" onclick="event.stopPropagation();bgGenerateAngle()">${c.outreach_angle?'Ã¢ÂÂº Regen':'Ã¢ÂÂ¨ Generate'}</span></div><div class="ib-body" id="ib-angle-wrap" style="padding:0"><div class="ib-angle${c.outreach_angle?'':' empty'}" id="ib-angle-card" style="border:none;border-radius:0;min-height:60px"><div class="ib-angle-lbl">${c.outreach_angle?'Recommended positioning':'No angle stored yet'}</div>${c.outreach_angle?`<div class="ib-angle-text">${c.outreach_angle}</div>`:`<div class="ib-angle-text" style="color:var(--t3);font-size:10px">Click "Ã¢ÂÂ¨ Generate" to create a personalised positioning.</div>`}</div>${techBlock}${integBlock}</div></div>
 </div>
 ${signalHtml?`<div class="ib-sec"><div class="ib-signals">${signalHtml}</div></div>`:''}
 ${privacyHtml}
-${sec('ib-ct-body','ð¤','Contacts',ctGridHtml,
-  `${coCts.length?`<span class="ib-sh-cnt">${coCts.length}</span>`:''}<span class="ib-sh-act" onclick="event.stopPropagation();bgFindDMs()">â¨ Find DMs</span>`,true)}
-${sec('ib-intel-body','ð°','Intelligence','<div class="ib-loading">Loadingâ¦</div>',
-  `<span class="ib-sh-cnt" id="ib-intel-cnt"></span><span id="ib-intel-live" style="display:none" class="live-label"><span class="live-dot"></span>Live</span><span class="ib-sh-act" id="ib-intel-refresh" onclick="event.stopPropagation();bgRefreshIntel()">âº Refresh</span>`,false)}
-${sec('ib-email-body','ð§','Email History',_getEmailSectionHTML(slug,c.name),``,false)}
-${prodsHtml?sec('ib-prods-body','ð¦','Products',prodsHtml,`<span class="ib-sh-cnt">${prods.length}</span>`,false):''}
-${sec('ib-segments-body','ð¯','Segment Mapper','<div class="ib-loading" id="ib-seg-loading">Loading taxonomyâ¦</div>',
-  `<span class="ib-sh-cnt" id="ib-seg-cnt"></span><span class="ib-sh-act" onclick="event.stopPropagation();mapSegments()">âº Remap</span>`,false)}
-${sec('ib-rels-body','ð','Relations','<div class="ib-loading">Loadingâ¦</div>',
-  `<span class="ib-sh-cnt" id="ib-rels-cnt"></span><span class="ib-sh-act" id="ib-rels-refresh" onclick="event.stopPropagation();loadRelationsBrief(_slug('${c.name.replace(/'/g,"\\'")}'),true)">âº Refresh</span>`,true)}
-<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-links-body')"><span id="ib-links-body-arrow" style="font-size:9px;color:var(--t3)">â¾</span><span class="ib-sh-lbl">ð Quick Links</span></div><div class="ib-links" id="ib-links-body"><a class="ib-link" href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank">LI People â</a><a class="ib-link" href="https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(c.name)}" target="_blank">LI Company â</a>${c.website?`<a class="ib-link" href="${safeUrl(c.website)}" target="_blank">${c.website.replace(/^https?:\/\//i,'')} â</a>`:''}<a class="ib-link" href="https://news.google.com/search?q=${encodeURIComponent(c.name)}" target="_blank">Google News â</a><span class="ib-link" onclick="coAction('gmail')">Gmail History</span></div></div>
+${sec('ib-ct-body','Ã°ÂÂÂ¤','Contacts',ctGridHtml,
+  `${coCts.length?`<span class="ib-sh-cnt">${coCts.length}</span>`:''}<span class="ib-sh-act" onclick="event.stopPropagation();bgFindDMs()">Ã¢ÂÂ¨ Find DMs</span>`,true)}
+${sec('ib-intel-body','Ã°ÂÂÂ°','Intelligence','<div class="ib-loading">LoadingÃ¢ÂÂ¦</div>',
+  `<span class="ib-sh-cnt" id="ib-intel-cnt"></span><span id="ib-intel-live" style="display:none" class="live-label"><span class="live-dot"></span>Live</span><span class="ib-sh-act" id="ib-intel-refresh" onclick="event.stopPropagation();bgRefreshIntel()">Ã¢ÂÂº Refresh</span>`,false)}
+${sec('ib-email-body','Ã°ÂÂÂ§','Email History',_getEmailSectionHTML(slug,c.name),``,false)}
+${prodsHtml?sec('ib-prods-body','Ã°ÂÂÂ¦','Products',prodsHtml,`<span class="ib-sh-cnt">${prods.length}</span>`,false):''}
+${sec('ib-segments-body','Ã°ÂÂÂ¯','Segment Mapper','<div class="ib-loading" id="ib-seg-loading">Loading taxonomyÃ¢ÂÂ¦</div>',
+  `<span class="ib-sh-cnt" id="ib-seg-cnt"></span><span class="ib-sh-act" onclick="event.stopPropagation();mapSegments()">Ã¢ÂÂº Remap</span>`,false)}
+${sec('ib-rels-body','Ã°ÂÂÂ','Relations','<div class="ib-loading">LoadingÃ¢ÂÂ¦</div>',
+  `<span class="ib-sh-cnt" id="ib-rels-cnt"></span><span class="ib-sh-act" id="ib-rels-refresh" onclick="event.stopPropagation();loadRelationsBrief(_slug('${c.name.replace(/'/g,"\\'")}'),true)">Ã¢ÂÂº Refresh</span>`,true)}
+<div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-links-body')"><span id="ib-links-body-arrow" style="font-size:9px;color:var(--t3)">Ã¢ÂÂ¾</span><span class="ib-sh-lbl">Ã°ÂÂÂ Quick Links</span></div><div class="ib-links" id="ib-links-body"><a class="ib-link" href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank">LI People Ã¢ÂÂ</a><a class="ib-link" href="https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(c.name)}" target="_blank">LI Company Ã¢ÂÂ</a>${c.website?`<a class="ib-link" href="${safeUrl(c.website)}" target="_blank">${c.website.replace(/^https?:\/\//i,'')} Ã¢ÂÂ</a>`:''}<a class="ib-link" href="https://news.google.com/search?q=${encodeURIComponent(c.name)}" target="_blank">Google News Ã¢ÂÂ</a><span class="ib-link" onclick="coAction('gmail')">Gmail History</span></div></div>
 </div>`;
   renderList();document.getElementById('centerScroll').scrollTop=0;
   if(c.name){setTimeout(()=>loadRelationsBrief(slug),60);setTimeout(()=>loadIntelligence(slug,c.name),80);}
 }
 export function closePanel(){S.currentCompany=null;window.currentCompany=null;document.getElementById('coPanel').style.display='none';document.getElementById('emptyState').style.display='flex';const _ap2=document.getElementById('audiencesPanel');if(_ap2&&_ap2.style.display!=='flex')_ap2.style.display='none';renderList();}
 
-/* âââ Actions ââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Actions Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function coAction(a){
   const c=S.currentCompany;if(!c)return;const n=c.name;
   if(a==='report'){promptResearch();}
@@ -294,7 +294,7 @@ export function openClaudeGmail(type, company, contactEmail, contactName) {
     const domain = company.website
       ? company.website.replace(/^https?:\/\//i,'').split('/')[0]
       : (company.name||'').toLowerCase().replace(/\s+/g,'') + '.com';
-    prompt = `Check Gmail for existing contact history with ${company.name} (domain: ${domain}). Show: relationship score (ð¥/â»ï¸/ð¡ï¸/ð§), contacts found with titles and emails, last thread date, topic and outcome, and who from onAudience owns the relationship. Cross-reference any found contacts against web to verify current roles.`;
+    prompt = `Check Gmail for existing contact history with ${company.name} (domain: ${domain}). Show: relationship score (Ã°ÂÂÂ¥/Ã¢ÂÂ»Ã¯Â¸Â/Ã°ÂÂÂ¡Ã¯Â¸Â/Ã°ÂÂ§Â), contacts found with titles and emails, last thread date, topic and outcome, and who from onAudience owns the relationship. Cross-reference any found contacts against web to verify current roles.`;
   } else if (type === 'draft') {
     const techStack = (company.tech_stack||[]).map(t=>t.tool||t).filter(Boolean).join(', ');
     prompt = `Draft a cold outreach email to ${contactName||'the recipient'} <${contactEmail||''}> at ${company.name}. Company: ${company.description||''}. Category: ${company.category||''}. ICP score: ${company.icp||''}. Outreach angle: ${company.outreach_angle||'data partnership'}. Tech stack: ${techStack}. Keep it under 150 words, specific hook, one clear value prop. Then use Gmail connector to save it as a draft.`;
@@ -312,7 +312,7 @@ export async function setCompanyStatus(id,status){
   // toggle .on on status bar buttons
   document.querySelectorAll('.ib-status-bar .btn').forEach(b=>{b.classList.toggle('on',b.textContent===status);});
   renderList();
-  clog('db',`Status set: <b>${esc(co.name)}</b> â ${esc(status)}`);
+  clog('db',`Status set: <b>${esc(co.name)}</b> Ã¢ÂÂ ${esc(status)}`);
   await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({relationship_status:status})}).catch(e=>clog('db',`Status PATCH error: ${esc(e.message)}`));
 }
 
@@ -322,13 +322,13 @@ export function ctAction(action,ctSlug){
   if(action==='research')openDrawer(ctSlug);
 }
 
-/* âââ BG Generate Angle ââââââââââââââââââââââââââââââââââââââ */
-export async function bgGenerateAngle(){const c=S.currentCompany;if(!c)return;const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">â¦ Generatingâ¦</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:'You are a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3â5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">â generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='âº Regen';btn.style.display='';}await fetch(`${SB_URL}/rest/v1/companies?name=eq.${encodeURIComponent(c.name)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({outreach_angle:angle})}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error â ${e.message}</span></div>`;if(btn){btn.textContent='âº Retry';btn.style.display='';}}}
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ BG Generate Angle Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+export async function bgGenerateAngle(){const c=S.currentCompany;if(!c)return;const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">Ã¢ÂÂ¦ GeneratingÃ¢ÂÂ¦</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:'You are a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3Ã¢ÂÂ5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">Ã¢ÂÂ generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='Ã¢ÂÂº Regen';btn.style.display='';}await fetch(`${SB_URL}/rest/v1/companies?name=eq.${encodeURIComponent(c.name)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({outreach_angle:angle})}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error Ã¢ÂÂ ${e.message}</span></div>`;if(btn){btn.textContent='Ã¢ÂÂº Retry';btn.style.display='';}}}
 
-/* âââ BG Find DMs (Opus + web_search â zero hallucination) âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ BG Find DMs (Opus + web_search Ã¢ÂÂ zero hallucination) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 const FIND_DMS_SYSTEM=`You are a B2B sales researcher finding REAL decision makers and outreach signals for data partnership outreach.
 
-CRITICAL RULES â ABSOLUTE:
+CRITICAL RULES Ã¢ÂÂ ABSOLUTE:
 1. ONLY return people you have VERIFIED via web search. Use the web_search tool to find real LinkedIn profiles, company team pages, press releases, and conference speakers.
 2. NEVER invent names. NEVER guess titles. If web search returns no results for a company's team, return an EMPTY contacts array [].
 3. Every person you return MUST have appeared in at least one web search result. Include the source URL.
@@ -336,15 +336,15 @@ CRITICAL RULES â ABSOLUTE:
    If you cannot find a real LinkedIn URL, set linkedin_url to "" (empty string).
 5. Uncertainty is ALWAYS better than fiction. Return fewer verified people rather than more guessed ones.
 
-ALSO EXTRACT outreach signals â things a sales person would care about:
+ALSO EXTRACT outreach signals Ã¢ÂÂ things a sales person would care about:
 - Hiring for data/programmatic/partnership roles (buying_signal)
 - New leadership hires or departures (org_change)
-- Technology adoption/migration â new DSP, CDP, identity solution (tech_change)
+- Technology adoption/migration Ã¢ÂÂ new DSP, CDP, identity solution (tech_change)
 - Conference appearances, speaking, panel participation (event)
 - Existing data partnerships with competitors (competitive_intel)
 - Funding rounds, expansion, new market entry (timing_signal)
 
-RESPONSE FORMAT â raw JSON object, no markdown:
+RESPONSE FORMAT Ã¢ÂÂ raw JSON object, no markdown:
 {
   "contacts": [{"full_name":"string","title":"string","linkedin_url":"string","source_url":"string","confidence":"verified|probable","reason":"string"}],
   "signals": [{"signal_type":"buying_signal|org_change|tech_change|event|competitive_intel|timing_signal","title":"string (short)","detail":"string (1-2 sentences)","source_url":"string","confidence":"verified|probable","relevance":1-5}]
@@ -365,8 +365,8 @@ Search strategy for signals:
 export async function bgFindDMs(){
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-ct-body');if(!body)return;
-  body.innerHTML=`<div class="ib-loading" style="text-align:left"><span class="bg-running">ð Researching</span> decision makers at ${esc(c.name)}â¦<br><span style="font-size:8px;color:var(--t4);animation:none">Using Opus + web search â this takes 15â30s</span></div>`;
-  clog('ai',`ð Finding DMs at <b>${esc(c.name)}</b> (Opus + web search)`);
+  body.innerHTML=`<div class="ib-loading" style="text-align:left"><span class="bg-running">Ã°ÂÂÂ Researching</span> decision makers at ${esc(c.name)}Ã¢ÂÂ¦<br><span style="font-size:8px;color:var(--t4);animation:none">Using Opus + web search Ã¢ÂÂ this takes 15Ã¢ÂÂ30s</span></div>`;
+  clog('ai',`Ã°ÂÂÂ Finding DMs at <b>${esc(c.name)}</b> (Opus + web search)`);
   const tags=getCoTags(c).join(', ');
   const slug=_slug(c.name);
   try{
@@ -375,7 +375,7 @@ export async function bgFindDMs(){
       max_tokens:2000,
       system:FIND_DMS_SYSTEM,
       tools:[{type:'web_search_20250305',name:'web_search',max_uses:8}],
-      messages:[{role:'user',content:`Find 3â5 REAL decision makers AND outreach signals at ${c.name} (${c.category||'ad tech'}, ${c.website||'no website'}) relevant for data partnership discussions with onAudience.\nFocus: Head/VP/Director of Programmatic, Data Partnerships, Product, Revenue, or Platform.\nCompany context: ${c.note||'none'}\nCompany description: ${(c.description||'').slice(0,200)}\nSignals: ${tags||'none'}\n\nUse web search to find REAL people and signals. Return empty arrays if you can't verify anything.`}]
+      messages:[{role:'user',content:`Find 3Ã¢ÂÂ5 REAL decision makers AND outreach signals at ${c.name} (${c.category||'ad tech'}, ${c.website||'no website'}) relevant for data partnership discussions with onAudience.\nFocus: Head/VP/Director of Programmatic, Data Partnerships, Product, Revenue, or Platform.\nCompany context: ${c.note||'none'}\nCompany description: ${(c.description||'').slice(0,200)}\nSignals: ${tags||'none'}\n\nUse web search to find REAL people and signals. Return empty arrays if you can't verify anything.`}]
     });
     const textBlocks=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
     let dms=[],signals=[];
@@ -390,38 +390,38 @@ export async function bgFindDMs(){
       for(const r of rows){const days=expiry[r.signal_type]||60;fetch(`${SB_URL}/rest/v1/outreach_signals`,{method:'POST',headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({...r,expires_at:new Date(Date.now()+days*86400000).toISOString()})}).catch(()=>{});}
       clog('db',`Stored <b>${rows.length}</b> outreach signals for ${esc(c.name)}`);
     }
-    clog('ai',`â Found <b>${dms.length}</b> contacts + <b>${signals.length}</b> signals at ${esc(c.name)} (${dms.filter(d=>d.confidence==='verified').length} verified)`);
+    clog('ai',`Ã¢ÂÂ Found <b>${dms.length}</b> contacts + <b>${signals.length}</b> signals at ${esc(c.name)} (${dms.filter(d=>d.confidence==='verified').length} verified)`);
     const contactsHtml=dms.length?`
       <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;align-items:center;gap:5px">
-        <span style="color:var(--g)">â Web-verified</span><span style="color:var(--t4)">Â·</span>
-        <span style="color:var(--t3);font-weight:400">Opus + search Â· ${dms.length} found</span>
+        <span style="color:var(--g)">Ã¢ÂÂ Web-verified</span><span style="color:var(--t4)">ÃÂ·</span>
+        <span style="color:var(--t3);font-weight:400">Opus + search ÃÂ· ${dms.length} found</span>
       </div>
       <div class="ib-cts-grid">${dms.map(dm=>{
         const a2=getAv(dm.full_name||''),n2=ini(dm.full_name||'');
         const confBadge=dm.confidence==='verified'?'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;color:var(--cc);border:1px solid var(--cr);background:var(--cb);border-radius:2px;padding:0 3px;margin-left:3px">VERIFIED</span>':'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;color:var(--prc);border:1px solid var(--prr);background:var(--prb);border-radius:2px;padding:0 3px;margin-left:3px">PROBABLE</span>';
-        const srcLink=dm.source_url?`<a href="${dm.source_url}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--g);text-decoration:none;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">source â</a>`:'';
-        return`<div class="ib-ct"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg};border:1px solid ${a2.fg}33">${n2}</div><div><div class="ib-ct-name">${esc(dm.full_name)}${confBadge}</div><div class="ib-ct-title">${esc(dm.title)}</div></div></div><div style="font-size:10px;color:var(--t3);margin:3px 0 4px;line-height:1.4">${esc(dm.reason||'')}</div>${srcLink}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="openComposer({company:'${c.name.replace(/'/g,'&apos;')}',contactName:'${(dm.full_name||'').replace(/'/g,'&apos;')}',contactTitle:'${(dm.title||'').replace(/'/g,'&apos;')}',angle:'${(c.outreach_angle||'').replace(/'/g,'&apos;').slice(0,100)}',description:'${(c.description||'').replace(/'/g,'&apos;').slice(0,100)}'})">â Email</button>${dm.linkedin_url?`<a class="ib-ct-btn" href="${dm.linkedin_url}" target="_blank">LI â</a>`:`<a class="ib-ct-btn" href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(dm.full_name+' '+c.name)}" target="_blank">LI Search â</a>`}<button class="ib-ct-btn" onclick="aiQuick('${esc(dm.full_name)} ${esc(c.name)}')">Research â</button></div></div>`;
+        const srcLink=dm.source_url?`<a href="${dm.source_url}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--g);text-decoration:none;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">source Ã¢ÂÂ</a>`:'';
+        return`<div class="ib-ct"><div class="ib-ct-top"><div class="ib-ct-av" style="background:${a2.bg};color:${a2.fg};border:1px solid ${a2.fg}33">${n2}</div><div><div class="ib-ct-name">${esc(dm.full_name)}${confBadge}</div><div class="ib-ct-title">${esc(dm.title)}</div></div></div><div style="font-size:10px;color:var(--t3);margin:3px 0 4px;line-height:1.4">${esc(dm.reason||'')}</div>${srcLink}<div class="ib-ct-actions"><button class="ib-ct-btn" onclick="openComposer({company:'${c.name.replace(/'/g,'&apos;')}',contactName:'${(dm.full_name||'').replace(/'/g,'&apos;')}',contactTitle:'${(dm.title||'').replace(/'/g,'&apos;')}',angle:'${(c.outreach_angle||'').replace(/'/g,'&apos;').slice(0,100)}',description:'${(c.description||'').replace(/'/g,'&apos;').slice(0,100)}'})">Ã¢ÂÂ Email</button>${dm.linkedin_url?`<a class="ib-ct-btn" href="${dm.linkedin_url}" target="_blank">LI Ã¢ÂÂ</a>`:`<a class="ib-ct-btn" href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(dm.full_name+' '+c.name)}" target="_blank">LI Search Ã¢ÂÂ</a>`}<button class="ib-ct-btn" onclick="aiQuick('${esc(dm.full_name)} ${esc(c.name)}')">Research Ã¢ÂÂ</button></div></div>`;
       }).join('')}</div>`:'<div style="font-size:11px;color:var(--t3)">No contacts verified via web search</div>';
-    const sigIcons={buying_signal:'ð¯',org_change:'ð¤',tech_change:'âï¸',event:'ð¤',competitive_intel:'ð',timing_signal:'â±ï¸'};
+    const sigIcons={buying_signal:'Ã°ÂÂÂ¯',org_change:'Ã°ÂÂÂ¤',tech_change:'Ã¢ÂÂÃ¯Â¸Â',event:'Ã°ÂÂÂ¤',competitive_intel:'Ã°ÂÂÂ',timing_signal:'Ã¢ÂÂ±Ã¯Â¸Â'};
     const sigLabels={buying_signal:'Buying Signal',org_change:'Org Change',tech_change:'Tech Change',event:'Event',competitive_intel:'Competitive',timing_signal:'Timing'};
-    const signalsHtml=signals.length?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)"><div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--poc);margin-bottom:6px">â¡ Outreach Signals Â· ${signals.length}</div>${signals.map(s=>{const icon=sigIcons[s.signal_type]||'ð';const label=sigLabels[s.signal_type]||s.signal_type;const relBar='â'.repeat(Math.min(5,s.relevance||3))+'â'.repeat(5-Math.min(5,s.relevance||3));return`<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid var(--rule3);font-family:'IBM Plex Mono',monospace;font-size:9px"><span style="flex-shrink:0">${icon}</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="font-size:6px;text-transform:uppercase;letter-spacing:.05em;padding:1px 4px;border-radius:2px;background:var(--pob);color:var(--poc);border:1px solid var(--por)">${label}</span><span style="font-size:7px;color:var(--t4);letter-spacing:.05em">${relBar}</span>${s.confidence==='verified'?'<span style="font-size:6px;color:var(--cc);border:1px solid var(--cr);background:var(--cb);border-radius:2px;padding:0 3px">â</span>':''}</div><div style="color:var(--t1);font-weight:500">${esc(s.title)}</div>${s.detail?`<div style="color:var(--t3);font-size:8px;margin-top:1px">${esc(s.detail)}</div>`:''}${s.source_url?`<a href="${s.source_url}" target="_blank" style="color:var(--g);font-size:7px;text-decoration:none">source â</a>`:''}</div></div>`;}).join('')}</div>`:'';
+    const signalsHtml=signals.length?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)"><div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--poc);margin-bottom:6px">Ã¢ÂÂ¡ Outreach Signals ÃÂ· ${signals.length}</div>${signals.map(s=>{const icon=sigIcons[s.signal_type]||'Ã°ÂÂÂ';const label=sigLabels[s.signal_type]||s.signal_type;const relBar='Ã¢ÂÂ'.repeat(Math.min(5,s.relevance||3))+'Ã¢ÂÂ'.repeat(5-Math.min(5,s.relevance||3));return`<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid var(--rule3);font-family:'IBM Plex Mono',monospace;font-size:9px"><span style="flex-shrink:0">${icon}</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="font-size:6px;text-transform:uppercase;letter-spacing:.05em;padding:1px 4px;border-radius:2px;background:var(--pob);color:var(--poc);border:1px solid var(--por)">${label}</span><span style="font-size:7px;color:var(--t4);letter-spacing:.05em">${relBar}</span>${s.confidence==='verified'?'<span style="font-size:6px;color:var(--cc);border:1px solid var(--cr);background:var(--cb);border-radius:2px;padding:0 3px">Ã¢ÂÂ</span>':''}</div><div style="color:var(--t1);font-weight:500">${esc(s.title)}</div>${s.detail?`<div style="color:var(--t3);font-size:8px;margin-top:1px">${esc(s.detail)}</div>`:''}${s.source_url?`<a href="${s.source_url}" target="_blank" style="color:var(--g);font-size:7px;text-decoration:none">source Ã¢ÂÂ</a>`:''}</div></div>`;}).join('')}</div>`:'';
     body.innerHTML=contactsHtml+signalsHtml;
-    if(!dms.length&&signals.length){body.innerHTML=`<div style="font-size:11px;color:var(--t3);margin-bottom:8px">No contacts verified â <a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" style="color:var(--g)">Manual LI search â</a></div>`+signalsHtml;}
+    if(!dms.length&&signals.length){body.innerHTML=`<div style="font-size:11px;color:var(--t3);margin-bottom:8px">No contacts verified Ã¢ÂÂ <a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" style="color:var(--g)">Manual LI search Ã¢ÂÂ</a></div>`+signalsHtml;}
   }catch(e){
-    clog('ai',`â DM search failed for ${esc(c.name)}: ${esc(e.message)}`);
-    body.innerHTML=`<div style="font-size:11px;color:var(--t3)"><span class="bg-err">Error</span> ${esc(e.message)}<div style="margin-top:6px;display:flex;gap:4px"><span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="bgFindDMs()">âº retry with Opus</span><span style="color:var(--t4)">Â·</span><a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" style="color:var(--g)">Manual LI search â</a></div></div>`;
+    clog('ai',`Ã¢ÂÂ DM search failed for ${esc(c.name)}: ${esc(e.message)}`);
+    body.innerHTML=`<div style="font-size:11px;color:var(--t3)"><span class="bg-err">Error</span> ${esc(e.message)}<div style="margin-top:6px;display:flex;gap:4px"><span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="bgFindDMs()">Ã¢ÂÂº retry with Opus</span><span style="color:var(--t4)">ÃÂ·</span><a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank" style="color:var(--g)">Manual LI search Ã¢ÂÂ</a></div></div>`;
   }
 }
 
-/* âââ Company Resolver â 4-tier fuzzy matching ââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Company Resolver Ã¢ÂÂ 4-tier fuzzy matching Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    Resolves a raw company name string to an existing companies.id.
    Tiers (in order, returns first hit):
-     1. Exact slug match            "The Trade Desk" â "the-trade-desk" â
+     1. Exact slug match            "The Trade Desk" Ã¢ÂÂ "the-trade-desk" Ã¢ÂÂ
      2. Normalized token match      strip legal suffixes, punctuation
-     3. Prefix match (â¥5 chars)     "Amazon Ads" tokens â "amazon" â amazon
-     4. Contained-in match          "IPG Mediabrands" â "ipg" in existing slug
+     3. Prefix match (Ã¢ÂÂ¥5 chars)     "Amazon Ads" tokens Ã¢ÂÂ "amazon" Ã¢ÂÂ amazon
+     4. Contained-in match          "IPG Mediabrands" Ã¢ÂÂ "ipg" in existing slug
    Returns null if no match found (caller creates stub).
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 function resolveCompany(rawName, coIndex){
   if(!rawName)return null;
 
@@ -434,16 +434,16 @@ function resolveCompany(rawName, coIndex){
   const rawSlug  = _slug(rawName);
   const normSlug = norm(rawName);
 
-  /* tier 1 â exact slug */
+  /* tier 1 Ã¢ÂÂ exact slug */
   if(coIndex[rawSlug])return coIndex[rawSlug].id||rawSlug;
 
-  /* tier 2 â normalized slug */
+  /* tier 2 Ã¢ÂÂ normalized slug */
   if(normSlug!==rawSlug&&coIndex[normSlug])return coIndex[normSlug].id||normSlug;
 
   /* build token set from raw name for tiers 3+4 */
   const tokens = normSlug.split('-').filter(t=>t.length>=4);
 
-  /* tier 3 â any significant token is a prefix of an existing slug */
+  /* tier 3 Ã¢ÂÂ any significant token is a prefix of an existing slug */
   for(const tok of tokens){
     for(const key of Object.keys(coIndex)){
       if(key.startsWith(tok)&&Math.abs(key.length-normSlug.length)<12){
@@ -452,7 +452,7 @@ function resolveCompany(rawName, coIndex){
     }
   }
 
-  /* tier 4 â existing slug is fully contained in raw tokens OR vice versa */
+  /* tier 4 Ã¢ÂÂ existing slug is fully contained in raw tokens OR vice versa */
   for(const tok of tokens){
     if(coIndex[tok])return coIndex[tok].id||tok;
   }
@@ -463,31 +463,31 @@ function resolveCompany(rawName, coIndex){
     }
   }
 
-  return null; /* no match â caller creates stub */
+  return null; /* no match Ã¢ÂÂ caller creates stub */
 }
 
-/* âââ Intelligence Extraction from News âââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Intelligence Extraction from News Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    Fires after articles load. Sends titles to Claude Haiku,
    extracts relations + products, writes to Supabase.
    Uses enrich_cache to avoid re-processing same article set.
    Uses 4-tier resolver to maximise matches to existing records.
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export async function extractIntelRelations(slug, companyName, articles){
   if(!articles||articles.length===0)return;
 
-  /* cache check â skip if already extracted from this many articles */
+  /* cache check Ã¢ÂÂ skip if already extracted from this many articles */
   const cacheKey='intel_extraction';
   const cached=await window.cacheGet?.(slug,cacheKey);
   if(cached?.article_count>=articles.length){
-    clog('info',`Extraction cache HIT â ${esc(companyName)} (${cached.article_count} arts)`);
+    clog('info',`Extraction cache HIT Ã¢ÂÂ ${esc(companyName)} (${cached.article_count} arts)`);
     return;
   }
 
-  clog('ai',`ð Extracting relations/products from ${articles.length} articles for <b>${esc(companyName)}</b>â¦`);
+  clog('ai',`Ã°ÂÂÂ Extracting relations/products from ${articles.length} articles for <b>${esc(companyName)}</b>Ã¢ÂÂ¦`);
 
   const articleLines=articles.slice(0,20).map((a,i)=>{
     const title=a.title||'';const summary=a.summary||'';const source=a.source||'';const date=a.date||'';
-    return`${i+1}. [${source} ${date}] ${title}${summary?' â '+summary.slice(0,120):''}`;
+    return`${i+1}. [${source} ${date}] ${title}${summary?' Ã¢ÂÂ '+summary.slice(0,120):''}`;
   }).join('\n');
 
   const EXTRACT_SYS=`You are a data extraction engine for an AdTech CRM. Extract structured intelligence from news article titles.
@@ -498,7 +498,7 @@ Return ONLY valid JSON with exactly two keys:
   "products": [{"name":"named product/platform","description":"1 sentence","features":[],"target_user":"advertiser|publisher|agency|both"}]
 }
 
-RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectional. acquisitionsâacquired_by with direction. Only NAMED products. Empty arrays if nothing qualifies. Raw JSON only.`;
+RULES: Only extract EXPLICIT mentions. partnerships/integrationsÃ¢ÂÂbidirectional. acquisitionsÃ¢ÂÂacquired_by with direction. Only NAMED products. Empty arrays if nothing qualifies. Raw JSON only.`;
 
   try{
     const data=await anthropicFetch({
@@ -513,13 +513,13 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
     const objMatch=cleaned.match(/\{[\s\S]*\}/);
     if(objMatch){
       try{const parsed=JSON.parse(objMatch[0]);relations=Array.isArray(parsed.relations)?parsed.relations:[];products=Array.isArray(parsed.products)?parsed.products:[];}
-      catch(e){clog('ai',`â ï¸ JSON parse error for ${esc(companyName)}: ${esc(e.message)}`);return;}
+      catch(e){clog('ai',`Ã¢ÂÂ Ã¯Â¸Â JSON parse error for ${esc(companyName)}: ${esc(e.message)}`);return;}
     }
-    clog('ai',`â Extracted: <b>${relations.length}</b> relations, <b>${products.length}</b> products from ${esc(companyName)} news`);
+    clog('ai',`Ã¢ÂÂ Extracted: <b>${relations.length}</b> relations, <b>${products.length}</b> products from ${esc(companyName)} news`);
 
-    /* ââ Upsert relations ââ */
+    /* Ã¢ÂÂÃ¢ÂÂ Upsert relations Ã¢ÂÂÃ¢ÂÂ */
     if(relations.length){
-      /* build coIndex from ALL companies in state â id + name slug â company */
+      /* build coIndex from ALL companies in state Ã¢ÂÂ id + name slug Ã¢ÂÂ company */
       const coIndex={};
       S.companies.forEach(c=>{
         const s=_slug(c.name);
@@ -537,11 +537,11 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
         const relType=validTypes.has(rel.relation_type)?rel.relation_type:'data_partner';
         const strength=['confirmed','probable','inferred'].includes(rel.strength)?rel.strength:'probable';
 
-        /* ââ 4-tier resolve ââ */
+        /* Ã¢ÂÂÃ¢ÂÂ 4-tier resolve Ã¢ÂÂÃ¢ÂÂ */
         let resolvedId=resolveCompany(otherName,coIndex);
         if(resolvedId){
           matched++;
-          clog('info',`  â³ Resolved "${esc(otherName)}" â <b>${esc(resolvedId)}</b>`);
+          clog('info',`  Ã¢ÂÂ³ Resolved "${esc(otherName)}" Ã¢ÂÂ <b>${esc(resolvedId)}</b>`);
         } else {
           /* create stub only if no match found */
           const stubId=_slug(otherName);
@@ -552,7 +552,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
           }).catch(()=>{});
           resolvedId=stubId;
           stubbed++;
-          clog('db',`â Stub: <b>${esc(otherName)}</b> (${stubId})`);
+          clog('db',`Ã¢ÂÂ Stub: <b>${esc(otherName)}</b> (${stubId})`);
           S.companies.push({id:stubId,name:otherName,type:'prospect',note:'auto-created by intel extraction'});
           coIndex[stubId]={id:stubId,name:otherName,type:'prospect'};
         }
@@ -580,7 +580,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
       }
 
       if(inserted>0||matched>0){
-        clog('db',`â¡ Relations: <b>${inserted}</b> saved Â· ${matched} matched existing Â· ${stubbed} stubs created`);
+        clog('db',`Ã¢ÂÂ¡ Relations: <b>${inserted}</b> saved ÃÂ· ${matched} matched existing ÃÂ· ${stubbed} stubs created`);
         if(S.currentCompany&&_slug(S.currentCompany.name)===slug){
           const rb=document.getElementById('ib-rels-body');
           if(rb&&!rb.innerHTML.includes('ib-loading'))setTimeout(()=>loadRelationsBrief(slug,false),200);
@@ -588,7 +588,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
       }
     }
 
-    /* ââ Upsert products ââ */
+    /* Ã¢ÂÂÃ¢ÂÂ Upsert products Ã¢ÂÂÃ¢ÂÂ */
     if(products.length){
       const coRow=S.companies.find(c=>(c.id||_slug(c.name))===slug);
       const existingProds=coRow?.products?.products||[];
@@ -599,27 +599,27 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrationsâbidirectio
         const payload={products:{products:merged,inferred:false,extracted_from:'intelligence',extracted_at:new Date().toISOString().slice(0,10),positioning:coRow?.products?.positioning||[],integrations_advertised:coRow?.products?.integrations_advertised||[],pricing_model:coRow?.products?.pricing_model||'contact_us'}};
         await fetch(`${SB_URL}/rest/v1/companies?id=eq.${slug}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify(payload)}).catch(()=>{});
         if(coRow)coRow.products=payload.products;
-        clog('db',`ð¦ Products: ${newProds.map(p=>esc(p.name)).join(', ')} â ${esc(companyName)}`);
+        clog('db',`Ã°ÂÂÂ¦ Products: ${newProds.map(p=>esc(p.name)).join(', ')} Ã¢ÂÂ ${esc(companyName)}`);
       }
     }
 
-    /* cache result â 14 day TTL */
+    /* cache result Ã¢ÂÂ 14 day TTL */
     await window.cacheSet?.(slug,cacheKey,{article_count:articles.length,relations_found:relations.length,products_found:products.length,extracted_at:new Date().toISOString()},336);
 
   }catch(e){
-    clog('ai',`â Intel extraction failed for ${esc(companyName)}: ${esc(e.message)}`);
+    clog('ai',`Ã¢ÂÂ Intel extraction failed for ${esc(companyName)}: ${esc(e.message)}`);
     console.error('extractIntelRelations',e);
   }
 }
 
-/* âââ Intelligence âââââââââââââââââââââââââââââââââââââââââââ */
-export function renderIntelBody(stored,live){const body=document.getElementById('ib-intel-body'),cnt=document.getElementById('ib-intel-cnt'),liveLabel=document.getElementById('ib-intel-live');if(!body)return;const storedItems=[];(Array.isArray(stored)?stored:[]).forEach(row=>{if(Array.isArray(row.content))storedItems.push(...row.content);else if(row.title||row.url)storedItems.push(row);});const total=storedItems.length+live.length;if(cnt)cnt.textContent=total||'';if(liveLabel)liveLabel.style.display=live.length?'flex':'none';if(!total){body.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--t3)">No intelligence yet</span><button class="ib-ct-btn" style="height:22px;padding:0 8px;font-size:7px;margin-left:auto" onclick="bgRefreshIntel()">âº Fetch news</button></div>`;return;}const itemHtml=(items,dotColor)=>items.map(r=>{const url=r.url||r.link||'';const title=r.title||r.summary||'â';const src=r.source||r.type||'';const date=r.date||(r.created_at?new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'');return`<div class="ib-news-item"><div class="ib-news-dot" style="background:${dotColor}"></div><div class="ib-news-body">${url?`<a class="ib-news-title" href="${url}" target="_blank">${title} â</a>`:`<div class="ib-news-title" style="cursor:default">${title}</div>`}<div class="ib-news-meta"><span class="ib-news-src">${src}</span><span class="ib-news-date">${date}</span></div></div></div>`;}).join('');let html='';if(live.length){html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px"><span class="live-label"><span class="live-dot"></span>Live â Google News</span><span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4)">${live.length} results</span></div>${itemHtml(live,'#E53935')}`;}if(storedItems.length){if(live.length)html+=`<div style="height:10px;border-top:1px solid var(--rule2);margin:8px 0"></div>`;html+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px">ð Stored</div>${itemHtml(storedItems,'var(--g)')}`;}body.innerHTML=html;}
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Intelligence Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+export function renderIntelBody(stored,live){const body=document.getElementById('ib-intel-body'),cnt=document.getElementById('ib-intel-cnt'),liveLabel=document.getElementById('ib-intel-live');if(!body)return;const storedItems=[];(Array.isArray(stored)?stored:[]).forEach(row=>{if(Array.isArray(row.content))storedItems.push(...row.content);else if(row.title||row.url)storedItems.push(row);});const total=storedItems.length+live.length;if(cnt)cnt.textContent=total||'';if(liveLabel)liveLabel.style.display=live.length?'flex':'none';if(!total){body.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--t3)">No intelligence yet</span><button class="ib-ct-btn" style="height:22px;padding:0 8px;font-size:7px;margin-left:auto" onclick="bgRefreshIntel()">Ã¢ÂÂº Fetch news</button></div>`;return;}const itemHtml=(items,dotColor)=>items.map(r=>{const url=r.url||r.link||'';const title=r.title||r.summary||'Ã¢ÂÂ';const src=r.source||r.type||'';const date=r.date||(r.created_at?new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'');return`<div class="ib-news-item"><div class="ib-news-dot" style="background:${dotColor}"></div><div class="ib-news-body">${url?`<a class="ib-news-title" href="${url}" target="_blank">${title} Ã¢ÂÂ</a>`:`<div class="ib-news-title" style="cursor:default">${title}</div>`}<div class="ib-news-meta"><span class="ib-news-src">${src}</span><span class="ib-news-date">${date}</span></div></div></div>`;}).join('');let html='';if(live.length){html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px"><span class="live-label"><span class="live-dot"></span>Live Ã¢ÂÂ Google News</span><span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4)">${live.length} results</span></div>${itemHtml(live,'#E53935')}`;}if(storedItems.length){if(live.length)html+=`<div style="height:10px;border-top:1px solid var(--rule2);margin:8px 0"></div>`;html+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px">Ã°ÂÂÂ Stored</div>${itemHtml(storedItems,'var(--g)')}`;}body.innerHTML=html;}
 
 export async function bgRefreshIntel(){
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-intel-body'),btn=document.getElementById('ib-intel-refresh');
-  if(body)body.innerHTML=`<div class="ib-loading" style="text-align:left">Fetching newsâ¦</div>`;
-  if(btn)btn.textContent='â» Loadingâ¦';
+  if(body)body.innerHTML=`<div class="ib-loading" style="text-align:left">Fetching newsÃ¢ÂÂ¦</div>`;
+  if(btn)btn.textContent='Ã¢ÂÂ» LoadingÃ¢ÂÂ¦';
   const slug=_slug(c.name);
   const[storedRes,liveRes]=await Promise.allSettled([
     fetch(`${SB_URL}/rest/v1/intelligence?company_id=eq.${slug}&type=eq.press_links`,{headers:authHdr()}).then(r=>r.json()),
@@ -635,19 +635,13 @@ export async function bgRefreshIntel(){
     const allArticles=[...storedItems,...live];
     if(allArticles.length>=2)setTimeout(()=>extractIntelRelations(slug,c.name,allArticles),500);
   }
-  if(btn)btn.textContent='âº Refresh';
+  if(btn)btn.textContent='Ã¢ÂÂº Refresh';
 }
 
-/* âââ Email History â Gmail AI Scanner ââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Email History Ã¢ÂÂ Gmail AI Scanner Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function _getEmailSectionHTML(slug,companyName){
-  const gmail=localStorage.getItem('oaGmailEmail');
-  const safeSlug=slug.replace(/'/g,"\\'");
-  const safeName=(companyName||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  if(!gmail){
-    return`<div style="padding:4px 0"><div style="font-size:10px;color:var(--t3);margin-bottom:8px">Connect Gmail to scan email history with <b>${esc(companyName)}</b></div><div style="display:flex;gap:6px;align-items:center"><input id="ib-gmail-input" type="email" placeholder="your@gmail.com" style="flex:1;font:400 10px 'IBM Plex Mono',monospace;padding:4px 8px;border:1px solid var(--rule);border-radius:3px;background:var(--surf2);color:var(--t1);outline:none" onkeydown="if(event.key==='Enter')oaGmailConnect()"><button class="btn sm" onclick="oaGmailConnect()">Connect</button></div></div>`;
-  }
-  return`<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surf3);border-radius:3px;margin-bottom:8px;border:1px solid var(--rule)"><span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--g)">â CONNECTED</span><span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(gmail)}</span><button class="btn sm" onclick="oaGmailDisconnect()" style="flex-shrink:0">Disconnect</button></div><button class="btn sm primary" onclick="oaEmailScan('${safeSlug}','${safeName}')">ð Scan Gmail for ${esc(companyName)}</button><div id="ib-email-results" style="margin-top:8px"></div><div id="ib-email-contacts-strip" style="display:none;margin-top:8px;padding:8px;background:var(--surf3);border-radius:3px;border:1px solid var(--rule)"></div></div>`;
+  return window.gmailSectionHTML?.(slug,companyName)||'';
 }
 
 function _refreshEmailSection(slug){
@@ -656,34 +650,20 @@ function _refreshEmailSection(slug){
   body.innerHTML=_getEmailSectionHTML(slug||_slug(c.name),c.name);
 }
 
-export function oaGmailConnect(){
-  const input=document.getElementById('ib-gmail-input');
-  const email=(input?.value||'').trim();
-  if(!email||!email.includes('@'))return;
-  localStorage.setItem('oaGmailEmail',email);
-  _refreshEmailSection(window._currentEmailSlug);
-}
+export function oaGmailConnect(){ window.gmailConnectAndScan?.(window._currentEmailSlug, window.currentCompany?.name||''); }
 
-export function oaGmailDisconnect(){
-  localStorage.removeItem('oaGmailEmail');
-  _refreshEmailSection(window._currentEmailSlug);
-}
+export function oaGmailDisconnect(){ window.gmailDisconnectUI?.(); }
 
-export function oaEmailScan(slug,companyName){
-  const gmailEmail=localStorage.getItem('oaGmailEmail');if(!gmailEmail)return;
-  const results=document.getElementById('ib-email-results');
-  openClaude(`Search my Gmail for all emails to/from anyone at ${companyName}. Summarise: who I've contacted (name, email, job title from signatures), email dates, subjects, and overall relationship status. Gmail search: from:${companyName} OR to:${companyName}`);
-  if(results)results.innerHTML=`<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--poc)">â Gmail scan sent to Claude â check the new tab</div>`;
-}
+export function oaEmailScan(slug, companyName){ window.gmailScanCompany?.(slug, companyName); }
 
 export async function oaEmailSaveContacts(){
   const contacts=S.emailScanContacts;if(!contacts?.length)return;
   const btn=document.querySelector('#ib-email-contacts-strip .btn');
-  if(btn){btn.disabled=true;btn.textContent='Savingâ¦';}
+  if(btn){btn.disabled=true;btn.textContent='SavingÃ¢ÂÂ¦';}
   let saved=0;
   for(const ct of contacts){try{await saveContact(ct);saved++;}catch(e){console.warn('save contact failed',e);}}
   const strip=document.getElementById('ib-email-contacts-strip');
-  if(strip)strip.innerHTML=`<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--g)">â Saved ${saved} contact${saved===1?'':'s'} to CRM</div>`;
+  if(strip)strip.innerHTML=`<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--g)">Ã¢ÂÂ Saved ${saved} contact${saved===1?'':'s'} to CRM</div>`;
   S.emailScanContacts=[];
 }
 
@@ -714,19 +694,19 @@ export async function loadIntelligence(slug,name){
   if(allArticles.length>=3)setTimeout(()=>extractIntelRelations(slug,name,allArticles),800);
 }
 
-/* âââ Relations ââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Relations Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 let _relCache=[];let _relView='list';let _relDepth=1;
 
-/* Graph filter state â which node/edge categories to show */
+/* Graph filter state Ã¢ÂÂ which node/edge categories to show */
 let _relFilters={
-  data_partner:     true,   /* data + tech partnerships â SIGNIFICANT */
+  data_partner:     true,   /* data + tech partnerships Ã¢ÂÂ SIGNIFICANT */
   tech_integration: true,
   marketplace_listed:true,
   dsp_integration:  true,
   activation_path:  true,   /* computed via-platform paths to OA */
   client_of:        true,
   acquired_by:      true,
-  subsidiary_of:    false,  /* off by default â very noisy */
+  subsidiary_of:    false,  /* off by default Ã¢ÂÂ very noisy */
   competes_with:    false,  /* off by default */
   hop2:             false,  /* 2-hop nodes off by default */
 };
@@ -809,7 +789,7 @@ function _renderGraphControls(){
 export async function loadRelationsBrief(slug,forceRefresh){
   const body=document.getElementById('ib-rels-body'),cnt=document.getElementById('ib-rels-cnt');if(!body)return;
   try{
-    if(forceRefresh||!S.allRelations.length){body.innerHTML='<div class="ib-loading">Refreshing relationsâ¦</div>';await refreshRelationsCache();}
+    if(forceRefresh||!S.allRelations.length){body.innerHTML='<div class="ib-loading">Refreshing relationsÃ¢ÂÂ¦</div>';await refreshRelationsCache();}
     const rels=S.allRelations.filter(r=>r.from_company===slug||r.to_company===slug);
     _relCache=rels;
     if(!_relCache.length){body.innerHTML=`<div style="font-size:11px;color:var(--t3)">No relations recorded</div>`;if(cnt)cnt.textContent='';return;}
@@ -817,10 +797,10 @@ export async function loadRelationsBrief(slug,forceRefresh){
     clog('info',`Relations for <b>${slug}</b>: ${_relCache.length} (from cache of ${S.allRelations.length})`);
     const coMap={};S.companies.forEach(x=>{if(x.name)coMap[_slug(x.name)]=x;});
     const TL={data_partner:'Data Partner',dsp_integration:'DSP Integration',marketplace_listed:'Marketplace',tech_integration:'Tech Integration',client_of:'Client Of',acquired_by:'Acquired By',subsidiary_of:'Subsidiary Of',competes_with:'Competes With',co_sell:'Co-Sell',reseller:'Reseller'};
-    const listHtml=_relCache.map(r=>{const isSrc=r.from_company===slug;const oid=isSrc?r.to_company:r.from_company;const co=coMap[oid];const arrow=r.direction==='bidirectional'?'â':(isSrc?'â':'â');const nameDisp=co?.name||oid;const type=TL[r.relation_type]||r.relation_type;return`<div class="ib-rel-item"><div class="ib-rel-arrow">${arrow}</div>${co?`<div class="ib-rel-name" data-slug="${oid}" onclick="openBySlug(this.dataset.slug)">${nameDisp}</div>`:`<div class="ib-rel-name no-link">${nameDisp}</div>`}<div class="ib-rel-type">${type}</div><span class="tag ${r.strength==='confirmed'?'tc':'tpr'}" style="flex-shrink:0">${r.strength||'â'}</span></div>${r.notes?`<div class="ib-rel-notes">${r.notes}</div>`:''}`;}).join('');
+    const listHtml=_relCache.map(r=>{const isSrc=r.from_company===slug;const oid=isSrc?r.to_company:r.from_company;const co=coMap[oid];const arrow=r.direction==='bidirectional'?'Ã¢ÂÂ':(isSrc?'Ã¢ÂÂ':'Ã¢ÂÂ');const nameDisp=co?.name||oid;const type=TL[r.relation_type]||r.relation_type;return`<div class="ib-rel-item"><div class="ib-rel-arrow">${arrow}</div>${co?`<div class="ib-rel-name" data-slug="${oid}" onclick="openBySlug(this.dataset.slug)">${nameDisp}</div>`:`<div class="ib-rel-name no-link">${nameDisp}</div>`}<div class="ib-rel-type">${type}</div><span class="tag ${r.strength==='confirmed'?'tc':'tpr'}" style="flex-shrink:0">${r.strength||'Ã¢ÂÂ'}</span></div>${r.notes?`<div class="ib-rel-notes">${r.notes}</div>`:''}`;}).join('');
     body.innerHTML=`<div style="display:flex;gap:3px;margin-bottom:6px;flex-wrap:wrap;align-items:center">
-      <button id="ib-rel-btn-list" class="ib-ct-btn active" onclick="setRelView('list')" style="height:20px;padding:0 8px;font-size:7px">â° List</button>
-      <button id="ib-rel-btn-graph" class="ib-ct-btn" onclick="setRelView('graph')" style="height:20px;padding:0 8px;font-size:7px">â Graph</button>
+      <button id="ib-rel-btn-list" class="ib-ct-btn active" onclick="setRelView('list')" style="height:20px;padding:0 8px;font-size:7px">Ã¢ÂÂ° List</button>
+      <button id="ib-rel-btn-graph" class="ib-ct-btn" onclick="setRelView('graph')" style="height:20px;padding:0 8px;font-size:7px">Ã¢ÂÂ Graph</button>
       <span style="display:inline-block;width:1px;height:16px;background:var(--rule);margin:0 2px"></span>
       <button id="ib-rel-d1" class="ib-ct-btn active" onclick="setRelDepth(1)" style="height:20px;padding:0 8px;font-size:7px">1-hop</button>
       <button id="ib-rel-d2" class="ib-ct-btn" onclick="setRelDepth(2)" style="height:20px;padding:0 8px;font-size:7px">2-hop</button>
@@ -829,18 +809,18 @@ export async function loadRelationsBrief(slug,forceRefresh){
     <div id="ib-rels-list">${listHtml}</div>
     <div id="ib-rels-graph" style="display:none"></div>`;
     _relView='list';_relDepth=1;
-  }catch(e){clog('info',`Relations error: ${e.message}`);body.innerHTML=`<div style="font-size:11px;color:var(--t3)">Error loading relations â <span style="cursor:pointer;color:var(--g)" onclick="loadRelationsBrief('${slug}',true)">retry</span></div>`;}
+  }catch(e){clog('info',`Relations error: ${e.message}`);body.innerHTML=`<div style="font-size:11px;color:var(--t3)">Error loading relations Ã¢ÂÂ <span style="cursor:pointer;color:var(--g)" onclick="loadRelationsBrief('${slug}',true)">retry</span></div>`;}
 }
 
-/* âââ Force-directed Relation Graph â 1-hop + 2-hop + onAudience path ââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Force-directed Relation Graph Ã¢ÂÂ 1-hop + 2-hop + onAudience path Ã¢ÂÂÃ¢ÂÂ */
 function renderRelGraph(){
   const container=document.getElementById('ib-rels-graph');if(!container)return;
   const centerSlug=_slug(S.currentCompany?.name||'');
   const OA='onaudience';
   const coMap={};S.companies.forEach(x=>{if(x.name){coMap[_slug(x.name)]=x;if(x.id)coMap[x.id]=x;}});
 
-  /* ââ build node + edge sets ââ */
-  const nodeSet=new Map(); /* id â {id,name,type,isCenter,isOA,hop} */
+  /* Ã¢ÂÂÃ¢ÂÂ build node + edge sets Ã¢ÂÂÃ¢ÂÂ */
+  const nodeSet=new Map(); /* id Ã¢ÂÂ {id,name,type,isCenter,isOA,hop} */
   const edgeSet=[];        /* {source,target,type,strength,direction,hop,onPath} */
 
   const addNode=(id,hop)=>{
@@ -862,22 +842,22 @@ function renderRelGraph(){
     edgeSet.push({source:r.from_company,target:r.to_company,type:r.relation_type,strength:r.strength,direction:r.direction,hop:1,onPath:false});
   });
 
-  /* ââ Inject onAudience + all logical sell paths âââââââââââââ
+  /* Ã¢ÂÂÃ¢ÂÂ Inject onAudience + all logical sell paths Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
      Two mechanisms:
 
      A) DIRECT: OA has an explicit relation to a node already in graph
-        â add OA node + that edge (hop:'oa')
+        Ã¢ÂÂ add OA node + that edge (hop:'oa')
 
      B) ACTIVATION PATH: center (or its hop-1 neighbor) uses a platform
-        that OA is listed on (TTD, DV360, Amazon DSP, Adform, LiveRampâ¦)
-        â add OA node + a computed "activation_path" edge through that platform
+        that OA is listed on (TTD, DV360, Amazon DSP, Adform, LiveRampÃ¢ÂÂ¦)
+        Ã¢ÂÂ add OA node + a computed "activation_path" edge through that platform
         This represents "you can buy onAudience data when you use TTD"
 
      Result: onAudience always appears when there is ANY logical sell path,
      not just when an explicit relation record exists.
-  ââ */
+  Ã¢ÂÂÃ¢ÂÂ */
   if(centerSlug!==OA){
-    /* Platforms onAudience is activated through â built from S.allRelations */
+    /* Platforms onAudience is activated through Ã¢ÂÂ built from S.allRelations */
     const oaPlatforms=new Set(
       S.allRelations
         .filter(r=>r.from_company===OA&&
@@ -894,7 +874,7 @@ function renderRelGraph(){
     );
 
     /* B) Activation paths: known node uses a platform OA is on */
-    /* e.g. center uses TTD â OA is on TTD â draw centerâTTDâOA path */
+    /* e.g. center uses TTD Ã¢ÂÂ OA is on TTD Ã¢ÂÂ draw centerÃ¢ÂÂTTDÃ¢ÂÂOA path */
     const activationEdges=[];
     const alreadyLinkedToOA=new Set([
       ...oaDirectEdges.map(r=>r.from_company===OA?r.to_company:r.from_company)
@@ -922,7 +902,7 @@ function renderRelGraph(){
           strength:r.strength,direction:r.direction,hop:'oa',onPath:false});
       });
 
-      /* add activation path edges â drawn as dashed green from known node to OA
+      /* add activation path edges Ã¢ÂÂ drawn as dashed green from known node to OA
          with the platform name as edge label */
       activationEdges.forEach(({via,from})=>{
         /* make sure the platform node is in the graph */
@@ -932,7 +912,7 @@ function renderRelGraph(){
           hop:'oa',onPath:false,viaLabel:via});
       });
 
-      clog('info',`Graph: OA injected â ${oaDirectEdges.length} direct + ${activationEdges.length} activation paths`);
+      clog('info',`Graph: OA injected Ã¢ÂÂ ${oaDirectEdges.length} direct + ${activationEdges.length} activation paths`);
     }
   }
 
@@ -940,7 +920,7 @@ function renderRelGraph(){
   if(_relDepth===2){
     const hop1Ids=new Set([...nodeSet.keys()]);
     S.allRelations.forEach(r=>{
-      /* exclude center and OA from generating hop-2 children â both have too many edges */
+      /* exclude center and OA from generating hop-2 children Ã¢ÂÂ both have too many edges */
       const fIn=hop1Ids.has(r.from_company)&&r.from_company!==centerSlug&&r.from_company!==OA;
       const tIn=hop1Ids.has(r.to_company)&&r.to_company!==centerSlug&&r.to_company!==OA;
       if(fIn&&!hop1Ids.has(r.to_company)){
@@ -973,7 +953,7 @@ function renderRelGraph(){
     }
   }
 
-  /* ââ Apply _relFilters: remove edges/nodes for hidden categories ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Apply _relFilters: remove edges/nodes for hidden categories Ã¢ÂÂÃ¢ÂÂ */
   {
     /* remove edges whose type is filtered off */
     const ALWAYS_KEEP_TYPES=new Set(['activation_path']); /* handled via activation_path filter */
@@ -1001,7 +981,7 @@ function renderRelGraph(){
     });
   }
 
-  /* ââ Find shortest path from centerSlug to OA ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Find shortest path from centerSlug to OA Ã¢ÂÂÃ¢ÂÂ */
   /* BFS over edgeSet */
   if(nodeSet.has(OA)&&centerSlug!==OA){
     const adj=new Map();
@@ -1036,7 +1016,7 @@ function renderRelGraph(){
   const edges=edgeSet;
   if(!nodes.length){container.innerHTML='<div style="font-size:11px;color:var(--t3);padding:8px">No graph data</div>';return;}
 
-  /* ââ Layout ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Layout Ã¢ÂÂÃ¢ÂÂ */
   const W=640,H=Math.max(360,Math.min(600,nodes.length*22));
   container.innerHTML=`<svg id="rel-svg" viewBox="0 0 ${W} ${H}" width="100%"
     style="max-height:520px;border:1px solid var(--rule);border-radius:2px;background:var(--surf2);cursor:grab;display:block">
@@ -1054,7 +1034,7 @@ function renderRelGraph(){
   const typeColors={data_partner:'var(--g)',dsp_integration:'var(--pc)',marketplace_listed:'var(--prc)',tech_integration:'var(--poc)',client_of:'var(--cc)',acquired_by:'var(--nc)',subsidiary_of:'var(--nc)',competes_with:'#F87171',co_sell:'var(--g)',reseller:'var(--prc)'};
   const cx=W/2,cy=H/2;
 
-  /* radial init â hop-0 center, hop-1 inner ring, hop-2 outer ring */
+  /* radial init Ã¢ÂÂ hop-0 center, hop-1 inner ring, hop-2 outer ring */
   const hop1Nodes=nodes.filter(n=>n.hop===1);
   const hop2Nodes=nodes.filter(n=>n.hop===2);
   const r1=Math.min(W,H)*0.28,r2=Math.min(W,H)*0.46;
@@ -1074,7 +1054,7 @@ function renderRelGraph(){
     n.vx=0;n.vy=0;
   });
 
-  /* force sim â stronger repulsion between hop-2 nodes */
+  /* force sim Ã¢ÂÂ stronger repulsion between hop-2 nodes */
   const nodeById=new Map(nodes.map(n=>[n.id,n]));
   const repulsion=(a,b)=>a.hop===2&&b.hop===2?1200:700;
   const ideal=(e)=>e.hop===2?160:110;
@@ -1109,7 +1089,7 @@ function renderRelGraph(){
   }
   for(let i=0;i<180;i++)tick();
 
-  /* ââ render: back-to-front: hop-2 edges â hop-1 edges â path edges â nodes ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ render: back-to-front: hop-2 edges Ã¢ÂÂ hop-1 edges Ã¢ÂÂ path edges Ã¢ÂÂ nodes Ã¢ÂÂÃ¢ÂÂ */
   const TL={data_partner:'partner',dsp_integration:'DSP',marketplace_listed:'mkt',tech_integration:'tech',client_of:'client',acquired_by:'acq',subsidiary_of:'sub',competes_with:'vs',co_sell:'co-sell',reseller:'resell'};
 
   /* layer groups for z-ordering */
@@ -1129,13 +1109,13 @@ function renderRelGraph(){
       line.setAttribute('stroke','var(--g)');
       line.setAttribute('stroke-width','2');
     } else if(e.hop==='oa'&&e.type==='activation_path'){
-      /* activation path edge â can sell via shared platform â dotted green */
+      /* activation path edge Ã¢ÂÂ can sell via shared platform Ã¢ÂÂ dotted green */
       line.setAttribute('stroke','var(--g)');
       line.setAttribute('stroke-width','1');
       line.setAttribute('opacity','0.4');
       line.setAttribute('stroke-dasharray','2 5');
     } else if(e.hop==='oa'){
-      /* direct OA relation edge â green tint */
+      /* direct OA relation edge Ã¢ÂÂ green tint */
       line.setAttribute('stroke','var(--g)');
       line.setAttribute('stroke-width','1');
       line.setAttribute('opacity','0.55');
@@ -1148,11 +1128,11 @@ function renderRelGraph(){
     }
     if(e.direction!=='bidirectional')line.setAttribute('marker-end',isPath?'url(#arr-g)':'url(#arr-n)');
     layer.appendChild(line);
-    /* edge label â only for hop-1, oa and path edges */
+    /* edge label Ã¢ÂÂ only for hop-1, oa and path edges */
     if(e.hop===1||e.hop==='oa'||isPath){
       if(e.type==='activation_path'&&e.viaLabel){
         const co2=coMap[e.viaLabel];const viaName=(co2?.name||e.viaLabel);
-        const shortVia=viaName.length>10?viaName.slice(0,9)+'â¦':viaName;
+        const shortVia=viaName.length>10?viaName.slice(0,9)+'Ã¢ÂÂ¦':viaName;
         const lbl2=document.createElementNS('http://www.w3.org/2000/svg','text');
         lbl2.setAttribute('x',(s.x+t.x)/2);lbl2.setAttribute('y',(s.y+t.y)/2-4);
         lbl2.setAttribute('text-anchor','middle');lbl2.setAttribute('font-family','IBM Plex Mono,monospace');
@@ -1170,7 +1150,7 @@ function renderRelGraph(){
     }
   });
 
-  /* ââ render nodes ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ render nodes Ã¢ÂÂÃ¢ÂÂ */
   nodes.forEach(n=>{
     const g=document.createElementNS('http://www.w3.org/2000/svg','g');
     g.style.cursor=n.inDB?'pointer':'default';
@@ -1213,7 +1193,7 @@ function renderRelGraph(){
 
     /* name label */
     const maxLen=n.hop===2?12:16;
-    const dispName=n.name.length>maxLen?n.name.slice(0,maxLen-1)+'â¦':n.name;
+    const dispName=n.name.length>maxLen?n.name.slice(0,maxLen-1)+'Ã¢ÂÂ¦':n.name;
     const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
     lbl.setAttribute('x',n.x);lbl.setAttribute('y',n.y+r+9);
     lbl.setAttribute('text-anchor','middle');
@@ -1254,12 +1234,12 @@ function renderRelGraph(){
     gNodes.appendChild(g);
   });
 
-  /* ââ legend ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ legend Ã¢ÂÂÃ¢ÂÂ */
   const leg=document.createElementNS('http://www.w3.org/2000/svg','g');
   const legendItems=[];
   if(nodeSet.has(OA)&&centerSlug!==OA){
-    legendItems.push({color:'var(--g)',label:'â onAudience (direct)',bold:true});
-    legendItems.push({color:'var(--g)',label:'â onAudience (via platform)',dash:'2 5',opacity:'0.5'});
+    legendItems.push({color:'var(--g)',label:'Ã¢ÂÂ onAudience (direct)',bold:true});
+    legendItems.push({color:'var(--g)',label:'Ã¢ÂÂ onAudience (via platform)',dash:'2 5',opacity:'0.5'});
   }
   if(_relDepth===2)legendItems.push({color:'var(--rule2)',label:'2-hop indirect',dash:'3 3'});
   legendItems.forEach((item,i)=>{
@@ -1279,37 +1259,37 @@ function renderRelGraph(){
   svg.appendChild(leg);
 }
 
-/* âââ Navigation helpers âââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Navigation helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function openBySlug(s){const c=S.companies.find(x=>_slug(x.name)===s);if(c)openCompany(c);}
 export function showCtxSlug(e,el){e.preventDefault();e.stopPropagation();showCtx(e,el.dataset.slug);}
 
-/* âââ Context Menu âââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Context Menu Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function showCtx(e,slugOrName){
   e.preventDefault();e.stopPropagation();
   const co=S.companies.find(x=>_slug(x.name)===slugOrName)||S.companies.find(x=>x.name===slugOrName);
   const name=co?.name||slugOrName;
   const menu=document.getElementById('ctxMenu');
   const actions=[
-    {icon:'ð',text:'Full contact report',fn:()=>{if(co)openCompany(co);promptResearch();}},
-    {icon:'ð¤',text:'Find decision makers',fn:()=>{openCompany(co);setTimeout(bgFindDMs,200);}},
-    {icon:'â',text:'Draft outreach email',fn:()=>window.openComposer({company:name,note:co?.note,status:co?.type,description:co?.description||'',angle:co?.outreach_angle||''})},
-    {icon:'ð¬',text:'LinkedIn message',fn:()=>window.openComposer({company:name,note:co?.note,status:co?.type,description:co?.description||'',angle:co?.outreach_angle||''})},
-    {icon:'ð',text:'Find similar',fn:()=>promptSimilar()},
-    {icon:'ð§',text:'Email history',fn:()=>{if(co)openCompany(co);setTimeout(()=>{const ib=document.getElementById('ib-intel-body');if(ib)ib.scrollIntoView({behavior:'smooth',block:'nearest'});bgRefreshIntel();},100);}},
+    {icon:'Ã°ÂÂÂ',text:'Full contact report',fn:()=>{if(co)openCompany(co);promptResearch();}},
+    {icon:'Ã°ÂÂÂ¤',text:'Find decision makers',fn:()=>{openCompany(co);setTimeout(bgFindDMs,200);}},
+    {icon:'Ã¢ÂÂ',text:'Draft outreach email',fn:()=>window.openComposer({company:name,note:co?.note,status:co?.type,description:co?.description||'',angle:co?.outreach_angle||''})},
+    {icon:'Ã°ÂÂÂ¬',text:'LinkedIn message',fn:()=>window.openComposer({company:name,note:co?.note,status:co?.type,description:co?.description||'',angle:co?.outreach_angle||''})},
+    {icon:'Ã°ÂÂÂ',text:'Find similar',fn:()=>promptSimilar()},
+    {icon:'Ã°ÂÂÂ§',text:'Email history',fn:()=>{if(co)openCompany(co);setTimeout(()=>{const ib=document.getElementById('ib-intel-body');if(ib)ib.scrollIntoView({behavior:'smooth',block:'nearest'});bgRefreshIntel();},100);}},
   ];
-  if(co?.type==='nogo')actions.push({icon:'â ï¸',text:'Why no outreach?',fn:()=>{aiQuick(`no outreach "${name}"`);document.getElementById('aiInp').scrollIntoView({behavior:'smooth',block:'nearest'});}});
-  if(co?.type==='prospect')actions.push({icon:'ð',text:'Prioritize',fn:()=>{aiQuick(`priority ${name}`);document.getElementById('aiInp').scrollIntoView({behavior:'smooth',block:'nearest'});}});
+  if(co?.type==='nogo')actions.push({icon:'Ã¢ÂÂ Ã¯Â¸Â',text:'Why no outreach?',fn:()=>{aiQuick(`no outreach "${name}"`);document.getElementById('aiInp').scrollIntoView({behavior:'smooth',block:'nearest'});}});
+  if(co?.type==='prospect')actions.push({icon:'Ã°ÂÂÂ',text:'Prioritize',fn:()=>{aiQuick(`priority ${name}`);document.getElementById('aiInp').scrollIntoView({behavior:'smooth',block:'nearest'});}});
   menu.innerHTML=`<div class="ctx-label">${name}</div><div class="ctx-sep"></div>`+actions.map((a,i)=>`<div class="ctx-item" data-i="${i}"><span class="ctx-ico">${a.icon}</span>${a.text}</div>`).join('');
   menu.querySelectorAll('.ctx-item').forEach((el,i)=>{el.addEventListener('click',()=>{menu.style.display='none';actions[i].fn();});});
   const x=Math.min(e.clientX,window.innerWidth-230),y=Math.min(e.clientY,window.innerHeight-actions.length*34-20);
   menu.style.left=x+'px';menu.style.top=y+'px';menu.style.display='block';
 }
 
-/* âââ Contact Drawer âââââââââââââââââââââââââââââââââââââââââ */
-export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'â';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' Â· '+ct.company_name:'');const flds=[[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.email}</a>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.linkedin_url}</a>`],[ct.notes,'Notes',ct.notes]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Contact Drawer Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'Ã¢ÂÂ';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' ÃÂ· '+ct.company_name:'');const flds=[[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.email}</a>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${ct.linkedin_url}</a>`],[ct.notes,'Notes',ct.notes]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');
   // Inject / update "Draft in Claude" button in drawer actions
   const _drAct=document.querySelector('#ctDrawer .dr-actions');
-  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='â Draft in Claude';_cb.onclick=()=>openClaudeGmail('draft',_co2,ct.email,ct.full_name);_drAct.appendChild(_cb);}}
+  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='Ã¢ÂÂ Draft in Claude';_cb.onclick=()=>openClaudeGmail('draft',_co2,ct.email,ct.full_name);_drAct.appendChild(_cb);}}
 }
 export function closeDrawer(){document.getElementById('ctDrawer').classList.remove('open');document.getElementById('ctDrawerOverlay').classList.remove('vis');S.currentContact=null;}
 export function openContactFull(ctId){
@@ -1351,7 +1331,7 @@ export function drResearch(){
   closeDrawer();
 }
 
-/* âââ Modals âââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Modals Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 export function promptResearch(){S._modalMode='research';document.getElementById('modalTitle').textContent='Research a Company';document.getElementById('modalDesc').textContent='Enter company name to generate a full contact report.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
 export function promptSimilar(){S._modalMode='similar';document.getElementById('modalTitle').textContent='Find Similar Companies';document.getElementById('modalDesc').textContent='Enter a reference company to find lookalikes.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
 export function closeModal(){document.getElementById('overlay').classList.remove('vis');}
@@ -1368,17 +1348,17 @@ export function submitModal(){
   }
 }
 
-/** Legacy escape hatch â only for truly unroutable actions that have no hub-native equivalent. */
+/** Legacy escape hatch Ã¢ÂÂ only for truly unroutable actions that have no hub-native equivalent. */
 export function openClaude(p){window.open('https://claude.ai/new?q='+encodeURIComponent(p),'_blank');}
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   ââ Lemlist campaign push modal ââââââââââââââââââââââââââââââ
-   initLemlistModal()   â creates DOM once on boot
-   openLemlistModal(contacts)  â contacts = [{id,email,name,company_name,title,linkedin}]
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   Ã¢ÂÂÃ¢ÂÂ Lemlist campaign push modal Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   initLemlistModal()   Ã¢ÂÂ creates DOM once on boot
+   openLemlistModal(contacts)  Ã¢ÂÂ contacts = [{id,email,name,company_name,title,linkedin}]
    closeLemlistModal()
-   lemlistPush()        â pushes leads, writes back to DB
-   audPushLemlist(audId) â audience-level helper
-   ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+   lemlistPush()        Ã¢ÂÂ pushes leads, writes back to DB
+   audPushLemlist(audId) Ã¢ÂÂ audience-level helper
+   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 let _llContacts=[];
 let _llCampaigns=[];
 let _llSelCampaign=null;
@@ -1392,17 +1372,17 @@ export function initLemlistModal(){
   d.innerHTML=`<div id="llModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeLemlistModal()">
     <div class="modal" style="width:460px">
       <div class="modal-header">
-        <span class="modal-title">ð¤ Push to lemlist</span>
-        <button class="btn sm" onclick="closeLemlistModal()">â</button>
+        <span class="modal-title">Ã°ÂÂÂ¤ Push to lemlist</span>
+        <button class="btn sm" onclick="closeLemlistModal()">Ã¢ÂÂ</button>
       </div>
       <div class="modal-body" style="padding:16px 20px">
-        <div id="llStatus" style="font-size:11px;color:var(--t3);margin-bottom:10px">Loading campaignsâ¦</div>
+        <div id="llStatus" style="font-size:11px;color:var(--t3);margin-bottom:10px">Loading campaignsÃ¢ÂÂ¦</div>
         <select id="llCampaignSel" class="inp" style="display:none;width:100%;margin-bottom:10px"></select>
         <div id="llPreview" style="font-size:11px;color:var(--t3)"></div>
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="closeLemlistModal()">Cancel</button>
-        <button class="btn p" id="llPushBtn" onclick="lemlistPush()" style="pointer-events:none;opacity:.5">ð¤ Push</button>
+        <button class="btn p" id="llPushBtn" onclick="lemlistPush()" style="pointer-events:none;opacity:.5">Ã°ÂÂÂ¤ Push</button>
       </div>
     </div>
   </div>`;
@@ -1418,7 +1398,7 @@ export async function openLemlistModal(contacts){
   const preview=document.getElementById('llPreview');
   const btn=document.getElementById('llPushBtn');
   modal.style.display='flex';
-  status.textContent='Loading campaignsâ¦';
+  status.textContent='Loading campaignsÃ¢ÂÂ¦';
   status.style.display='block';
   sel.style.display='none';
   btn.style.opacity='.5';
@@ -1440,7 +1420,7 @@ export function closeLemlistModal(){
   const m=document.getElementById('llModal');
   if(m)m.style.display='none';
   const btn=document.getElementById('llPushBtn');
-  if(btn){btn.textContent='ð¤ Push';btn.style.opacity='.5';btn.style.pointerEvents='none';}
+  if(btn){btn.textContent='Ã°ÂÂÂ¤ Push';btn.style.opacity='.5';btn.style.pointerEvents='none';}
 }
 
 export async function lemlistPush(){
@@ -1450,7 +1430,7 @@ export async function lemlistPush(){
   const campaignId=sel?.value;
   const campaignName=sel?.options[sel.selectedIndex]?.text?.replace(/\s*\[.*\]$/,'')||'';
   if(!campaignId||!_llContacts.length)return;
-  btn.textContent='Pushingâ¦';
+  btn.textContent='PushingÃ¢ÂÂ¦';
   btn.style.pointerEvents='none';
   let ok=0,fail=0;
   for(const ct of _llContacts){
@@ -1462,9 +1442,9 @@ export async function lemlistPush(){
     try{await lemlistWriteBack(ids,campaignId,campaignName);}
     catch(e){clog('info','lemlist writeback error: '+e.message);}
   }
-  clog('db','ð¤ lemlist: '+ok+'/'+_llContacts.length+' pushed â '+campaignName);
-  prev.textContent='â '+ok+' pushed'+(fail?', '+fail+' skipped':'')+' â '+campaignName;
-  btn.textContent='â Done';
+  clog('db','Ã°ÂÂÂ¤ lemlist: '+ok+'/'+_llContacts.length+' pushed Ã¢ÂÂ '+campaignName);
+  prev.textContent='Ã¢ÂÂ '+ok+' pushed'+(fail?', '+fail+' skipped':'')+' Ã¢ÂÂ '+campaignName;
+  btn.textContent='Ã¢ÂÂ Done';
   setTimeout(closeLemlistModal,2000);
 }
 
@@ -1477,7 +1457,7 @@ export async function audPushLemlist(audId,campaignId=null){
   if(campaignId){
     const camp=_llCampaigns.find(c=>c._id===campaignId);
     const campaignName=camp?.name||campaignId;
-    clog('db','ð¤ Pushing <b>'+contacts.length+'</b> contacts to <b>'+esc(campaignName)+'</b>â¦');
+    clog('db','Ã°ÂÂÂ¤ Pushing <b>'+contacts.length+'</b> contacts to <b>'+esc(campaignName)+'</b>Ã¢ÂÂ¦');
     let ok=0,fail=0;
     for(const ct of contacts){
       try{await lemlistAddLead(campaignId,ct);ok++;}
@@ -1485,14 +1465,14 @@ export async function audPushLemlist(audId,campaignId=null){
     }
     const ids=contacts.map(c=>c.id).filter(Boolean);
     if(ids.length){try{await lemlistWriteBack(ids,campaignId,campaignName);}catch(e){clog('info','writeback: '+e.message);}}
-    clog('db','ð¤ '+ok+'/'+contacts.length+' pushed â '+esc(campaignName)+(fail?' ('+fail+' failed)':''));
+    clog('db','Ã°ÂÂÂ¤ '+ok+'/'+contacts.length+' pushed Ã¢ÂÂ '+esc(campaignName)+(fail?' ('+fail+' failed)':''));
     if(_llSelCampaign?._id===campaignId)await selectLemlistCampaign(campaignId);
   }else{
     openLemlistModal(contacts);
   }
 }
 
-// ââ LEMLIST CAMPAIGNS TAB âââââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ LEMLIST CAMPAIGNS TAB Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 export async function refreshLemlistCampaigns(){
   const panel=document.getElementById('lemlistPanel');
@@ -1697,19 +1677,19 @@ function renderSegTree(matches){
   if(!matches.length)return'<div style="font-size:11px;color:var(--t3)">No matching segments. Add more company details to improve matching.</div>';
   const groups={};
   for(const m of matches){const top=m.path[0]||'Other';if(!groups[top])groups[top]=[];groups[top].push(m);}
-  const topIcons={'Interest':'ð','Brands':'ð·ï¸','Connected TV (CTV)':'ðº'};
+  const topIcons={'Interest':'Ã°ÂÂÂ','Brands':'Ã°ÂÂÂ·Ã¯Â¸Â','Connected TV (CTV)':'Ã°ÂÂÂº'};
   let html='';
   for(const[top,items]of Object.entries(groups)){
-    const icon=topIcons[top]||'ð';
+    const icon=topIcons[top]||'Ã°ÂÂÂ';
     const subs={};for(const m of items){const sub=m.path.length>=2?m.path[1]:'General';if(!subs[sub])subs[sub]=[];subs[sub].push(m);}
     const topId='seg-'+top.replace(/[^a-z0-9]/gi,'');
-    html+=`<div style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:3px 0" onclick="ibToggle('${topId}')"><span id="${topId}-arrow" style="font-size:9px;color:var(--t3)">â¾</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;color:var(--t1)">${icon} ${esc(top)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t3)">${items.length} segments Â· ${Object.keys(subs).length} categories</span></div><div id="${topId}" style="margin-left:12px">`;
+    html+=`<div style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:3px 0" onclick="ibToggle('${topId}')"><span id="${topId}-arrow" style="font-size:9px;color:var(--t3)">Ã¢ÂÂ¾</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;color:var(--t1)">${icon} ${esc(top)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t3)">${items.length} segments ÃÂ· ${Object.keys(subs).length} categories</span></div><div id="${topId}" style="margin-left:12px">`;
     for(const[sub,segs]of Object.entries(subs).sort((a,b)=>b[1].reduce((s,m)=>s+m.score,0)-a[1].reduce((s,m)=>s+m.score,0))){
       const subId=topId+'-'+sub.replace(/[^a-z0-9]/gi,'');
       const barW=Math.min(100,Math.round(segs.reduce((s,m)=>s+m.score,0)/segs[0].score*20));
-      html+=`<div style="margin-bottom:4px"><div style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px 0" onclick="ibToggle('${subId}')"><span id="${subId}-arrow" style="font-size:8px;color:var(--t4)">â¸</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t2)">${esc(sub)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--t4)">${segs.length}</span><span style="display:inline-block;width:${barW}px;height:3px;border-radius:1px;background:var(--g);opacity:.5;margin-left:auto"></span></div><div id="${subId}" style="display:none;margin-left:14px">`;
+      html+=`<div style="margin-bottom:4px"><div style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px 0" onclick="ibToggle('${subId}')"><span id="${subId}-arrow" style="font-size:8px;color:var(--t4)">Ã¢ÂÂ¸</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t2)">${esc(sub)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--t4)">${segs.length}</span><span style="display:inline-block;width:${barW}px;height:3px;border-radius:1px;background:var(--g);opacity:.5;margin-left:auto"></span></div><div id="${subId}" style="display:none;margin-left:14px">`;
       for(const seg of segs.slice(0,10)){const leaf=seg.path[seg.path.length-1];const kwHtml=seg.keywords.map(k=>`<span style="background:var(--gb);color:var(--g);padding:0 3px;border-radius:1px;font-size:6px">${k}</span>`).join(' ');html+=`<div style="display:flex;align-items:baseline;gap:4px;padding:2px 0;border-bottom:1px solid var(--rule3)"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t1)">${esc(leaf)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--t4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">${esc(seg.desc)}</span><div style="display:flex;gap:2px;margin-left:auto;flex-shrink:0">${kwHtml}</div></div>`;}
-      if(segs.length>10)html+=`<div style="font-size:7px;color:var(--t4);padding:2px 0">â¦ and ${segs.length-10} more</div>`;
+      if(segs.length>10)html+=`<div style="font-size:7px;color:var(--t4);padding:2px 0">Ã¢ÂÂ¦ and ${segs.length-10} more</div>`;
       html+=`</div></div>`;
     }
     html+=`</div></div>`;
@@ -1720,9 +1700,9 @@ function renderSegTree(matches){
 export async function mapSegments(){
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-segments-body'),cnt=document.getElementById('ib-seg-cnt');if(!body)return;
-  body.innerHTML='<div class="ib-loading">Loading taxonomyâ¦</div>';
+  body.innerHTML='<div class="ib-loading">Loading taxonomyÃ¢ÂÂ¦</div>';
   const tax=await loadTaxonomy();
-  if(!tax||!tax.length){body.innerHTML='<div style="font-size:11px;color:var(--t3)">Taxonomy not available â check taxonomy.json</div>';return;}
+  if(!tax||!tax.length){body.innerHTML='<div style="font-size:11px;color:var(--t3)">Taxonomy not available Ã¢ÂÂ check taxonomy.json</div>';return;}
   const matches=matchSegments(c,tax);
   if(cnt)cnt.textContent=matches.length||'';
   clog('info',`Segment mapper: <b>${matches.length}</b> matches for ${esc(c.name)}`);
