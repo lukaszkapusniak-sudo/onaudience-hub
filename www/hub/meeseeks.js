@@ -2,7 +2,7 @@
 
 import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260330j';
 import { authHdr } from './utils.js?v=20260330j';
-import S from './state.js?v=20260330j';
+import S from './state.js?v=20260331d';
 import { _slug, getCoTags, getAv, ini, esc } from './utils.js?v=20260330j';
 import { anthropicFetch } from './api.js?v=20260330j';
 

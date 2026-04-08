@@ -1,7 +1,7 @@
 /* ═══ merge.js — company merge system ═══ */
 
 import { SB_URL } from './config.js?v=20260330j';
-import S from './state.js?v=20260330j';
+import S from './state.js?v=20260331d';
 import { esc, _slug, authHdr } from './utils.js?v=20260330j';
 import { clog } from './api.js?v=20260330j';
 
