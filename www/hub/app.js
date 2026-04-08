@@ -84,6 +84,13 @@ function switchTab(t) {
   /* Hide coPanel campaign detail when leaving lemlist */
   if (t !== 'lemlist' && coPanel?.querySelector('.ll-detail')) coPanel.style.display = 'none';
 
+  // hide coPanel and audiencesPanel on any tab switch except audiences
+  const _coP = document.getElementById('coPanel');
+  const _emp = document.getElementById('emptyState');
+  if (t !== 'companies') {
+    if (_coP) _coP.style.display = 'none';
+    if (_emp) _emp.style.display = 'none';
+  }
   if (t === 'audiences') {
     if (audPanel)   audPanel.style.display   = 'flex';
     if (listScroll) listScroll.style.display = 'none';

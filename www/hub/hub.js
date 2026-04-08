@@ -273,7 +273,7 @@ ${sec('ib-rels-body','🔗','Relations','<div class="ib-loading">Loading…</div
   renderList();document.getElementById('centerScroll').scrollTop=0;
   if(c.name){setTimeout(()=>loadRelationsBrief(slug),60);setTimeout(()=>loadIntelligence(slug,c.name),80);}
 }
-export function closePanel(){S.currentCompany=null;window.currentCompany=null;document.getElementById('coPanel').style.display='none';document.getElementById('emptyState').style.display='flex';renderList();}
+export function closePanel(){S.currentCompany=null;window.currentCompany=null;document.getElementById('coPanel').style.display='none';document.getElementById('emptyState').style.display='flex';const _ap2=document.getElementById('audiencesPanel');if(_ap2&&_ap2.style.display!=='flex')_ap2.style.display='none';renderList();}
 
 /* ═══ Actions ════════════════════════════════════════════════ */
 export function coAction(a){
