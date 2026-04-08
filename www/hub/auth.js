@@ -53,7 +53,7 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       hd:          'onaudience.pl',   // restrict to onaudience.pl Google Workspace
-      redirectTo:  window.location.href.split('#')[0],  // back to hub, no hash
+      redirectTo:  'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
     },
   });
   if (error) throw error;
