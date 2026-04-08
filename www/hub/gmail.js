@@ -209,3 +209,44 @@ export async function gmailSaveContacts() {
   window._gmailFoundContacts = [];
   if (window.clog) window.clog('db', 'Gmail contacts saved: ' + saved);
 }
+
+/* ── Nav bar toggle ──────────────────────────────────────────── */
+export function updateGmailNavBtn() {
+  var btn = document.getElementById('gmailNavBtn');
+  if (!btn) return;
+  if (gmailIsConnected()) {
+    var email = gmailGetStoredEmail();
+    btn.textContent = 'Gmail: ' + (email ? email.split('@')[0] : 'on');
+    btn.style.color = 'var(--cc)';
+    btn.style.borderColor = 'var(--cr)';
+    btn.title = 'Gmail connected as ' + email + ' — click to disconnect';
+  } else {
+    btn.textContent = 'Gmail';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    btn.title = 'Connect Gmail';
+  }
+}
+
+export async function gmailNavToggle() {
+  if (gmailIsConnected()) {
+    if (!confirm('Disconnect Gmail?')) return;
+    gmailDisconnect();
+    updateGmailNavBtn();
+    if (window.clog) window.clog('info', 'Gmail disconnected');
+  } else {
+    var btn = document.getElementById('gmailNavBtn');
+    if (btn) { btn.textContent = 'Gmail...'; btn.disabled = true; }
+    try {
+      await gmailConnect();
+      try { await gmailGetProfile(); } catch(e2) {}
+      updateGmailNavBtn();
+      if (window.clog) window.clog('info', 'Gmail connected as ' + gmailGetStoredEmail());
+    } catch(e) {
+      if (window.clog) window.clog('info', 'Gmail connect failed: ' + e.message);
+    } finally {
+      if (btn) btn.disabled = false;
+      updateGmailNavBtn();
+    }
+  }
+}
