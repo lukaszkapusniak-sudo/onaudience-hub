@@ -1,40 +1,49 @@
 /**
  * helpers.ts — shared test utilities (Hub v2.4)
+ *
+ * All tests use storageState from auth.setup, so the session is pre-injected.
+ * This helper just navigates and waits for the hub to be ready.
+ * If the login screen appears anyway (expired token), it re-injects via REST API.
  */
-import { Page, expect } from '@playwright/test';
+import { Page, expect, request } from '@playwright/test';
 import dotenv from 'dotenv';
 dotenv.config();
 
 const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
 
-async function ensureSignedIn(page: Page) {
-  const loginVisible = await page.locator('#oaLoginScreen').isVisible({ timeout: 4000 }).catch(() => false);
-  if (!loginVisible) return;
-
+async function signInAndInject(page: Page) {
   const email = process.env.OA_EMAIL;
   const pwd   = process.env.OA_PASSWORD;
-  if (!email || !pwd) throw new Error('OA_EMAIL / OA_PASSWORD not set');
+  if (!email || !pwd) return; // skip — no credentials
 
-  console.warn('Login screen appeared — signing in via CI account');
-  await page.waitForFunction(() => !!window.supabase, { timeout: 10000 });
-  const r = await page.evaluate(
-    async ({ email, pwd, SB_URL, SB_KEY }) => {
-      const sb = window.supabase.createClient(SB_URL, SB_KEY, {
-        auth: { persistSession: true, storageKey: 'oaHubSession', detectSessionInUrl: false }
-      });
-      const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-      return error ? { ok: false, msg: error.message } : { ok: true };
-    },
-    { email, pwd, SB_URL, SB_KEY }
-  );
-  if (!r.ok) throw new Error(`CI sign-in failed: ${(r as any).msg}`);
-  await page.reload();
+  const api = await request.newContext();
+  const res = await api.post(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+    data: { email, password: pwd },
+  });
+  await api.dispose();
+  if (!res.ok()) return;
+
+  const session = await res.json();
+  if (session.error) return;
+
+  await page.evaluate((s: string) => {
+    try { localStorage.setItem('oaHubSession', s); } catch {}
+    location.reload();
+  }, JSON.stringify(session));
 }
 
 export async function waitForHub(page: Page) {
   await page.goto('./');
-  await ensureSignedIn(page);
+
+  // If login screen appears despite storage state, re-inject session
+  const loginVisible = await page.locator('#oaLoginScreen').isVisible({ timeout: 4000 }).catch(() => false);
+  if (loginVisible) {
+    console.warn('Login screen appeared — re-injecting session');
+    await signInAndInject(page);
+  }
+
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
