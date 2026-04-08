@@ -323,3 +323,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderLoginScreen();
   }
 });
+
+/* ── Context menu — close on outside click or Escape ─────── */
+document.addEventListener('click', () => {
+  const menu = document.getElementById('ctxMenu');
+  if (menu && menu.style.display === 'block') menu.style.display = 'none';
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const menu = document.getElementById('ctxMenu');
+    if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
+  }
+});

@@ -29,11 +29,25 @@ test("context menu has action items", async ({ page }) => {
   expect(count).toBeGreaterThanOrEqual(4);
 });
 
-// TODO: context menu has no close-on-outside-click or Escape handler — hub bug
-
 test("context menu Draft option opens composer", async ({ page }) => {
   await page.locator(".c-row").first().click({ button: "right" });
   await expect(page.locator("#ctxMenu")).toBeVisible();
   await page.locator("#ctxMenu .ctx-item:has-text('Draft')").click();
   await expect(page.locator("#mcDrawer")).toHaveClass(/open/, { timeout: 5000 });
+});
+
+test("clicking outside closes context menu", async ({ page }) => {
+  await page.locator(".c-row").first().click({ button: "right" });
+  await expect(page.locator("#ctxMenu")).toBeVisible();
+  await page.locator("nav.nav").click();
+  await page.waitForTimeout(300);
+  await expect(page.locator("#ctxMenu")).not.toBeVisible();
+});
+
+test("Escape key closes context menu", async ({ page }) => {
+  await page.locator(".c-row").first().click({ button: "right" });
+  await expect(page.locator("#ctxMenu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  await expect(page.locator("#ctxMenu")).not.toBeVisible();
 });
