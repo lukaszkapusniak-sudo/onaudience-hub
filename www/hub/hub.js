@@ -647,7 +647,17 @@ function _getEmailSectionHTML(slug,companyName){
 function _refreshEmailSection(slug){
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-email-body');if(!body)return;
+  // Preserve existing scan results so toggling the section doesn't wipe them
+  const existingResults = document.getElementById('ib-email-results')?.innerHTML||'';
+  const existingStrip   = document.getElementById('ib-email-contacts-strip')?.innerHTML||'';
+  const stripDisplay    = document.getElementById('ib-email-contacts-strip')?.style.display||'none';
   body.innerHTML=_getEmailSectionHTML(slug||_slug(c.name),c.name);
+  // Restore preserved results
+  const newResults = document.getElementById('ib-email-results');
+  const newStrip   = document.getElementById('ib-email-contacts-strip');
+  if(newResults && existingResults) newResults.innerHTML=existingResults;
+  if(newStrip && existingStrip){ newStrip.innerHTML=existingStrip; newStrip.style.display=stripDisplay; }
+  if(newStrip && existingStrip) window._gmailFoundContacts=window._gmailFoundContacts||[];
 }
 
 export function oaGmailConnect(){ window.gmailConnectAndScan?.(window._currentEmailSlug, window.currentCompany?.name||''); }
@@ -1637,6 +1647,7 @@ export async function llUnsubLead(campaignId,email){
 }
 
 let _taxLoading=false;
+let _taxData=null;
 
 async function loadTaxonomy(){
   if(_taxData)return _taxData;
