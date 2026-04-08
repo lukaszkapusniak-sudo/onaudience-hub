@@ -1,1 +1,2 @@
-hello world
+// test
+export const x = 1;
