@@ -60,7 +60,13 @@ async function _gFetch(path, params) {
   params = params || {};
   var token = await _ensureToken();
   var url = new URL(GMAIL_BASE + path);
-  Object.entries(params).forEach(function(kv){ url.searchParams.set(kv[0], kv[1]); });
+  Object.entries(params).forEach(function(kv){
+    if (Array.isArray(kv[1])) {
+      kv[1].forEach(function(v){ url.searchParams.append(kv[0], v); });
+    } else {
+      url.searchParams.set(kv[0], kv[1]);
+    }
+  });
   var res = await fetch(url.toString(), { headers: { Authorization: 'Bearer ' + token } });
   if (!res.ok) { var txt = await res.text().catch(function(){ return ''; }); throw new Error('Gmail API ' + res.status + ': ' + txt.slice(0,100)); }
   return res.json();
@@ -85,7 +91,7 @@ export async function gmailSearchCompany(companyName, domain) {
   var msgs = list.messages || [];
   if (!msgs.length) return { threads: [], contacts: [], query: query };
   var details = await Promise.allSettled(
-    msgs.slice(0,8).map(function(m){ return _gFetch('/messages/' + m.id, { format: 'metadata', metadataHeaders: 'From,To,Subject,Date' }); })
+    msgs.slice(0,8).map(function(m){ return _gFetch('/messages/' + m.id, { format: 'metadata', metadataHeaders: ['From','To','Subject','Date'] }); })
   );
   var threads = [], cmap = {};
   details.forEach(function(r) {
@@ -115,7 +121,10 @@ export function gmailSectionHTML(slug, companyName) {
     + '<span style="font:600 9px monospace;color:var(--g)">CONNECTED</span>'
     + '<span style="font:400 9px monospace;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis">' + esc(gmailGetStoredEmail()) + '</span>'
     + '<button class="btn sm" onclick="window.gmailDisconnectUI()">Disconnect</button></div>'
-    + '<button class="btn sm p" onclick="window.gmailScanCompany(\'' + s + '\',\'' + n + '\')">Scan Gmail for ' + n + '</button>'
+    + '<div style="display:flex;gap:6px;margin-bottom:4px">'
+    + '<button class="btn sm p" onclick="window.gmailScanCompany(\'' + s + '\',\'' + n + '\')">Scan Gmail</button>'
+    + '<button class="btn sm" onclick="window.gmailEnrichContacts(\'' + s + '\',\'' + n + '\')">Update Contacts</button>'
+    + '</div>'
     + '<div id="ib-email-results" style="margin-top:8px"></div>'
     + '<div id="ib-email-contacts-strip" style="display:none;margin-top:8px;padding:8px;background:var(--surf3);border:1px solid var(--rule)"></div>'
     + '</div>';
@@ -249,4 +258,158 @@ export async function gmailNavToggle() {
       updateGmailNavBtn();
     }
   }
+}
+
+/* ── Update CRM contacts from Gmail data ─────────────────────── */
+export async function gmailEnrichContacts(slug, companyName) {
+  var el = document.getElementById('ib-email-results');
+  var strip = document.getElementById('ib-email-contacts-strip');
+  if (el) el.innerHTML = '<div style="font-size:9px;color:var(--t3);animation:pulse 1.4s infinite">Scanning Gmail for contacts...</div>';
+
+  var co = window._oaState && window._oaState.companies && window._oaState.companies.find(function(c){ return (c.id||(window._slug&&window._slug(c.name||'')))===slug; });
+  var domain = (co && co.website) || '';
+
+  try {
+    // Fetch up to 50 messages to find more contacts
+    var dc = '';
+    if (domain) dc = domain.replace(/^https?:\/\//i,'').replace(/\/.*$/,'').trim();
+    var parts = [];
+    if (dc) parts.push('(from:' + dc + ' OR to:' + dc + ')');
+    if (companyName) {
+      var q = companyName.replace(/['"]/g,'').trim();
+      if (!dc || q.toLowerCase() !== dc.split('.')[0].toLowerCase()) parts.push('"' + q + '"');
+    }
+    var query = parts.join(' OR ');
+    if (!query) throw new Error('No search terms');
+
+    var list = await _gFetch('/messages', { q: query, maxResults: 50 });
+    var msgs = list.messages || [];
+    if (!msgs.length) {
+      if (el) el.innerHTML = '<div style="font-size:9px;color:var(--t3)">No emails found for ' + esc(companyName) + '</div>';
+      return;
+    }
+
+    // Fetch details for up to 20 messages
+    var details = await Promise.allSettled(
+      msgs.slice(0,20).map(function(m){ return _gFetch('/messages/' + m.id, { format: 'metadata', metadataHeaders: ['From','To','Cc','Subject','Date'] }); })
+    );
+
+    // Extract unique contacts from From/To/Cc headers
+    var cmap = {};
+    details.forEach(function(r) {
+      if (r.status !== 'fulfilled') return;
+      var hh = {}; ((r.value.payload && r.value.payload.headers) || []).forEach(function(x){ hh[x.name] = x.value; });
+
+      // Parse From, To, Cc headers
+      ['From','To','Cc'].forEach(function(hName) {
+        var val = hh[hName] || '';
+        // Split by comma for multiple recipients
+        val.split(',').forEach(function(addr) {
+          addr = addr.trim();
+          var m2 = addr.match(/^(.+?)\s*<(.+?)>/) || addr.match(/^([^\s@]+@[^\s@]+)$/);
+          if (m2) {
+            var name = (m2[1]||'').trim().replace(/^["']|["']$/g,'');
+            var email = (m2[2]||m2[1]||'').trim().toLowerCase();
+            if (email.indexOf('@') !== -1 && email.indexOf(dc||'NOMATCH') !== -1 && !cmap[email]) {
+              cmap[email] = { name: name || email.split('@')[0], email: email };
+            }
+          }
+        });
+      });
+    });
+
+    var contacts = Object.values(cmap);
+
+    // Also check existing CRM contacts and enrich with email if missing
+    var existingContacts = window._oaState && window._oaState.contacts && window._oaState.contacts.filter(function(ct){
+      return ct.company_id === slug || (ct.company_name||'').toLowerCase() === companyName.toLowerCase();
+    }) || [];
+
+    var newContacts = contacts.filter(function(c){
+      return !existingContacts.some(function(ec){ return (ec.email||'').toLowerCase() === c.email; });
+    });
+
+    var enriched = existingContacts.filter(function(ec){
+      if (ec.email) return false; // already has email
+      return contacts.some(function(c){ return (ec.full_name||'').toLowerCase().includes(c.name.toLowerCase()) && c.name.length > 2; });
+    }).map(function(ec){
+      var match = contacts.find(function(c){ return (ec.full_name||'').toLowerCase().includes(c.name.toLowerCase()); });
+      return { id: ec.id, email: match.email };
+    });
+
+    window._gmailFoundContacts = newContacts.map(function(c){
+      return { full_name: c.name, email: c.email, company_name: companyName, company_id: slug, source: 'gmail_scan' };
+    });
+
+    if (el) {
+      el.innerHTML = '<div style="font:600 8px monospace;text-transform:uppercase;color:var(--t3);margin-bottom:6px">'
+        + msgs.length + ' emails scanned · ' + contacts.length + ' unique contacts found</div>'
+        + (newContacts.length ? '<div style="font-size:9px;color:var(--g);margin-bottom:4px">' + newContacts.length + ' new contact' + (newContacts.length>1?'s':'') + ' not in CRM</div>' : '')
+        + (enriched.length ? '<div style="font-size:9px;color:var(--poc);margin-bottom:4px">' + enriched.length + ' existing contact' + (enriched.length>1?'s':'') + ' can get email added</div>' : '')
+        + (!newContacts.length && !enriched.length ? '<div style="font-size:9px;color:var(--t3)">All contacts already in CRM with emails</div>' : '');
+    }
+
+    if (strip && (newContacts.length || enriched.length)) {
+      strip.style.display = 'block';
+      strip.innerHTML = (newContacts.length ? newContacts.map(function(c){
+          return '<div style="display:flex;gap:6px;padding:3px 0;font-size:10px">'
+            + '<span style="color:var(--t1)">' + esc(c.name) + '</span>'
+            + '<span style="color:var(--t4)">' + esc(c.email) + '</span>'
+            + '<span style="color:var(--g);font-size:8px">NEW</span></div>';
+        }).join('') : '')
+        + (enriched.length ? enriched.map(function(e){
+          var ct = existingContacts.find(function(ec){ return ec.id === e.id; });
+          return '<div style="display:flex;gap:6px;padding:3px 0;font-size:10px">'
+            + '<span style="color:var(--t1)">' + esc(ct && ct.full_name || e.id) + '</span>'
+            + '<span style="color:var(--t4)">' + esc(e.email) + '</span>'
+            + '<span style="color:var(--poc);font-size:8px">ADD EMAIL</span></div>';
+        }).join('') : '')
+        + '<button class="btn sm p" onclick="window.gmailSaveAndEnrichContacts('+JSON.stringify(enriched)+')" style="margin-top:6px">'
+        + 'Save ' + (newContacts.length + enriched.length) + ' update' + (newContacts.length+enriched.length>1?'s':'') + ' to CRM</button>';
+    } else if (strip) { strip.style.display = 'none'; }
+
+    if (window.clog) window.clog('db', 'Gmail enrichment: ' + newContacts.length + ' new contacts, ' + enriched.length + ' enriched for ' + esc(companyName));
+
+  } catch(e) {
+    if (el) el.innerHTML = '<div style="font-size:9px;color:var(--prc)">Error: ' + esc(e.message) + '</div>';
+    if (window.clog) window.clog('info', 'Gmail enrich error: ' + esc(e.message));
+  }
+}
+
+export async function gmailSaveAndEnrichContacts(enriched) {
+  // Save new contacts
+  var newContacts = window._gmailFoundContacts || [];
+  var saved = 0;
+  for (var i = 0; i < newContacts.length; i++) {
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/contacts', {
+        method: 'POST',
+        headers: authHdr({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify(newContacts[i])
+      });
+      if (res.ok || res.status === 409) saved++;
+    } catch(e2) {}
+  }
+  // Patch existing contacts with email
+  var enriched2 = enriched || [];
+  var patched = 0;
+  for (var j = 0; j < enriched2.length; j++) {
+    try {
+      var res2 = await fetch(SB_URL + '/rest/v1/contacts?id=eq.' + encodeURIComponent(enriched2[j].id), {
+        method: 'PATCH',
+        headers: authHdr({ Prefer: 'return=minimal' }),
+        body: JSON.stringify({ email: enriched2[j].email })
+      });
+      if (res2.ok) {
+        patched++;
+        // Update local state
+        var ct = window._oaState && window._oaState.contacts && window._oaState.contacts.find(function(c){ return c.id === enriched2[j].id; });
+        if (ct) ct.email = enriched2[j].email;
+      }
+    } catch(e3) {}
+  }
+  var strip = document.getElementById('ib-email-contacts-strip');
+  if (strip) strip.innerHTML = '<div style="font-size:9px;color:var(--g)">Saved ' + saved + ' new + ' + patched + ' emails added to CRM</div>';
+  window._gmailFoundContacts = [];
+  if (window.clog) window.clog('db', 'Gmail enrich done: ' + saved + ' new, ' + patched + ' emails patched');
 }
