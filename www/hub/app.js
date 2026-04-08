@@ -1,10 +1,10 @@
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ app.js Ã¢ÂÂ boot + window exports (v2.3 Ã¢ÂÂ magic link + audit) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
 import S from './state.js?v=20260331d';
 import { _slug } from './utils.js?v=20260331d';
 import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260331d';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead } from './hub.js?v=20260331d';
 import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260331d';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL, extendSwitchTab } from './tcf.js?v=20260331d';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260331d';
 import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260331d';
 import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260331d';
 import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected } from './gmail.js?v=20260331d';
@@ -18,25 +18,25 @@ import {
   renderUserBadge,
 } from './auth.js?v=20260331d';
 
-/* Ã¢ÂÂÃ¢ÂÂ Theme Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
 function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
 applyTheme(localStorage.getItem('oaTheme')||'dark');
 
-/* Ã¢ÂÂÃ¢ÂÂ Auth token store Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-   api.js reads window._oaToken directly on each request Ã¢ÂÂ a simple
+/* ── Auth token store ───────────────────────────────────────────
+   api.js reads window._oaToken directly on each request — a simple
    shared variable avoids the ES-module fetch-interception deadlock.
    bootHub() primes it from the session; auth.js refreshes it.
-   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+   ─────────────────────────────────────────────────────────────── */
 window._oaToken = null;
 window._oaState = S;   // shared ref so modules with mismatched version URLs can access canonical state
 
-/* Ã¢ÂÂÃ¢ÂÂ Audit trail helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+/* ── Audit trail helpers ────────────────────────────────────────
    Thin wrappers that add context then call logActivity().
    Call these AFTER any successful DB write in hub.js / api.js.
    Since we can't easily patch hub.js internals, we expose them
    on window so the existing hub code can call window.oaLog*().
-   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+   ─────────────────────────────────────────────────────────────── */
 function oaLogCompany(action, company, diff=null) {
   logActivity({
     action,
@@ -67,7 +67,7 @@ function oaLogAudience(action, audience, diff=null) {
   }).catch(()=>{});
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Tab switch Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── Tab switch ─────────────────────────────────────────────── */
 function switchTab(t) {
   _switchTab(t);
 
@@ -137,23 +137,23 @@ function switchTab(t) {
   }
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Prospect finder shim Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── Prospect finder shim ───────────────────────────────────── */
 function openProspectFinder(q) {
   openClaude(q
-    ? `Find companies matching: ${q} Ã¢ÂÂ for onAudience data partnerships`
-    : 'Find 10 high-priority prospect companies for onAudience data partnerships Ã¢ÂÂ DSPs, SSPs, agencies, data providers not yet in our CRM');
+    ? `Find companies matching: ${q} — for onAudience data partnerships`
+    : 'Find 10 high-priority prospect companies for onAudience data partnerships — DSPs, SSPs, agencies, data providers not yet in our CRM');
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Sign out Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── Sign out ───────────────────────────────────────────────── */
 async function oaSignOut() {
   if (!confirm('Sign out?')) return;
   await signOut();
 }
 
-/* Ã¢ÂÂÃ¢ÂÂ Manual DB sync Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+/* ── Manual DB sync ─────────────────────────────────────────────
    Callable from the nav status badge (click) and auto-triggered
    on tab refocus if data is >5 min stale.
-   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+   ─────────────────────────────────────────────────────────────── */
 let _lastSync = 0;
 let _syncing  = false;
 
@@ -171,14 +171,14 @@ async function refreshData(force = false) {
   }
 
   _syncing = true;
-  if (el) { el.classList.add('syncing'); el.title = 'SyncingÃ¢ÂÂ¦'; }
+  if (el) { el.classList.add('syncing'); el.title = 'Syncing…'; }
 
   try {
     await loadFromSupabase(renderStats, renderList, renderTagPanel);
     _lastSync = Date.now();
-    clog('db', `Ã¢ÂÂº Synced Ã¢ÂÂ ${S.companies.length} companies ÃÂ· ${S.contacts.length} contacts`);
+    clog('db', `↺ Synced — ${S.companies.length} companies · ${S.contacts.length} contacts`);
   } catch(e) {
-    clog('db', `Ã¢ÂÂº Sync failed: ${e.message}`);
+    clog('db', `↺ Sync failed: ${e.message}`);
   } finally {
     _syncing = false;
     if (el) { el.classList.remove('syncing'); el.title = 'Click to sync'; }
@@ -192,7 +192,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-/* Ã¢ÂÂÃ¢ÂÂ window exports Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── window exports ─────────────────────────────────────────── */
 Object.assign(window, {
   /* theme */
   getCurrentCompany: () => S.currentCompany,
@@ -227,7 +227,7 @@ Object.assign(window, {
   oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts,
 
   /* drawers / modals */
-  openDrawer, closeDrawer, openContactFull,
+  openDrawer, closeDrawer,
   drEmail, drLinkedIn, drGmail, drResearch,
   promptResearch, promptSimilar,
   closeModal, submitModal,
@@ -280,9 +280,9 @@ Object.assign(window, {
   _pickMergeSource:    (...a) => window._pickMergeSource?.(...a),
 });
 
-/* Ã¢ÂÂÃ¢ÂÂ Boot Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ── Boot ───────────────────────────────────────────────────── */
 
-/* bootHub Ã¢ÂÂ idempotent, called from both INITIAL_SESSION and the
+/* bootHub — idempotent, called from both INITIAL_SESSION and the
    explicit getSession() check below. Guard prevents double-boot. */
 let _hubBooted = false;
 async function bootHub(session) {
@@ -301,14 +301,14 @@ async function bootHub(session) {
   if (profile) {
     S.currentUserProfile = profile;
     renderUserBadge(profile);
-    clog('info', `Signed in as <b>${profile.full_name || session.user.email}</b> ÃÂ· ${profile.active_role}`);
+    clog('info', `Signed in as <b>${profile.full_name || session.user.email}</b> · ${profile.active_role}`);
   }
   await loadFromSupabase(renderStats, renderList, renderTagPanel);
   _lastSync = Date.now();
   loadMergeSuggestionsCount().then(n => {
     if (n > 0) { const badge = document.getElementById('mergeBadge'); if (badge) { badge.textContent = n; badge.style.display = 'inline'; } }
   });
-  /* Retry on cold CORS start Ã¢ÂÂ poll up to 4ÃÂ at 1s intervals */
+  /* Retry on cold CORS start — poll up to 4× at 1s intervals */
   if (!S.companies.length) {
     let _retries = 0;
     const _retryTimer = setInterval(async () => {
@@ -325,11 +325,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* 1. Subscribe to future auth changes (SIGNED_IN after login, SIGNED_OUT) */
   onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
-      /* Fresh login Ã¢ÂÂ reset boot guard so hub re-initialises cleanly */
+      /* Fresh login — reset boot guard so hub re-initialises cleanly */
       _hubBooted = false;
       await bootHub(session);
     } else if (event === 'INITIAL_SESSION' && session && !_hubBooted) {
-      /* Caught the initial session event Ã¢ÂÂ boot if not already done */
+      /* Caught the initial session event — boot if not already done */
       await bootHub(session);
     } else if (event === 'SIGNED_OUT') {
       _hubBooted = false;
@@ -354,106 +354,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderLoginScreen();
   }
 });
-
-/* Ã¢ÂÂÃ¢ÂÂ Context menu Ã¢ÂÂ close on outside click or Escape Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
-document.addEventListener('click', () => {
-  const menu = document.getElementById('ctxMenu');
-  if (menu && menu.style.display === 'block') menu.style.display = 'none';
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    const menu = document.getElementById('ctxMenu');
-    if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
-  }
-});
-
-/* Ã¢ÂÂÃ¢ÂÂ Keyboard navigation Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-   j/Ã¢ÂÂ  Ã¢ÂÂ next company row
-   k/Ã¢ÂÂ  Ã¢ÂÂ previous company row
-   Enter Ã¢ÂÂ open focused row
-   Escape Ã¢ÂÂ close panel / drawer / context menu
-   /    Ã¢ÂÂ focus search input
-   Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
-(function initKeyNav() {
-  let _focusIdx = -1;
-
-  function getRows() {
-    return Array.from(document.querySelectorAll('#listScroll .c-row'));
-  }
-
-  function setFocus(idx) {
-    const rows = getRows();
-    if (!rows.length) return;
-    // clamp
-    idx = Math.max(0, Math.min(idx, rows.length - 1));
-    // remove previous highlight
-    rows.forEach(r => r.classList.remove('kb-focus'));
-    rows[idx].classList.add('kb-focus');
-    rows[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    _focusIdx = idx;
-  }
-
-  function isTyping() {
-    const el = document.activeElement;
-    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-  }
-
-  document.addEventListener('keydown', (e) => {
-    const menu = document.getElementById('ctxMenu');
-    const drawer = document.getElementById('ctDrawer');
-    const mcDrawer = document.getElementById('mcDrawer');
-
-    // Escape Ã¢ÂÂ priority chain
-    if (e.key === 'Escape') {
-      if (menu && menu.style.display === 'block') { menu.style.display = 'none'; return; }
-      if (mcDrawer && mcDrawer.classList.contains('open')) { window.closeComposer?.(); return; }
-      if (drawer && drawer.classList.contains('open')) { window.closeDrawer?.(); return; }
-      if (document.getElementById("coPanel")?.style.display !== "none") { window.closePanel?.(); _focusIdx = -1; return; }
-      return;
-    }
-
-    // / Ã¢ÂÂ focus search (don't interfere if already typing)
-    if (e.key === '/' && !isTyping()) {
-      e.preventDefault();
-      document.getElementById('searchInput')?.focus();
-      return;
-    }
-
-    // Skip nav keys if user is typing in an input
-    if (isTyping()) return;
-
-    // Skip if any drawer/modal is open
-    if (mcDrawer?.classList.contains('open')) return;
-    if (drawer?.classList.contains('open')) return;
-
-    const rows = getRows();
-    if (!rows.length) return;
-
-    if (e.key === 'j' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      setFocus(_focusIdx < 0 ? 0 : _focusIdx + 1);
-      return;
-    }
-
-    if (e.key === 'k' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      setFocus(_focusIdx <= 0 ? 0 : _focusIdx - 1);
-      return;
-    }
-
-    if (e.key === 'Enter' && _focusIdx >= 0) {
-      e.preventDefault();
-      const slug = rows[_focusIdx]?.dataset?.slug;
-      if (slug) window.openBySlug?.(slug);
-      return;
-    }
-  });
-
-  // Reset focus index when list re-renders
-  const listScroll = document.getElementById('listScroll');
-  if (listScroll) {
-    new MutationObserver(() => { _focusIdx = -1; })
-      .observe(listScroll, { childList: true });
-  }
-})();
