@@ -2,7 +2,9 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
-  await expect(page.locator("nav.nav")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("nav.nav")).toBeVisible({ timeout: 10000 });
   await page.locator("button[onclick*=openComposer]").first().click();
   await expect(page.locator("#mcDrawer")).toHaveClass(/open/, { timeout: 8000 });
 });

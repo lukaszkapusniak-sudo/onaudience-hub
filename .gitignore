@@ -6,3 +6,4 @@ www/*.zip
 www/hub/*.zip
 playwright-report/
 test-results/
+tests/fixtures/.auth.json

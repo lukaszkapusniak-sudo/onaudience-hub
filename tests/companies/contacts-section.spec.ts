@@ -12,7 +12,8 @@ import { test, expect, Page } from '@playwright/test';
 
 async function waitForHub(page: Page) {
   await page.goto('./');
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
   await page.evaluate(() => {
     window.clearAI?.();

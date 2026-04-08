@@ -7,13 +7,15 @@ import { test, expect } from '@playwright/test';
 
 test('hub loads without blank screen', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.nav-title')).toContainText('Sales Intelligence Hub');
 });
 
 test('stats bar renders', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('.stats-bar')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.stats-bar')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.sb-lbl').first()).toBeVisible();
 });
 
@@ -45,7 +47,8 @@ test('company count is non-zero', async ({ page }) => {
 
 test('filter chips visible', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('#sbClient')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('#sbProspect')).toBeVisible();
   await expect(page.locator('#sbPartner')).toBeVisible();
