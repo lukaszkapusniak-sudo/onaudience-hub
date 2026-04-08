@@ -1,9 +1,9 @@
-/* ═══ gmail.js — Gmail OAuth (Google Identity Services) + API ═══
-   Uses GIS token model — no backend, no client_secret needed.
+/* âââ gmail.js â Gmail OAuth (Google Identity Services) + API âââ
+   Uses GIS token model â no backend, no client_secret needed.
    Token stored in localStorage('oaGmailToken') with expiry.
    Requires <script src="https://accounts.google.com/gsi/client">
    in index.html (added separately).
-   ════════════════════════════════════════════════════════════ */
+   ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 import { GMAIL_CLIENT_ID } from './config.js?v=20260331d';
 import { esc } from './utils.js?v=20260331d';
@@ -13,7 +13,7 @@ import { authHdr, clog } from './api.js?v=20260331d';
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
-/* ── Token storage ───────────────────────────────────────────── */
+/* ââ Token storage âââââââââââââââââââââââââââââââââââââââââââââ */
 function _saveToken(accessToken, expiresIn = 3600) {
   const expiry = Date.now() + (expiresIn - 60) * 1000; // 60s buffer
   localStorage.setItem('oaGmailToken', accessToken);
@@ -46,7 +46,7 @@ export function gmailGetStoredName() {
   return localStorage.getItem('oaGmailName') || '';
 }
 
-/* ── GIS Token Client ────────────────────────────────────────── */
+/* ââ GIS Token Client ââââââââââââââââââââââââââââââââââââââââââ */
 let _tokenClient = null;
 let _pendingResolve = null;
 let _pendingReject = null;
@@ -73,7 +73,7 @@ function _getTokenClient() {
   return _tokenClient;
 }
 
-/* ── Connect / Disconnect ────────────────────────────────────── */
+/* ââ Connect / Disconnect ââââââââââââââââââââââââââââââââââââââ */
 export function gmailConnect() {
   return new Promise((resolve, reject) => {
     try {
@@ -96,7 +96,7 @@ export function gmailDisconnect() {
   _tokenClient = null;
 }
 
-/* ── Ensure valid token (re-prompt if expired) ───────────────── */
+/* ââ Ensure valid token (re-prompt if expired) âââââââââââââââââ */
 async function _ensureToken() {
   const existing = _getToken();
   if (existing) return existing;
@@ -161,24 +161,22 @@ export async function gmailSearchCompany(companyName, domain) {
 }
 
 export function gmailSectionHTML(slug, companyName) {
-  if (!GMAIL_CLIENT_ID || GMAIL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') return `<div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--prc);padding:8px 0">Gmail not configured — add GMAIL_CLIENT_ID to config.js</div>`;
-  if (!gmailIsConnected()) return `<div style="padding:4px 0"><div style="font:400 10px 'IBM Plex Sans',sans-serif;color:var(--t3);margin-bottom:10px;line-height:1.5">Connect your Gmail to scan email history with <b>${esc(companyName)}</b></div><button class="btn sm p" onclick="window.gmailConnectAndScan('${esc(slug)}','${esc(companyName)}')">Connect Gmail ↗</button></div>`;
-  const gmailEmail = gmailGetStoredEmail();
-  return `<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surf3);border-radius:3px;margin-bottom:8px;border:1px solid var(--rule)"><span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--g)">● CONNECTED</span><span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(gmailEmail)}</span><button class="btn sm" onclick="window.gmailDisconnectUI()" style="flex-shrink:0">Disconnect</button></div><button class="btn sm p" onclick="window.gmailScanCompany('${esc(slug)}','${esc(companyName)}')">🔍 Scan Gmail for ${esc(companyName)}</button><div id="ib-email-results" style="margin-top:8px"></div><div id="ib-email-contacts-strip" style="display:none;margin-top:8px;padding:8px;background:var(--surf3);border-radius:3px;border:1px solid var(--rule)"></div></div>`;
+  if (!GMAIL_CLIENT_ID || GMAIL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') return `<div style="font:400 10px 'IBM Plex Mono',monospace;color:var(--prc);padding:8px 0">Gmail not configured â add GMAIL_CLIENT_ID to config.js</div>`;
+  if (!gmailIsConnected()) return `<div style="padding:4px 0"><div style="font:400 10px 'IBM Plex Sans',sans-serif;color:var(--t3);margin-bottom:10px;line-height:1.5">Connect your Gmail to scan email history with <b>${esc(companyName)}</b></div><button class="btn sm p" onclick="window.gmailConnectAndScan('${esc(slug)}','${esc(companyName)}')">Connect Gmail';IBM Plex Mono',monospace;color:var(--g)">â CONNECTED</span><span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(gmailEmail)}</span><button class="btn sm" onclick="window.gmailDisconnectUI()" style="flex-shrink:0">Disconnect</button></div><button class="btn sm p" onclick="window.gmailScanCompany('${esc(slug)}','${esc(companyName)}')">ð Scan Gmail for ${esc(companyName)}</button><div id="ib-email-results" style="margin-top:8px"></div><div id="ib-email-contacts-strip" style="display:none;margin-top:8px;padding:8px;background:var(--surf3);border-radius:3px;border:1px solid var(--rule)"></div></div>`;
 }
 
 export async function gmailConnectAndScan(slug, companyName) {
   const btn = document.querySelector('[onclick*="gmailConnectAndScan"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Connectingâ¦'; }
   try {
     await gmailConnect();
     try { await gmailGetProfile(); } catch(_) {}
     const body = document.getElementById('ib-email-body');
     if (body) body.innerHTML = gmailSectionHTML(slug, companyName);
     await gmailScanCompany(slug, companyName);
-    if (window.clog) window.clog('info', `Gmail connected ✓ - scanning ${esc(companyName)}`);
+    if (window.clog) window.clog('info', `Gmail connected â - scanning ${esc(companyName)}`);
   } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Connect Gmail ↗7; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect Gmail â7; }
     if (window.clog) window.clog('info', `Gmail connect failed: ${esc(e.message)}`);
   }
 }
@@ -196,21 +194,21 @@ export async function gmailScanCompany(slug, companyName) {
   const resultsEl = document.getElementById('ib-email-results');
   const stripEl   = document.getElementById('ib-email-contacts-strip');
   if (!resultsEl) return;
-  resultsEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);animation:pulse 1.4s infinite">⟳ Scanning Gmail...</div>`;
+  resultsEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);animation:pulse 1.4s infinite">â³ Scanning Gmail...</div>`;
   const co = window._oaState?.companies?.find(c => (c.id || window._slug?.(c.name || '')) === slug);
   const domain = co?.website || '';
   try {
     const { threads, contacts, total } = await gmailSearchCompany(companyName, domain);
     if (!threads.length) { resultsEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3);padding:4px 0">No emails found for <b>${esc(companyName)}</b></div>`; return; }
-    resultsEl.innerHTML = `<div style="font:600 8px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:6px">${threads.length} emails found${total > threads.length ? ` (of ~${total})` : ''}</div>${threads.map(t => `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3)"><div style="width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div><div style="flex:1;min-width:0"><div style="font:500 11px 'IBM Plex Mono',monospace;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</div><div style="font:400 8px 'IBM Plex Mono',monospace;color:var(--t3);margin-top:2px;display:flex;gap:8px"><span>${esc(t.from.slice(0,40))}${t.from.length>40?'…':''}</span><span style="color:var(--t4)">${t.date}</span></div></div></div>`).join('')}`;
+    resultsEl.innerHTML = `<div style="font:600 8px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:6px">${threads.length} emails found${total > threads.length ? ` (of ~${total})` : ''}</div>${threads.map(t => `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3)"><div style="width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:4px"></div><div style="flex:1;min-width:0"><div style="font:500 11px 'IBM Plex Mono',monospace;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</div><div style="font:400 8px 'IBM Plex Mono',monospace;color:var(--t3);margin-top:2px;display:flex;gap:8px"><span>${esc(t.from.slice(0,40))}${t.from.length>40?'â¦':''}</span><span style="color:var(--t4)">${t.date}</span></div></div></div>`).join('')}`;
     if (contacts.length) {
       stripEl.style.display = 'block';
       window._gmailFoundContacts = contacts.map(c => ({ full_name: c.name, email: c.email, company_name: companyName, company_id: slug, source: 'gmail_scan' }));
-      stripEl.innerHTML = `<div style="font:600 8px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:6px">${contacts.length} contact${contacts.length>1?'s':''} found</div>${contacts.map(c => `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font:400 10px 'IBM Plex Mono',monospace"><span style="color:var(--t1)">${esc(c.name||c.email)}</span><span style="color:var(--t4)">${esc(c.email)}</span></div>`).join('')}<button class="btn sm p" onclick="window.gmailSaveContacts()" style="margin-top:6px">💾 Save ${contacts.length} contact${contacts.length>1?'s':''} to CRM</button>`;
+      stripEl.innerHTML = `<div style="font:600 8px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:6px">${contacts.length} contact${contacts.length>1?'s':''} found</div>${contacts.map(c => `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font:400 10px 'IBM Plex Mono',monospace"><span style="color:var(--t1)">${esc(c.name||c.email)}</span><span style="color:var(--t4)">${esc(c.email)}</span></div>`).join('')}<button class="btn sm p" onclick="window.gmailSaveContacts()" style="margin-top:6px">ð¾ Save ${contacts.length} contact${contacts.length>1?'s':''} to CRM</button>`;
     } else { stripEl.style.display = 'none'; }
     if (window.clog) window.clog('info', `Gmail scan - ${threads.length} emails, ${contacts.length} contacts for ${esc(companyName)}`);
   } catch (e) {
-    resultsEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--prc)">✕ ${esc(e.message)}${e.message.includes('401')||e.message.includes('token')?`<br><button class="btn sm" onclick="window.gmailConnectAndScan('${esc(slug)}','${esc(companyName)}')" style="margin-top:4px">↺ Reconnect</button>`:''}</div>`;
+    resultsEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--prc)">â ${esc(e.message)}${e.message.includes('401')||e.message.includes('token')?`<br><button class="btn sm" onclick="window.gmailConnectAndScan('${esc(slug)}','${esc(companyName)}')" style="margin-top:4px">âº Reconnect</button>`:''}</div>`;
     if (window.clog) window.clog('info', `Gmail scan error for ${esc(companyName)}: ${esc(e.message)}`);
   }
 }
@@ -219,13 +217,13 @@ export async function gmailSaveContacts() {
   const contacts = window._gmailFoundContacts;
   if (!contacts?.length) return;
   const btn = document.querySelector('[onclick="window.gmailSaveContacts()"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Savingâ¦'; }
   let saved = 0;
   for (const ct of contacts) {
     try { const res = await fetch(`${SB_URL}/rest/v1/contacts`, { method: 'POST', headers: authHdr({ Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify(ct) }); if (res.ok||res.status===409) saved++; } catch (_) {}
   }
   const stripEl = document.getElementById('ib-email-contacts-strip');
-  if (stripEl) stripEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--g)">✓ Saved ${saved} contact${saved!==1?'s':''} to CRM</div>`;
+  if (stripEl) stripEl.innerHTML = `<div style="font:400 9px 'IBM Plex Mono',monospace;color:var(--g)">â Saved ${saved} contact${saved!==1?'s':''} to CRM</div>`;
   window._gmailFoundContacts = [];
   if (window.clog) window.clog('db', `Gmail contacts saved: <b>${saved}</b>`);
 }
