@@ -296,8 +296,23 @@ Object.assign(window, {
 /* bootHub — idempotent, called from both INITIAL_SESSION and the
    explicit getSession() check below. Guard prevents double-boot. */
 let _hubBooted = false;
+const ALLOWED_DOMAINS = ['onaudience.pl', 'cloudtechnologies.pl'];
+
 async function bootHub(session) {
   if (_hubBooted) return;
+
+  /* ── Domain enforcement ───────────────────────────────── */
+  const email  = session?.user?.email || '';
+  const domain = email.split('@')[1] || '';
+  if (!ALLOWED_DOMAINS.includes(domain)) {
+    // Sign out silently, then show the login screen with a clear error
+    await signOut().catch(() => {});
+    renderLoginScreen();
+    const err = document.getElementById('oa-err');
+    if (err) err.textContent = `Access restricted — ${email || 'unknown account'} is not authorised.`;
+    return;
+  }
+
   _hubBooted = true;
   /* Prime the shared token store from the session we already hold */
   if (session?.access_token) {

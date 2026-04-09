@@ -53,9 +53,12 @@ export async function signInWithGoogle() {
   const { error } = await sb().auth.signInWithOAuth({
     provider: 'google',
     options: {
-      // hd hint removed — supports both onaudience.pl + cloudtechnologies.pl
-      // domain enforcement happens post-sign-in (see app.js bootHub)
-      redirectTo:  'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+      redirectTo: 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+      queryParams: {
+        // Hints to Google to show accounts from these domains first
+        // (not a hard restriction — enforcement is in bootHub)
+        hd: 'onaudience.pl',
+      },
     },
   });
   if (error) throw error;
@@ -167,7 +170,7 @@ export function renderLoginScreen() {
 <div class="oa-lb">
   <div class="oa-logo">oA</div>
   <div class="oa-title">Sales Intelligence Hub</div>
-  <div class="oa-sub">Sign in with your Google account</div>
+  <div class="oa-sub">onaudience.pl &nbsp;·&nbsp; cloudtechnologies.pl</div>
   <button class="oa-google" id="oa-google-btn" onclick="window.oaGoogleSignIn()">
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
