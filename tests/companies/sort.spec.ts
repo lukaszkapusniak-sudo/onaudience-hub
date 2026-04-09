@@ -24,7 +24,7 @@ test("sort by name A-Z changes order", async ({ page }) => {
   // after sorting by name the first company name should be alphabetically early
   expect(firstNameAfter).toBeTruthy();
   // reset
-  await page.locator("#sortSel").selectOption("recent");
+  await page.locator("#sortSel").selectOption("icp"); // reset to default
 });
 
 test("sort by ICP score works", async ({ page }) => {
