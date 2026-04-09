@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zq';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409zq';
-import S from './state.js?v=20260409zq';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zq';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zq';
-import { clog } from './hub.js?v=20260409zq';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zr';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409zr';
+import S from './state.js?v=20260409zr';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zr';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zr';
+import { clog } from './hub.js?v=20260409zr';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -1840,16 +1840,21 @@ export async function audB2bLookup(audId) {
   try {
     const res = await anthropicMcpFetch({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
+      max_tokens: 1400,
       mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
       messages: [{ role: 'user', content:
-        `Use the b2b search_companies tool to find 15-20 companies matching: "${fullQ}".
-For onAudience EU first-party data partnerships.
-Return ONLY a JSON array (no extra text):
+        `Use the b2b search_companies tool to find 15-20 companies for: "${fullQ}".
+Focus on adtech, media, data, or publisher companies relevant to EU data partnerships.
+${geoCtx ? `Prioritise companies based in or operating in: ${geoCtx}.` : ''}
+Deduplicate — skip subdomains, blogs, or case-study sites of the same company.
+Return ONLY a compact JSON array, no prose:
 [{"name":"...","category":"...","hq":"...","website":"...","why":"one sentence"}]` }],
     });
-    const text = (res.content||[]).filter(b => b.type==='text').map(b=>b.text).join('');
-    const m = text.match(/\[[\s\S]*\]/);
+    const textBlocks = (res.content||[]).filter(b => b.type==='text').map(b=>b.text).join('');
+    const toolResults = (res.content||[]).filter(b => b.type==='mcp_tool_result')
+      .map(b => b.content?.[0]?.text || '').join('\n');
+    const raw = textBlocks.trim() || toolResults;
+    const m = raw.match(/\[[\s\S]*\]/);
     candidates = m ? JSON.parse(m[0]) : [];
   } catch(e) {
     resultsEl.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--prc);padding:16px 0;text-align:center">b2b lookup failed: ${esc(e.message)}</div>`;
@@ -1970,7 +1975,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zq';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zr';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zq';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zr';
