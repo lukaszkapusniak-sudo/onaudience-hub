@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zy';
-import S from './state.js?v=20260409zy';
-import { classify, _slug, authHdr } from './utils.js?v=20260409zy';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zz';
+import S from './state.js?v=20260409zz';
+import { classify, _slug, authHdr } from './utils.js?v=20260409zz';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zy';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zz';
 
 
 
@@ -494,14 +494,15 @@ export async function lemlistCampaigns(){
 }
 
 export async function lemlistAddLead(campaignId,contact){
-  const parts=(contact.name||'').split(' ');
+  const name=contact.full_name||contact.name||'';
+  const parts=name.split(' ');
   return lemlistFetch('/campaigns/'+campaignId+'/leads/','POST',{
     email:      contact.email||'',
     firstName:  parts[0]||'',
     lastName:   parts.slice(1).join(' ')||'',
     companyName:contact.company_name||'',
     jobTitle:   contact.title||'',
-    linkedinUrl:contact.linkedin||'',
+    linkedinUrl:contact.linkedin_url||contact.linkedin||'',
   });
 }
 
