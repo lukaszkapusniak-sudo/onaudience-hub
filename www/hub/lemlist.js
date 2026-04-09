@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a1';
-import S from './state.js?v=20260409a1';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a1';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a1';
-import { clog } from './hub.js?v=20260409a1';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a2';
+import S from './state.js?v=20260409a2';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a2';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a2';
+import { clog } from './hub.js?v=20260409a2';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -371,10 +371,28 @@ export async function llSyncContacts() {
       const lastName  = detail.lastName  || '';
       const fullName  = (firstName + ' ' + lastName).trim() || detail.email || '';
       const company   = detail.companyName || '';
-      const namePart  = fullName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-      const coPart    = company.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const email     = detail.email || '';
+      // Look up existing SB contact by email to preserve their existing ID
+      let contactId = null;
+      if (email) {
+        try {
+          const existing = await fetch(
+            SB_URL + '/rest/v1/contacts?email=eq.' + encodeURIComponent(email) + '&select=id&limit=1',
+            { headers: authHdr() }
+          );
+          const rows = await existing.json();
+          if (rows?.[0]?.id) contactId = rows[0].id;
+        } catch (e) { /* generate one */ }
+      }
+      if (!contactId) {
+        // Transliterate + slug
+        const clean = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+        contactId = (clean(fullName) + (company ? '-'+clean(company) : '')).slice(0,80)
+          || email.replace('@','--at--').replace(/\./g,'-') || detail.contactId;
+      }
       const rec = {
-        id: (namePart + (coPart ? '-'+coPart : '')).slice(0,80) || detail.email?.replace('@','--') || detail.contactId,
+        id: contactId,
         full_name: fullName || detail.email,
         email: detail.email || '',
         company_name: company,

@@ -1,7 +1,7 @@
 /* gmail.js -- Gmail OAuth via Google Identity Services */
-import { GMAIL_CLIENT_ID } from './config.js?v=20260409a1';
-import { esc, authHdr } from './utils.js?v=20260409a1';
-import { SB_URL } from './config.js?v=20260409a1';
+import { GMAIL_CLIENT_ID } from './config.js?v=20260409a2';
+import { esc, authHdr } from './utils.js?v=20260409a2';
+import { SB_URL } from './config.js?v=20260409a2';
 
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -229,13 +229,15 @@ export async function gmailSaveContacts() {
   for (var i = 0; i < contacts.length; i++) {
     try {
       var ct = Object.assign({}, contacts[i]);
-      // Generate id if missing — required for SB upsert
+      // Generate id if missing — normalise unicode, then slug
       if (!ct.id) {
-        var namePart = (ct.full_name || ct.email || '').toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        var coPart  = (ct.company_name || '').toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        ct.id = (namePart + (coPart ? '-' + coPart : '')).slice(0, 80) || ct.email.replace('@','--');
+        var clean = function(s){ return (s||'').normalize('NFD')
+          .replace(/[\u0300-\u036f]/g,'').toLowerCase()
+          .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); };
+        var namePart = clean(ct.full_name || ct.email || '');
+        var coPart   = clean(ct.company_name || '');
+        ct.id = (namePart + (coPart ? '-' + coPart : '')).slice(0, 80)
+          || (ct.email || '').replace('@','--at--').replace(/\./g,'-');
       }
       var res = await fetch(SB_URL + '/rest/v1/contacts', {
         method: 'POST',
