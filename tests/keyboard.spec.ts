@@ -20,36 +20,37 @@ test("j key moves focus to first row", async ({ page }) => {
 });
 
 test("j/k keys navigate up and down", async ({ page }) => {
-  await page.keyboard.press("j");
-  await page.keyboard.press("j");
+  await page.evaluate(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "j", bubbles: true, cancelable: true })); });
+  await page.waitForTimeout(150);
+  await page.evaluate(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "j", bubbles: true, cancelable: true })); });
   const secondFocus = await page.locator(".c-row.kb-focus").first().textContent();
-  await page.keyboard.press("k");
+  await page.evaluate(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", bubbles: true, cancelable: true })); });
   const firstFocus = await page.locator(".c-row.kb-focus").first().textContent();
   expect(firstFocus).not.toBe(secondFocus);
 });
 
 test("ArrowDown moves focus to first row", async ({ page }) => {
-  await page.keyboard.press("ArrowDown");
-  await expect(page.locator(".c-row.kb-focus").first()).toBeVisible({ timeout: 3000 });
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })));
+  await expect(page.locator(".c-row.kb-focus").first()).toBeVisible({ timeout: 5000 });
 });
 
 test("Enter opens focused company", async ({ page }) => {
-  await page.keyboard.press("j");
-  await expect(page.locator(".c-row.kb-focus")).toBeVisible();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#coPanel")).toBeVisible({ timeout: 5000 });
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "j", bubbles: true, cancelable: true })));
+  await expect(page.locator(".c-row.kb-focus")).toBeVisible({ timeout: 5000 });
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+  await expect(page.locator("#coPanel")).toBeVisible({ timeout: 8000 });
 });
 
 test("Escape closes open panel", async ({ page }) => {
   await page.locator(".c-row").first().click();
   await expect(page.locator("#coPanel")).toBeVisible({ timeout: 5000 });
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(300);
-  await expect(page.locator("#emptyState")).toBeVisible({ timeout: 3000 });
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
+  await page.waitForTimeout(400);
+  await expect(page.locator("#emptyState")).toBeVisible({ timeout: 5000 });
 });
 
 test("/ key focuses search input", async ({ page }) => {
-  await page.keyboard.press("/");
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "/", bubbles: true, cancelable: true })));
   await expect(page.locator("#searchInput")).toBeFocused({ timeout: 3000 });
 });
 

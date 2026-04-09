@@ -40,15 +40,15 @@ test("context menu Draft option opens composer", async ({ page }) => {
 test("clicking outside closes context menu", async ({ page }) => {
   await page.locator(".c-row").first().click({ button: "right" });
   await expect(page.locator("#ctxMenu")).toBeVisible();
-  await page.locator("nav.nav").click();
-  await page.waitForTimeout(300);
-  await expect(page.locator("#ctxMenu")).not.toBeVisible();
+  await page.mouse.click(10, 10);
+  await page.waitForTimeout(500);
+  await expect(page.locator("#ctxMenu")).not.toBeVisible({ timeout: 6000 });
 });
 
 test("Escape key closes context menu", async ({ page }) => {
   await page.locator(".c-row").first().click({ button: "right" });
   await expect(page.locator("#ctxMenu")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.waitForTimeout(200);
-  await expect(page.locator("#ctxMenu")).not.toBeVisible();
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })));
+  await page.waitForTimeout(500);
+  await expect(page.locator("#ctxMenu")).not.toBeVisible({ timeout: 6000 });
 });

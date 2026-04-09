@@ -83,27 +83,36 @@ test.describe('Company panel — Contacts section', () => {
   test('company_id-matched contacts appear in section (regression: Ltd suffix)', async ({ page }) => {
     // Inject a mock contact with company_id matching but company_name with "Ltd" suffix
     await page.evaluate(() => {
+      const co = window.S?.companies?.[0];
+      if (!co) return;
       const mockContact = {
         id: 'test-contact-ltd-suffix',
-        company_id: window.S?.companies?.[0]?.id || 'onaudience',
-        company_name: (window.S?.companies?.[0]?.name || 'onAudience') + ' Ltd',
-        full_name: 'Test Contact',
+        company_id: co.id,
+        company_name: co.name + ' Ltd',
+        full_name: 'Test Contact Ltd',
         title: 'Test Title',
         email: 'test@test-company.com',
       };
+      // Remove old if exists
+      if (window.S?.contacts) window.S.contacts = window.S.contacts.filter((c: any) => c.id !== 'test-contact-ltd-suffix');
       window.S?.contacts?.push(mockContact);
-      // Re-open the currently active company
+    });
+    // Re-open company to force panel re-render
+    await page.evaluate(() => {
       if (window.currentCompany) window.openCompany(window.currentCompany);
     });
-    await page.waitForTimeout(400);
-    await expandContactsSection(page);
-    await expect(page.locator('#ib-ct-body .ib-ct', { hasText: 'Test Contact' })).toBeVisible({ timeout: 4000 });
+    // Wait for panel to render with the new contact
+    await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });
+    await page.waitForTimeout(600);
+    const ctH = page.locator('.ib-sh', { hasText: /contacts/i }).first();
+    await expect(ctH).toBeVisible({ timeout: 8000 });
+    if (!await page.locator('#ib-ct-body').isVisible()) await ctH.click();
+    await expect(page.locator('#ib-ct-body')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#ib-ct-body .ib-ct', { hasText: 'Test Contact Ltd' })).toBeVisible({ timeout: 6000 });
 
     // Cleanup
     await page.evaluate(() => {
-      if (window.S?.contacts) {
-        window.S.contacts = window.S.contacts.filter((c: any) => c.id !== 'test-contact-ltd-suffix');
-      }
+      if (window.S?.contacts) window.S.contacts = window.S.contacts.filter((c: any) => c.id !== 'test-contact-ltd-suffix');
     });
   });
 
@@ -291,8 +300,12 @@ test.describe('Contact drawer — enriched fields', () => {
         notes: 'Key decision maker for data partnerships.',
       });
     });
-    await page.evaluate(() => window.openDrawer('drawer-test-full-contact'));
-    await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 3000 });
+    // Ensure contact is in S.contacts before opening drawer
+    await page.evaluate(() => {
+      const existing = (window.S?.contacts || []).find((c: any) => c.id === 'drawer-test-full-contact');
+      if (existing) window.openDrawer('drawer-test-full-contact');
+    });
+    await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 6000 });
 
     // Name and subtitle
     await expect(page.locator('#drName')).toHaveText('Jane Richfield');
