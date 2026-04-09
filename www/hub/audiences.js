@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409t';
-import { authHdr } from './utils.js?v=20260409t';
-import S from './state.js?v=20260409t';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409t';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409t';
-import { clog } from './hub.js?v=20260409t';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409u';
+import { authHdr } from './utils.js?v=20260409u';
+import S from './state.js?v=20260409u';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409u';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409u';
+import { clog } from './hub.js?v=20260409u';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -457,7 +457,7 @@ function audCoRowHtml(c, aud) {
   const slug = c.id || _slug(c.name);
 
   return `
-<div class="aud-co-row" onclick="openBySlug(${JSON.stringify(slug)})">
+<div class="aud-co-row" onclick="openBySlug('${slug}')">
   <div class="aud-co-row-main">
     <span class="aud-co-name">${esc(c.name)}</span>
     <span class="tag ${tc}" style="font-size:7px">${esc(tl)}</span>
@@ -470,10 +470,10 @@ function audCoRowHtml(c, aud) {
     ${tagHtml}
   </div>
   <div class="aud-co-row-actions">
-    <button class="btn sm" onclick="event.stopPropagation();audToggleCo(${JSON.stringify(aud.id)},${JSON.stringify(slug)})">
+    <button class="btn sm" onclick="event.stopPropagation();audToggleCo('${aud.id}','${slug}')">
       ${(aud.company_ids || []).includes(slug) ? '✓ PINNED' : '+ PIN'}
     </button>
-    <button class="btn sm" onclick="event.stopPropagation();openBySlug(${JSON.stringify(slug)})">DETAIL →</button>
+    <button class="btn sm" onclick="event.stopPropagation();openBySlug('${slug}')">DETAIL →</button>
   </div>
 </div>`;
 }
@@ -1133,7 +1133,7 @@ function _addAudMarker(cluster, c, lat, lng) {
     <div style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;min-width:140px;line-height:1.5">
       <div style="font-weight:600;margin-bottom:2px">${esc(c.name)}</div>
       <div style="color:#888;font-size:10px">${esc(tl)}${c.icp ? ` · ICP ${c.icp}` : ''}</div>
-      <a href="#" onclick="event.preventDefault();openCompany(${JSON.stringify(slug)})" style="font-size:10px;color:#178066;text-decoration:none">Open →</a>
+      <a href="#" onclick="event.preventDefault();openCompany('${slug}')" style="font-size:10px;color:#178066;text-decoration:none">Open →</a>
     </div>`);
   cluster.addLayer(marker);
 }
@@ -1874,7 +1874,7 @@ export async function icpSaveStep() {
     <div id="icp-save-err" style="color:var(--prc);font-family:'IBM Plex Mono',monospace;font-size:8px;min-height:12px;margin-top:4px"></div>
     <div class="aud-modal-foot" style="margin-top:12px">
       <button class="btn" onclick="window._icpBack()">← Back</button>
-      <button class="btn p" onclick="icpSaveAudience(${JSON.stringify(ids)})">💾 Save</button>
+      <button class="btn p" id="icp-save-btn" data-ids="${ids.join(',')}" onclick="icpSaveAudience(this.dataset.ids.split(','))">💾 Save</button>
     </div>
   </div>
 </div>
