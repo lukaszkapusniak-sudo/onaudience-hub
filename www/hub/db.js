@@ -3,8 +3,8 @@
    Consistent auth headers, error handling, Prefer headers.
    ══════════════════════════════════════════════════════════════ */
 
-import { SB_URL } from './config.js?v=20260409zj';
-import { authHdr } from './utils.js?v=20260409zj';
+import { SB_URL } from './config.js?v=20260409zk';
+import { authHdr } from './utils.js?v=20260409zk';
 
 const UPSERT = { 'Prefer': 'resolution=merge-duplicates,return=minimal' };
 const REPR   = { 'Prefer': 'resolution=merge-duplicates,return=representation' };
@@ -54,6 +54,7 @@ export const audiences = {
 /* ── Company relations ─────────────────────────────────────────── */
 export const relations = {
   listAll: () => _req('GET', 'company_relations?select=*'),
+  upsert:  (row) => _req('POST', 'company_relations', row, UPSERT),
 };
 
 /* ── Intelligence ──────────────────────────────────────────────── */

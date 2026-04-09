@@ -46,14 +46,20 @@ for (const f of FILES) {
   // ── Check 2: JS SyntaxError via vm.Script ───────────────────────────────
   try {
     const stripped = src
-      .replace(/import\s*\{[^}]*\}\s*from\s*['"][^'"]+['"]\s*;?/gs, '/* import */')
-      .replace(/^import\s+.*?from\s+['"][^'"]+['"]\s*;?\s*$/gm,      '/* import */')
+      // Strip multi-line import { ... } from '...' blocks first (non-greedy, no 's' flag needed with [\s\S])
+      .replace(/import\s*\{[\s\S]*?\}\s*from\s*['"][^'"]+['"]\s*;?/g, '/* import */')
+      // Strip single-identifier imports: import S from '...'
+      .replace(/^import\s+\w+\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm,   '/* import */')
+      // Strip side-effect imports: import '...'
       .replace(/^import\s+['"][^'"]+['"]\s*;?\s*$/gm,                '/* import */')
+      // Dynamic import() → Promise.resolve()
       .replace(/\bimport\s*\(/g,                                      'Promise.resolve(')
       .replace(/^export\s+default\s+/gm,                             'var _default = ')
       .replace(/^export\s+(async\s+)?(function|class|const|let|var)\s+/gm, '$1$2 ')
+      // Strip export { ... } (local)
       .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm,                    '/* export */')
-      .replace(/^export\s*\{[^}]*\}\s*from\s*['"][^'"]+['"']\s*;?\s*$/gm, '/* re-export */');
+      // Strip multi-line re-exports: export { ... } from '...'
+      .replace(/export\s*\{[\s\S]*?\}\s*from\s*['"][^'"]+['"]\s*;?/g, '/* re-export */');
     new vm.Script(stripped, { filename: f });
   } catch(e) {
     console.error(`FAIL ${f} — SyntaxError: ${e.message.split('\n')[0]}`);

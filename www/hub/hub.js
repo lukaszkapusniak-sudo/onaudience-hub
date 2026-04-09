@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409zj';
-import S from './state.js?v=20260409zj';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zj';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409zj';
-import { resolveAlias } from './merge.js?v=20260409zj';
-import { intelligence as dbIntel } from './db.js?v=20260409zj';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409zk';
+import S from './state.js?v=20260409zk';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zk';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409zk';
+import { resolveAlias } from './merge.js?v=20260409zk';
+import { intelligence as dbIntel } from './db.js?v=20260409zk';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -481,11 +481,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrations→bidirectional
         } else {
           /* create stub only if no match found */
           const stubId=_slug(otherName);
-          await fetch(`${SB_URL}/rest/v1/companies`,{
-            method:'POST',
-            headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
-            body:JSON.stringify({id:stubId,name:otherName,type:'prospect',note:'auto-created by intel extraction'})
-          }).catch(()=>{});
+          await dbCompanies.upsert({id:stubId,name:otherName,type:'prospect',note:'auto-created by intel extraction'}).catch(()=>{});
           resolvedId=stubId;
           stubbed++;
           clog('db',`➕ Stub: <b>${esc(otherName)}</b> (${stubId})`);
@@ -502,17 +498,10 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrations→bidirectional
         const keyRev=`${toSlug}|${fromSlug}|${relType}`;
         if(existingKeys.has(key)||existingKeys.has(keyRev))continue;
 
-        const res=await fetch(`${SB_URL}/rest/v1/company_relations`,{
-          method:'POST',
-          headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
-          body:JSON.stringify({from_company:fromSlug,to_company:toSlug,relation_type:relType,direction,strength,source:'intelligence_extraction',notes:(rel.evidence||'').slice(0,300)||null})
-        }).catch(()=>null);
-
-        if(res?.ok||res?.status===201||res?.status===409){
-          existingKeys.add(key);
-          S.allRelations.push({from_company:fromSlug,to_company:toSlug,relation_type:relType,direction,strength,source:'intelligence_extraction'});
-          inserted++;
-        }
+        await dbRelations.upsert({from_company:fromSlug,to_company:toSlug,relation_type:relType,direction,strength,source:'intelligence_extraction',notes:(rel.evidence||'').slice(0,300)||null}).catch(()=>null);
+        existingKeys.add(key);
+        S.allRelations.push({from_company:fromSlug,to_company:toSlug,relation_type:relType,direction,strength,source:'intelligence_extraction'});
+        inserted++;
       }
 
       if(inserted>0||matched>0){
@@ -533,7 +522,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrations→bidirectional
       if(newProds.length){
         const merged=[...existingProds,...newProds];
         const payload={products:{products:merged,inferred:false,extracted_from:'intelligence',extracted_at:new Date().toISOString().slice(0,10),positioning:coRow?.products?.positioning||[],integrations_advertised:coRow?.products?.integrations_advertised||[],pricing_model:coRow?.products?.pricing_model||'contact_us'}};
-        await fetch(`${SB_URL}/rest/v1/companies?id=eq.${slug}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify(payload)}).catch(()=>{});
+        dbCompanies.patch(slug, payload).catch(()=>{});
         if(coRow)coRow.products=payload.products;
         clog('db',`📦 Products: ${newProds.map(p=>esc(p.name)).join(', ')} → ${esc(companyName)}`);
       }
@@ -627,7 +616,7 @@ async function _saveEmailIntelligence(slug,summary){
 export async function loadIntelligence(slug,name){
   const body=document.getElementById('ib-intel-body');if(!body)return;
   const[storedRes,liveRes]=await Promise.allSettled([
-    fetch(`${SB_URL}/rest/v1/intelligence?company_id=eq.${slug}&type=eq.press_links`,{headers:authHdr()}).then(r=>r.json()),
+    dbIntel.get(slug,'press_links'),
     fetchGoogleNews(name)
   ]);
   const stored=storedRes.status==='fulfilled'&&Array.isArray(storedRes.value)?storedRes.value:[];
@@ -1344,12 +1333,12 @@ export async function mapSegments(){
 export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
-  llPushFromAudience, llUnsubLead } from './lemlist.js?v=20260409zj';
+  llPushFromAudience, llUnsubLead } from './lemlist.js?v=20260409zk';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409zj';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409zk';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409zj';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409zk';

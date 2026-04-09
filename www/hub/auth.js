@@ -3,8 +3,8 @@
    Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { SB_URL, SB_KEY } from './config.js?v=20260409zj';
-import { authHdr } from './utils.js?v=20260409zj';
+import { SB_URL, SB_KEY } from './config.js?v=20260409zk';
+import { authHdr } from './utils.js?v=20260409zk';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
