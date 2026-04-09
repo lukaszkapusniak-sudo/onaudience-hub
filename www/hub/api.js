@@ -1,8 +1,8 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409k';
-import S from './state.js?v=20260409k';
-import { classify, _slug, authHdr } from './utils.js?v=20260409k';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409l';
+import S from './state.js?v=20260409l';
+import { classify, _slug, authHdr } from './utils.js?v=20260409l';
 
 
 
@@ -332,7 +332,7 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
     const dbc=await cr.json(), dbt=ct.ok?await ct.json():[], dbr=rl.ok?await rl.json():[];
     const total=parseInt((cr.headers.get('content-range')||'').match(/\/(\d+)/)?.[1]||0);
     S.totalCompaniesInDb=total;
-    if(Array.isArray(dbc)&&dbc.length) S.companies=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}));
+    if(Array.isArray(dbc)&&dbc.length){ const fresh=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''})); S.companies=fresh; _loadingPages=false; /* reset flag so bg load can proceed */ }
     if(Array.isArray(dbt)) S.contacts=dbt;
     if(Array.isArray(dbr)) S.allRelations=dbr;
     setStatus(true);
@@ -347,7 +347,10 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
   }
 }
 
+let _loadingPages=false;
 async function _loadRemainingPages(total,renderStats,renderList,renderTagPanel){
+  if(_loadingPages) return; // already loading — don't run twice
+  _loadingPages=true;
   let offset=_PAGE;
   while(offset<total){
     const end=Math.min(offset+_PAGE-1,total-1);
@@ -359,12 +362,18 @@ async function _loadRemainingPages(total,renderStats,renderList,renderTagPanel){
       if(!r.ok) break;
       const page=await r.json();
       if(!Array.isArray(page)||!page.length) break;
-      S.companies=[...S.companies,...page.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}))];
+      // Deduplicate by id to prevent doubles when loadFromSupabase is called multiple times
+      const incoming=page.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}));
+      const existingIds=new Set(S.companies.map(c=>c.id));
+      const newOnly=incoming.filter(c=>!existingIds.has(c.id));
+      if(!newOnly.length) break; // already have this page — stop
+      S.companies=[...S.companies,...newOnly];
       setStatus(true);
       renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
     }catch(e){ break; }
     offset+=_PAGE;
   }
+  _loadingPages=false;
   if(window.clog) window.clog('db',`✓ All loaded: <b>${S.companies.length}</b> / ${total} companies`);
 }
 
