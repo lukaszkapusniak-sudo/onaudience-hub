@@ -1,12 +1,12 @@
 /* ═══ aud-campaign.js — Campaign generation, email templates, Lemlist launch ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a0';
-import S from './state.js?v=20260409a0';
-import { esc, _slug, authHdr } from './utils.js?v=20260409a0';
-import { anthropicFetch, lemlistFetch } from './api.js?v=20260409a0';
-import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409a0';
-import { clog } from './hub.js?v=20260409a0';
-import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a0';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a1';
+import S from './state.js?v=20260409a1';
+import { esc, _slug, authHdr } from './utils.js?v=20260409a1';
+import { anthropicFetch, lemlistFetch } from './api.js?v=20260409a1';
+import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409a1';
+import { clog } from './hub.js?v=20260409a1';
+import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a1';
 
 export async function generateCampaignHook(audId) {
   const aud = S.audiences.find(a => a.id === audId);
@@ -22,7 +22,7 @@ export async function generateCampaignHook(audId) {
     const res = await anthropicFetch({
       model: MODEL_CREATIVE, max_tokens: 140,
       messages: [{ role: 'user', content:
-        `Write a punchy 2–3 sentence B2B outreach hook for a cold email.\n\nAudience segment: "${icp}"\n${coCtx ? '\nCompanies in this segment:\n'+coCtx+'\n' : ''}\nWe are onAudience — we provide EU first-party audience data to DSPs, SSPs, agencies and data providers.\n\nRules:\n- Focus on BUSINESS VALUE relevant to what these companies DO (their tech, clients, products)\n- Do NOT mention their country or region\n- Be direct and specific, no buzzwords\n- Start with an insight or challenge they face, not "I"\n- 2–3 sentences max` }],
+        `Write a punchy 2–3 sentence B2B outreach hook for a cold email.\n\nAudience segment: "${icp}"\n${coCtx ? '\nCompanies in this segment:\n'+coCtx+'\n' : ''}\nWe are onAudience — we provide EU first-party audience data to DSPs, SSPs, agencies and data providers.\n\nRules:\n- Focus on BUSINESS VALUE relevant to what these companies DO (their tech, clients, products)\n- NEVER mention country, city, region, or market name — not even indirectly (no 'Polish', 'German', 'UK-based' etc.)\n- Be direct and specific, no buzzwords\n- Start with an insight or challenge they face, not "I"\n- 2–3 sentences max` }],
     });
     const hook = res.content?.[0]?.text?.trim() || '';
     if (ta) { ta.value = hook; ta.placeholder = ''; }

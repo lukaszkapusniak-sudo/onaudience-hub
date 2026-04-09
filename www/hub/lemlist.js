@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a0';
-import S from './state.js?v=20260409a0';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a0';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a0';
-import { clog } from './hub.js?v=20260409a0';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a1';
+import S from './state.js?v=20260409a1';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a1';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a1';
+import { clog } from './hub.js?v=20260409a1';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -356,26 +356,39 @@ export async function llSyncContacts() {
       }
     }
 
-    // Upsert to SB contacts
+    // For each lead, fetch full contact details (leads endpoint is minimal)
     const now = new Date().toISOString();
     let saved = 0;
     for (const l of allLeads) {
+      let detail = l;
+      if (l.contactId) {
+        try {
+          const cd = await lemlistFetch('/contacts/' + l.contactId);
+          if (cd && cd.email) detail = { ...l, ...cd };
+        } catch (e) { /* use minimal data */ }
+      }
+      const firstName = detail.firstName || '';
+      const lastName  = detail.lastName  || '';
+      const fullName  = (firstName + ' ' + lastName).trim() || detail.email || '';
+      const company   = detail.companyName || '';
+      const namePart  = fullName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const coPart    = company.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
       const rec = {
-        id: (((l.firstName || '') + '-' + (l.lastName || '') + '-' + (l.companyName || '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) || l.email.split('@')[0],
-        full_name: ((l.firstName || '') + ' ' + (l.lastName || '')).trim() || l.email,
-        email: l.email,
-        company_name: l.companyName || '',
-        title: l.jobTitle || l.title || '',
-        linkedin_url: l.linkedinUrl || '',
+        id: (namePart + (coPart ? '-'+coPart : '')).slice(0,80) || detail.email?.replace('@','--') || detail.contactId,
+        full_name: fullName || detail.email,
+        email: detail.email || '',
+        company_name: company,
+        title: detail.jobTitle || detail.fields?.jobTitle || '',
+        linkedin_url: detail.linkedinUrl || '',
         lemlist_campaign_id: l.campaignId,
         lemlist_campaign_name: l.campaignName,
-        lemlist_pushed_at: l.addedAt || now,
+        lemlist_pushed_at: detail.addedAt || now,
         source: 'lemlist',
       };
       try {
         await saveContact(rec);
         saved++;
-      } catch (e) { /* skip */ }
+      } catch (e) { clog('info', 'Lemlist contact save error: ' + e.message); }
     }
 
     _llLastSync = new Date();
