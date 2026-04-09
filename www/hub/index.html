@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>onAudience — Sales Intelligence Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=20260409h"/>
+<link rel="stylesheet" href="style.css?v=20260409i"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
@@ -30,7 +30,6 @@
     <button class="btn sm" onclick="openComposer(null)">&#9993; Compose</button>
     <button class="btn sm p" onclick="promptResearch()">+ Research</button>
     <button class="btn sm" onclick="toggleTheme()" id="themeBtn">&#127769;</button>
-    <button class="btn sm" id="signOutBtn" onclick="oaSignOut()" title="Sign out" style="opacity:.7">&#8592; Sign out</button>
   </div>
 </nav>
 <div class="stats-bar">
@@ -259,6 +258,17 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script type="module" src="app.js?v=20260409h"></script>
+<script type="module" src="app.js?v=20260409i"></script>
+<div id="signOutPill" style="display:none;position:fixed;bottom:18px;right:18px;z-index:9000">
+  <button onclick="oaSignOut()" style="
+    font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.07em;
+    background:var(--surf);border:1px solid var(--rule);border-radius:2px;
+    color:var(--t3);padding:6px 12px;cursor:pointer;
+    transition:color .15s,border-color .15s;
+  " onmouseover="this.style.color='var(--t1)';this.style.borderColor='var(--rule3)'"
+     onmouseout="this.style.color='var(--t3)';this.style.borderColor='var(--rule)'"
+  >&#8592; Sign out</button>
+</div>
 </body>
 </html>

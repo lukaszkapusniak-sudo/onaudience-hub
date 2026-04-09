@@ -3,8 +3,8 @@
    Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { SB_URL, SB_KEY } from './config.js?v=20260409h';
-import { authHdr } from './utils.js?v=20260409h';
+import { SB_URL, SB_KEY } from './config.js?v=20260409i';
+import { authHdr } from './utils.js?v=20260409i';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
@@ -115,6 +115,8 @@ export async function logActivity({ action, entity_type, entity_id, entity_name,
 export function renderLoginScreen() {
   const app = document.querySelector('.app');
   if (app) app.style.display = 'none';
+  const _pill = document.getElementById('signOutPill');
+  if (_pill) _pill.style.display = 'none';
 
   let el = document.getElementById('oaLoginScreen');
   if (!el) {
