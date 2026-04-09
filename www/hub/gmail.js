@@ -1,7 +1,7 @@
 /* gmail.js -- Gmail OAuth via Google Identity Services */
-import { GMAIL_CLIENT_ID } from './config.js?v=20260409a2';
-import { esc, authHdr } from './utils.js?v=20260409a2';
-import { SB_URL } from './config.js?v=20260409a2';
+import { GMAIL_CLIENT_ID } from './config.js?v=20260409a3';
+import { esc, authHdr } from './utils.js?v=20260409a3';
+import { SB_URL } from './config.js?v=20260409a3';
 
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -178,7 +178,7 @@ export function gmailRenderResults(threads, companyName) {
       }).join('');
 }
 
-export async function gmailScanCompany(slug, companyName) {
+export async async function gmailScanCompany(slug, companyName) {
   var el = document.getElementById('ib-email-results');
   var strip = document.getElementById('ib-email-contacts-strip');
   if (!el) return;

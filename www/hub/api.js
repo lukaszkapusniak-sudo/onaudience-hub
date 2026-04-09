@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409a2';
-import S from './state.js?v=20260409a2';
-import { classify, _slug, authHdr } from './utils.js?v=20260409a2';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409a3';
+import S from './state.js?v=20260409a3';
+import { classify, _slug, authHdr } from './utils.js?v=20260409a3';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409a2';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409a3';
 
 
 
@@ -322,11 +322,30 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
   try{
     const[cr,ct,rl] = await Promise.all([
       dbCo.list('0-199'),
-      dbContacts.listAll(),
+      dbContacts.listAll(),   // first 1000 (SB row limit)
       dbRelations.listAll(),
     ]);
     if(!Array.isArray(cr)) throw new Error('companies load failed');
     const dbc=cr, dbt=Array.isArray(ct)?ct:[], dbr=Array.isArray(rl)?rl:[];
+    // Paginate contacts beyond the first 1000 (SB limit per request)
+    const _loadAllContacts = async (initial) => {
+      let all=[...initial], page=1000;
+      while(true){
+        try{
+          const r=await fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,
+            {headers:authHdr({'Range':`${page}-${page+999}`})});
+          if(!r.ok || r.status===416) break;
+          const rows=await r.json();
+          if(!Array.isArray(rows)||!rows.length) break;
+          all=[...all,...rows];
+          page+=1000;
+          if(r.status!==206) break;  // 200 = got all
+        }catch(e){break;}
+      }
+      return all;
+    };
+    // Start bg contacts pagination immediately (don't block first render)
+    _loadAllContacts(dbt).then(all=>{ S.contacts=all; });
     // cr is a plain array from db.js — get total from SB separately
     const totalRes = await fetch(`${SB_URL}/rest/v1/companies?select=id`,
       {headers:authHdr({'Prefer':'count=exact','Range':'0-0'})});
