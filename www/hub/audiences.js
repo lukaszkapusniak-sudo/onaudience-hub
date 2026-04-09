@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409u';
-import { authHdr } from './utils.js?v=20260409u';
-import S from './state.js?v=20260409u';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409u';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409u';
-import { clog } from './hub.js?v=20260409u';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409v';
+import { authHdr } from './utils.js?v=20260409v';
+import S from './state.js?v=20260409v';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409v';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409v';
+import { clog } from './hub.js?v=20260409v';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;

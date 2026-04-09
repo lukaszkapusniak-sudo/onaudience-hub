@@ -1,7 +1,7 @@
 /* gmail.js -- Gmail OAuth via Google Identity Services */
-import { GMAIL_CLIENT_ID } from './config.js?v=20260409u';
-import { esc, authHdr } from './utils.js?v=20260409u';
-import { SB_URL } from './config.js?v=20260409u';
+import { GMAIL_CLIENT_ID } from './config.js?v=20260409v';
+import { esc, authHdr } from './utils.js?v=20260409v';
+import { SB_URL } from './config.js?v=20260409v';
 
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -387,7 +387,7 @@ export async function gmailEnrichContacts(slug, companyName) {
             + '<span style="color:var(--t4)">' + esc(e.email) + '</span>'
             + '<span style="color:var(--poc);font-size:8px">ADD EMAIL</span></div>';
         }).join('') : '')
-        + '<button class="btn sm p" onclick="window.gmailSaveAndEnrichContacts('+JSON.stringify(enriched)+')" style="margin-top:6px">'
+        + (window._gmailEnriched = enriched, '<button class="btn sm p" onclick="window.gmailSaveAndEnrichContacts(window._gmailEnriched)" style="margin-top:6px">')
         + 'Save ' + (newContacts.length + enriched.length) + ' update' + (newContacts.length+enriched.length>1?'s':'') + ' to CRM</button>';
     } else if (strip) { strip.style.display = 'none'; }
 
@@ -570,7 +570,7 @@ export async function gmailRunSummarize() {
             + '<span style="font:600 8px monospace;color:var(--g);text-transform:uppercase;letter-spacing:.05em">Recommended: </span>'
             + esc(parsed.recommended_action) + '</div>' : '')
           + '<div style="display:flex;gap:5px;margin-top:8px">'
-          + '<button class="btn sm" onclick="window.gmailSaveRelationshipSummary(' + JSON.stringify(slug) + ',' + JSON.stringify(parsed) + ')">Save to Intelligence</button>'
+          + (window._gmailSlug = slug, window._gmailParsed = parsed, '<button class="btn sm" onclick="window.gmailSaveRelationshipSummary(window._gmailSlug,window._gmailParsed)">Save to Intelligence</button>')
           + '<button class="btn sm" onclick="document.getElementById(\'gmail-sum-confirm\').remove()">Close</button>'
           + '</div>';
       } else {

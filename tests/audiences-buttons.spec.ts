@@ -92,3 +92,23 @@ test('clicking EDIT button opens scout modal', async ({ page }) => {
   await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('.aud-modal-title')).toContainText('EDIT AUDIENCE');
 });
+
+// ── Gmail button regression tests ─────────────────────────────────────────
+
+test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => {
+  // Boot and load some data
+  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  await page.waitForTimeout(2000); // let pagination finish
+
+  // Collect all onclick attrs across the whole page
+  const badOnclicks = await page.evaluate(() => {
+    const all = document.querySelectorAll('[onclick]');
+    const bad: string[] = [];
+    all.forEach(el => {
+      const v = el.getAttribute('onclick') || '';
+      if (v.includes('JSON.stringify')) bad.push(v.slice(0, 80));
+    });
+    return bad;
+  });
+  expect(badOnclicks, `JSON.stringify found in onclick: ${badOnclicks.join(', ')}`).toHaveLength(0);
+});
