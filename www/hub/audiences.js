@@ -5,12 +5,13 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409ze';
-import { authHdr } from './utils.js?v=20260409ze';
-import S from './state.js?v=20260409ze';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409ze';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409ze';
-import { clog } from './hub.js?v=20260409ze';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zf';
+import { authHdr } from './utils.js?v=20260409zf';
+import S from './state.js?v=20260409zf';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409zf';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zf';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zf';
+import { clog } from './hub.js?v=20260409zf';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -20,11 +21,7 @@ let _audMapMembers = [];
 
 async function sbLoadAudiences() {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/audiences?select=*&order=updated_at.desc`, {
-      headers: authHdr()
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return await res.json();
+    return await dbAud.list();
   } catch (e) {
     clog('db', `audiences load error: ${esc(e.message)}`);
     return [];
@@ -32,32 +29,15 @@ async function sbLoadAudiences() {
 }
 
 export async function sbSaveAudience(aud) {
-  const body = { ...aud, updated_at: new Date().toISOString() };
-  const res = await fetch(`${SB_URL}/rest/v1/audiences`, {
-    method: 'POST',
-    headers: authHdr({'Prefer':'resolution=merge-duplicates,return=representation'}),
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return await res.json();
+  return await dbAud.upsert(aud);
 }
 
 async function sbDeleteAudience(id) {
-  const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers: authHdr()
-  });
-  if (!res.ok) throw new Error(await res.text());
+  await dbAud.delete(id);
 }
 
 async function sbPatchCompanyType(companyId, type) {
-  const res = await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(companyId)}`, {
-    method: 'PATCH',
-    headers: authHdr({ 'Prefer': 'return=representation' }),
-    body: JSON.stringify({ type })
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return await res.json();
+  return await dbCo.patch(companyId, { type });
 }
 
 /* ─── Left panel render ────────────────────────────────────── */
@@ -776,14 +756,10 @@ async function _scoutSave(existingId) {
 
   try {
     if (existingId) {
-      const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(existingId)}`, {
-        method: 'PATCH',
-        headers: authHdr(),
-        body: JSON.stringify({
+      await dbAud.patch(existingId, {
           name, description: desc || null, outreach_hook: hook || null,
           filters, icp_prompt: prompt || null, sort_field: sortField,
-          company_ids: companyIds, updated_at: new Date().toISOString(),
-        }),
+          company_ids: companyIds
       });
       if (!res.ok) throw new Error(await res.text());
       const aud = S.audiences.find(a => a.id === existingId);
@@ -1040,11 +1016,7 @@ async function _gapGenAngles() {
         c.outreach_angle = angle;
         const sc = S.companies.find(co => (co.id || _slug(co.name)) === (c.id || _slug(c.name)));
         if (sc) sc.outreach_angle = angle;
-        await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(c.id || _slug(c.name))}`, {
-          method: 'PATCH',
-          headers: authHdr({ 'Prefer': 'return=minimal' }),
-          body: JSON.stringify({ outreach_angle: angle }),
-        }).catch(() => {});
+        await dbCo.patch(c.id || _slug(c.name), { outreach_angle: angle }).catch(() => {});
         done++;
       } catch { /* skip */ }
     }));
@@ -1987,12 +1959,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
       note:       'Added via Audience Scout (external)',
       updated_at: new Date().toISOString(),
     };
-    const res = await fetch(`${SB_URL}/rest/v1/companies`, {
-      method: 'POST',
-      headers: authHdr({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(await res.text());
+    await dbCo.upsert(body);
     if (!S.companies.find(c => c.id === body.id)) S.companies.push({ ...body });
     const btn = document.querySelector(`[data-add-slug="${slug}"]`);
     if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.color = 'var(--g)'; }
@@ -2004,7 +1971,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409ze';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zf';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409ze';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zf';
