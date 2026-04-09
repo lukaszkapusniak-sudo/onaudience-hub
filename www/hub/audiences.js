@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409q';
-import { authHdr } from './utils.js?v=20260409q';
-import S from './state.js?v=20260409q';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409q';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409q';
-import { clog } from './hub.js?v=20260409q';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409r';
+import { authHdr } from './utils.js?v=20260409r';
+import S from './state.js?v=20260409r';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409r';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409r';
+import { clog } from './hub.js?v=20260409r';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -2278,64 +2278,171 @@ export async function audGenAngleForCo(audId, coSlug) {
   }
 }
 
+/* ─── B2B Lookup Dialog ───────────────────────────────────────────────── */
+
 export async function audB2bLookup(audId) {
   const aud = S.audiences.find(a => a.id === audId);
   if (!aud) return;
 
-  // Open scout modal in edit mode so results show in Section C
-  openAudienceModal(audId);
-  await new Promise(r => setTimeout(r, 150)); // wait for modal render
-
-  const cBody = document.getElementById('scout-c-body');
-  if (!cBody) return;
+  // Build / reuse dialog element
+  let dlg = document.getElementById('b2b-dlg');
+  if (!dlg) {
+    dlg = document.createElement('div');
+    dlg.id = 'b2b-dlg';
+    document.body.appendChild(dlg);
+  }
+  dlg.style.cssText = 'position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)';
 
   const prompt  = aud.icp_prompt || aud.description || aud.name || '';
   const country = aud.filters?.country || '';
   const city    = aud.filters?.city    || '';
-  const type    = aud.filters?.type    || '';
   const geoCtx  = [city, country].filter(Boolean).join(', ');
   const fullQ   = [prompt, geoCtx ? `in ${geoCtx}` : ''].filter(Boolean).join(' ');
 
-  cBody.innerHTML = '<div class="scout-running">&#9889; Querying b2b database…</div>';
+  dlg.innerHTML = `
+<div style="background:var(--surf);border:1px solid var(--rule);border-radius:4px;width:640px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule);flex-shrink:0">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t1)">🔍 B2B LOOKUP</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(fullQ)}</span>
+    <button class="btn sm" id="b2b-close-btn">✕</button>
+  </div>
+  <div id="b2b-results" style="flex:1;overflow-y:auto;padding:8px 14px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);padding:16px 0;text-align:center">⚡ Querying b2b database…</div>
+  </div>
+  <div style="padding:10px 14px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <span id="b2b-sel-count" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3)">0 selected</span>
+    <button class="btn p" id="b2b-add-btn" style="margin-left:auto" disabled>+ Add to Audience</button>
+    <button class="btn" id="b2b-cancel-btn">Cancel</button>
+  </div>
+</div>`;
+
+  // Wire close buttons
+  const close = () => { dlg.style.display = 'none'; dlg.innerHTML = ''; };
+  document.getElementById('b2b-close-btn').addEventListener('click', close);
+  document.getElementById('b2b-cancel-btn').addEventListener('click', close);
+  dlg.addEventListener('mousedown', e => { if (e.target === dlg) close(); });
+
+  // Wire add button
+  const addBtn = document.getElementById('b2b-add-btn');
+  const selCount = document.getElementById('b2b-sel-count');
+  const resultsEl = document.getElementById('b2b-results');
+
+  const updateSelCount = () => {
+    const n = document.querySelectorAll('#b2b-results .b2b-cb:checked').length;
+    selCount.textContent = `${n} selected`;
+    addBtn.disabled = n === 0;
+  };
+
+  // ── Query b2b MCP ──────────────────────────────────────────────────────
+  let candidates = [];
+  const existingIds = new Set(aud.company_ids || []);
   const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
 
   try {
     const res = await anthropicMcpFetch({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: 1200,
       mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
       messages: [{ role: 'user', content:
-        `Use the b2b search_companies tool to find 10-15 companies matching: "${fullQ}"${type ? ` (type: ${type})` : ''}.
-For onAudience EU first-party data partnerships (DSPs, SSPs, agencies, data providers).
-Exclude these already in CRM: ${[...existingNames].slice(0,20).join(', ')}
-Return ONLY JSON array: [{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
+        `Use the b2b search_companies tool to find 15-20 companies matching: "${fullQ}".
+For onAudience EU first-party data partnerships.
+Return ONLY a JSON array (no extra text):
+[{"name":"...","category":"...","hq":"...","website":"...","why":"one sentence"}]` }],
     });
-    const text = (res.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const text = (res.content||[]).filter(b => b.type==='text').map(b=>b.text).join('');
     const m = text.match(/\[[\s\S]*\]/);
-    const candidates = m ? JSON.parse(m[0]) : [];
-    const fresh = candidates.filter(co => !existingNames.has((co.name||'').toLowerCase()));
-
-    if (!fresh.length) {
-      cBody.innerHTML = '<div class="scout-empty">No new companies found — try refining the audience prompt</div>';
-      return;
-    }
-    cBody.innerHTML = fresh.map(co => {
-      const slug = _slug(co.name||'');
-      return `<div class="scout-row" style="padding:5px 8px;border-bottom:1px solid var(--rule2)">
-        <div style="display:flex;align-items:baseline;gap:6px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;color:var(--t1)">${esc(co.name)}</span>
-          ${co.hq?`<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>`:''}
-        </div>
-        <div style="font-size:10px;color:var(--t2);margin:1px 0 3px">${esc(co.why||co.category||'')}</div>
-        ${co.website?`<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>`:''}
-        <div style="margin-top:4px">
-          <button class="btn sm" data-add-slug="${esc(slug)}" onclick="audAddExternalCo('${esc(slug)}','${esc(co.name||'')}','${esc(co.category||'')}','${esc(co.hq||'')}','${esc(co.website||'')}')">+ Add to DB</button>
-        </div>
-      </div>`;
-    }).join('');
+    candidates = m ? JSON.parse(m[0]) : [];
   } catch(e) {
-    cBody.innerHTML = `<div class="scout-empty">b2b lookup failed: ${esc(e.message)} — check API key</div>`;
+    resultsEl.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--prc);padding:16px 0;text-align:center">b2b lookup failed: ${esc(e.message)}</div>`;
+    return;
   }
+
+  if (!candidates.length) {
+    resultsEl.innerHTML = '<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);padding:16px 0;text-align:center">No results — try editing the audience prompt</div>';
+    return;
+  }
+
+  // Render results as checkboxes
+  resultsEl.innerHTML = candidates.map((co, i) => {
+    const slug = _slug(co.name||'');
+    const inAud = existingIds.has(slug);
+    const inDb  = existingNames.has((co.name||'').toLowerCase());
+    const badge = inAud ? '<span style="font-size:8px;color:var(--g);margin-left:4px">✓ in audience</span>'
+                : inDb  ? '<span style="font-size:8px;color:var(--t3);margin-left:4px">in DB</span>' : '';
+    return `<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3);cursor:pointer">
+      <input type="checkbox" class="b2b-cb" data-idx="${i}" data-slug="${esc(slug)}"
+        style="margin-top:3px;flex-shrink:0" ${inAud ? 'disabled' : ''} />
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;color:var(--t1)">${esc(co.name)}</span>
+          ${co.hq ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>` : ''}
+          ${badge}
+        </div>
+        <div style="font-size:10px;color:var(--t2);margin-top:1px">${esc(co.why||co.category||'')}</div>
+        ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
+      </div>
+    </label>`;
+  }).join('');
+
+  // Checkbox change listener
+  resultsEl.addEventListener('change', updateSelCount);
+  updateSelCount();
+
+  // ── Add selected to audience ────────────────────────────────────────────
+  addBtn.addEventListener('click', async () => {
+    const checked = [...document.querySelectorAll('#b2b-results .b2b-cb:checked')];
+    if (!checked.length) return;
+
+    addBtn.disabled = true;
+    addBtn.textContent = '⟳ Adding…';
+
+    const SB = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
+    const HDR = { 'apikey': window._oaToken||'', 'Authorization': 'Bearer '+(window._oaToken||''), 'Content-Type': 'application/json' };
+
+    const newIds = [];
+    for (const cb of checked) {
+      const idx = parseInt(cb.dataset.idx);
+      const co = candidates[idx];
+      const slug = _slug(co.name||'');
+      if (!slug) continue;
+
+      // Save to Supabase companies if not already there
+      if (!existingNames.has((co.name||'').toLowerCase())) {
+        const body = { id: slug, name: co.name, category: co.category||null,
+          hq_city: co.hq||null, website: co.website||null,
+          type: 'prospect', note: 'Added via b2b Lookup',
+          updated_at: new Date().toISOString() };
+        const r = await fetch(`${SB}/rest/v1/companies`, {
+          method: 'POST',
+          headers: { ...HDR, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(body)
+        });
+        if (r.ok && !S.companies.find(c => c.id === slug)) S.companies.push({...body});
+      }
+      newIds.push(slug);
+    }
+
+    // Update audience company_ids
+    const merged = [...new Set([...(aud.company_ids||[]), ...newIds])];
+    const r = await fetch(`https://nyzkkqqjnkctcmxoirdj.supabase.co/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`, {
+      method: 'PATCH',
+      headers: { ...HDR, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ company_ids: merged, updated_at: new Date().toISOString() })
+    });
+
+    if (r.ok) {
+      aud.company_ids = merged;
+      addBtn.textContent = `✓ Added ${newIds.length}`;
+      setTimeout(() => {
+        close();
+        // Refresh detail view
+        window.renderAudienceDetail?.(audId);
+      }, 800);
+    } else {
+      addBtn.textContent = '✗ Failed';
+      addBtn.disabled = false;
+    }
+  });
 }
 
 
