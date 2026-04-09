@@ -5,7 +5,7 @@
  * Covers the taxonomy loading bug (ReferenceError: _taxData not defined).
  */
 import { test, expect, Page } from '@playwright/test';
-import { waitForHub } from 'helpers';
+import { waitForHub } from './helpers';
 async function openFirstCompany(page: Page) {
   await page.locator('.c-row').first().click();
   await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });

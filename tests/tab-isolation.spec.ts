@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { waitForHub } from 'helpers';
+import { waitForHub } from './helpers';
 
 async function switchTab(page: Page, tab: string) {
   await page.evaluate((t) => window.switchTab(t), tab);

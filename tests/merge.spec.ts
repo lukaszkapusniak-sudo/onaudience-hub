@@ -5,7 +5,7 @@
  * Covers: accessing merge panel, candidate list, merge flow, and API resilience.
  */
 import { test, expect, Page } from '@playwright/test';
-import { waitForHub } from 'helpers';
+import { waitForHub } from './helpers';
 
 async function openFirstCompany(page: Page) {
   await page.evaluate(() => {
