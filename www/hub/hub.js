@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409b5';
-import S from './state.js?v=20260409b5';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409b5';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b5';
-import { resolveAlias } from './merge.js?v=20260409b5';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409b5';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409b6';
+import S from './state.js?v=20260409b6';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409b6';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b6';
+import { resolveAlias } from './merge.js?v=20260409b6';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409b6';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -449,6 +449,15 @@ async function _findSimilarViaB2B(companyInput) {
       || companyInput.toLowerCase().replace(/^https?:\/\//,'').split('/')[0]
       || (companyInput.includes('.')?companyInput:companyInput.toLowerCase().replace(/\s+/g,'')+'.com');
 
+    // MCP requires a personal Anthropic key (proxy can't connect to external SSE)
+    const hasPersonalKey = !!localStorage.getItem('oaAnthropicKey');
+    if (!hasPersonalKey) {
+      if (txt) txt.textContent = 'Key needed';
+      if (dot) { dot.className = 'ai-dot'; dot.style.background = 'var(--prb)'; }
+      clog('ai', '🔑 b2b Find Similar requires a personal Anthropic key. Click <b>🔑</b> in nav to add yours.');
+      if (aiBtn) aiBtn.disabled = false;
+      return;
+    }
     const b2bRes = await anthropicMcpFetch({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
@@ -1674,12 +1683,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409b5';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409b6';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409b5';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409b6';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409b5';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409b6';
