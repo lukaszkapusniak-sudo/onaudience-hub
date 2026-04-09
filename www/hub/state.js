@@ -13,7 +13,7 @@ const S = {
   searchQ:        '',
   activeTags:     new Set(),
   tagLogic:       'or',
-  sortBy:         'recent',
+  sortBy:         'icp',
   tagPanelOpen:   false,
   currentCompany: null,
   currentContact: null,
