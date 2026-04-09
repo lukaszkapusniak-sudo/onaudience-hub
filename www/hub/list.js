@@ -1,10 +1,10 @@
 /* ═══ list.js — Company list rendering, filters, tags, sort ═══ */
 
-import { SB_URL, TAG_RULES } from './config.js?v=20260409zo';
-import S from './state.js?v=20260409zo';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zo';
-import { anthropicFetch } from './api.js?v=20260409zo';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409zo';
+import { SB_URL, TAG_RULES } from './config.js?v=20260409zp';
+import S from './state.js?v=20260409zp';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zp';
+import { anthropicFetch } from './api.js?v=20260409zp';
+import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409zp';
 
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
 export function countPool(){const t30=Date.now()-30*24*60*60*1000;const cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));return S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ))return false;return true;});}

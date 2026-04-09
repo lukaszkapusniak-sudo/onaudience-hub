@@ -137,6 +137,35 @@ for (const cf of FILES) {
 }
 
 
+// ── Check 5b: undeclared db.js symbol usage ─────────────────────────────
+// Only checks the canonical alias names we actually use — avoids false positives
+// like `dbStatus` (DOM element id) or `dbSummary` (local variable).
+const DB_KNOWN = new Set(['dbCo','dbCompanies','dbContacts','dbRelations',
+  'dbIntel','dbEnrich','dbMerge','dbAud','dbMergeSugg']);
+
+for (const cf of FILES) {
+  const cpath = HUB + cf;
+  if (!fs.existsSync(cpath) || cf === 'db.js') continue;
+  const csrc = fs.readFileSync(cpath,'utf8');
+  const csnc = csrc.split('\n').filter(l=>!l.trim().startsWith('//')).join('\n');
+  const dbImp = csnc.match(/import\s*\{([^}]+)\}\s*from\s*['"]\.\/db\.js/);
+  const importedDb = new Set();
+  if (dbImp) {
+    for (const part of dbImp[1].split(',')) {
+      const m = part.trim().match(/\bas\s+(\w+)$|^(\w+)$/);
+      if (m) importedDb.add(m[1] || m[2]);
+    }
+  }
+  // Only flag symbols in our known set that are used but not imported
+  for (const sym of DB_KNOWN) {
+    if (importedDb.has(sym)) continue;
+    if (new RegExp('\\b' + sym + '\\b').test(csnc)) {
+      console.error('FAIL ' + cf + " — uses '" + sym + "' but not imported from db.js");
+      issues++;
+    }
+  }
+}
+
 if (issues === 0) {
   console.log(`✓ All ${FILES.length} files pass (duplicate-import, syntax, onclick checks)`);
   process.exit(0);
