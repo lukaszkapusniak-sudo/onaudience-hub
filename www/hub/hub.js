@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a7';
-import S from './state.js?v=20260409a7';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a7';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a7';
-import { resolveAlias } from './merge.js?v=20260409a7';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a7';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a8';
+import S from './state.js?v=20260409a8';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a8';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a8';
+import { resolveAlias } from './merge.js?v=20260409a8';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a8';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -202,7 +202,7 @@ export function openCompany(c){
   ${sec('ib-company','🏢','Company',
     (facts.length?`<table class="ib-facts">${facts.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`:'<span style="font-size:11px;color:var(--t3)">No details stored</span>')+linksHtml+(c.description?`<div class="ib-desc">${c.description}</div>`:''),
     null,true)}
-  <div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-angle-wrap')"><span id="ib-angle-wrap-arrow" style="font-size:9px;color:var(--t3)">▾</span><span class="ib-sh-lbl">💡 Outreach Angle</span><span class="ib-sh-act" id="ib-angle-btn" onclick="event.stopPropagation();bgGenerateAngle()">${c.outreach_angle?'↺ Regen':'✨ Generate'}</span></div><div class="ib-body" id="ib-angle-wrap" style="padding:0"><div class="ib-angle${c.outreach_angle?'':' empty'}" id="ib-angle-card" style="border:none;border-radius:0;min-height:60px"><div class="ib-angle-lbl">${c.outreach_angle?'Recommended positioning':'No angle stored yet'}</div>${c.outreach_angle?`<div class="ib-angle-text">${c.outreach_angle}</div>`:`<div class="ib-angle-text" style="color:var(--t3);font-size:10px">Click "✨ Generate" to create a personalised positioning.</div>`}</div>${techBlock}${integBlock}</div></div>
+  <div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-angle-wrap')"><span id="ib-angle-wrap-arrow" style="font-size:9px;color:var(--t3)">▾</span><span class="ib-sh-lbl">💡 Outreach Angle</span><span class="ib-sh-act" id="ib-angle-btn" onclick="event.stopPropagation();showPersonaPicker('ib-angle-card',pid=>bgGenerateAngleWithPersona(pid))">${c.outreach_angle?'↺ Regen':'✨ Generate'}</span></div><div class="ib-body" id="ib-angle-wrap" style="padding:0"><div class="ib-angle${c.outreach_angle?'':' empty'}" id="ib-angle-card" style="border:none;border-radius:0;min-height:60px"><div class="ib-angle-lbl">${c.outreach_angle?'Recommended positioning':'No angle stored yet'}</div>${c.outreach_angle?`<div class="ib-angle-text">${c.outreach_angle}</div>`:`<div class="ib-angle-text" style="color:var(--t3);font-size:10px">Click "✨ Generate" to create a personalised positioning.</div>`}</div>${techBlock}${integBlock}</div></div>
 </div>
 ${signalHtml?`<div class="ib-sec"><div class="ib-signals">${signalHtml}</div></div>`:''}
 ${privacyHtml}
@@ -230,6 +230,69 @@ ${sec('ib-rels-body','🔗','Relations','<div class="ib-loading">Loading…</div
     if(localStorage.getItem('oaLemlistKey')) setTimeout(()=>_loadLemlistSection(slug,c.name),200);
   }
 }
+
+// ── Meeseeks persona picker for inline AI generation ─────────────────────────
+export function showPersonaPicker(anchorId, onPickFn) {
+  // Remove any existing picker
+  document.getElementById('oa-persona-pick')?.remove();
+  const anchor = document.getElementById(anchorId);
+  if (!anchor) return;
+  const personas = window.MC_PERSONAS_LIST || [];
+  const pick = document.createElement('div');
+  pick.id = 'oa-persona-pick';
+  pick.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;padding:5px 0 6px;';
+  pick.innerHTML = personas.map(p =>
+    `<button class="mc-mini-btn" data-pid="${p.id}"
+      style="background:${p.color||'var(--surf3)'};color:#fff;border:none;border-radius:2px;
+             font:500 8px 'IBM Plex Mono',monospace;padding:2px 6px;cursor:pointer;
+             letter-spacing:.04em;opacity:.9;transition:opacity .15s"
+      title="${p.name} · ${p.vibe||''}"
+      onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.9"
+      onclick="_onPersonaPick('${p.id}',this)">${p.emoji} ${p.name}</button>`
+  ).join('');
+  anchor.after(pick);
+  // Store callback
+  window._personaPickCallback = onPickFn;
+}
+
+export function _onPersonaPick(personaId, btn) {
+  document.getElementById('oa-persona-pick')?.remove();
+  if (window._personaPickCallback) window._personaPickCallback(personaId);
+}
+
+// Angle generation with persona
+export async function bgGenerateAngleWithPersona(personaId) {
+  const c = S.currentCompany;
+  if (!c) return;
+  const persona = (window.MC_PERSONAS_LIST || []).find(p => p.id === personaId);
+  const card = document.getElementById('ib-angle-card');
+  const btn = document.getElementById('ib-angle-btn');
+  if (card) { card.className = 'ib-angle'; card.innerHTML = `<div class="ib-angle-lbl"><span class="bg-running">✦ ${persona?.name||'AI'} generating…</span></div>`; }
+  if (btn) btn.style.display = 'none';
+  const tags = getCoTags(c).join(', ');
+  const techArr2 = (Array.isArray(c.tech_stack) ? c.tech_stack : []).slice(0, 6)
+    .map(t => typeof t === 'string' ? t : (t?.tool ? String(t.tool) : '?')).join(', ');
+  const baseSystem = `You are a B2B sales strategist for onAudience (EU first-party audience data). Write a concise, insightful outreach angle for a specific company — one sharp paragraph showing you understand their business and how onAudience data creates value for them specifically. No generic statements. No buzzwords. No location mentions. Max 80 words.`;
+  const system = persona ? persona.system + '\n\n' + baseSystem : baseSystem;
+  try {
+    const data = await anthropicFetch({ model: MODEL_CREATIVE, max_tokens: 350,
+      system,
+      messages: [{ role: 'user', content:
+        `Company: ${c.name}\nCategory: ${c.category||''}\nTags: ${tags}\nTech: ${techArr2}\nNote: ${(c.note||'').slice(0,200)}\nWrite the outreach angle.` }],
+    });
+    const angle = data.content?.[0]?.text?.trim() || '';
+    if (angle) {
+      c.outreach_angle = angle;
+      if (card) { card.className = 'ib-angle has-angle'; card.innerHTML = `<div class="ib-angle-lbl">Positioning ${persona?'('+persona.emoji+' '+persona.name+')':''}</div><div class="ib-angle-text">${esc(angle)}</div>`; }
+      try { await fetch(`\${SB_URL}/rest/v1/companies?id=eq.\${encodeURIComponent(c.id||_slug(c.name))}`, { method: 'PATCH', headers: authHdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ outreach_angle: angle }) }); } catch (e2) { /* ok */ }
+      clog('db', `✦ Angle generated (\${persona?.name||'AI'}): \${esc(c.name)}`);
+    }
+  } catch(e) {
+    if (card) card.innerHTML = `<div class="ib-angle-text" style="color:var(--cr)">Error: \${esc(e.message)}</div>`;
+  }
+  if (btn) btn.style.display = '';
+}
+
 // ── Lemlist section loader ────────────────────────────────────────
 async function _loadLemlistSection(slug, name) {
   const body = document.getElementById('ib-lemlist-body');
@@ -411,7 +474,24 @@ export function ctAction(action,ctSlug){
 }
 
 /* ═══ BG Generate Angle ══════════════════════════════════════ */
-export async function bgGenerateAngle(){const c=S.currentCompany;if(!c)return;const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">✦ Generating…</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:'You are a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3–5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">✓ generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='↺ Regen';btn.style.display='';}dbCompanies.patchByName(c.name, {outreach_angle:angle}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error — ${e.message}</span></div>`;if(btn){btn.textContent='↺ Retry';btn.style.display='';}}}
+export async function bgGenerateAngle(personaId){const c=S.currentCompany;if(!c)return;
+  // If no persona selected, show inline picker first
+  if(!personaId&&window.MC_PERSONAS){
+    const card=document.getElementById('ib-angle-card');
+    if(card){
+      card.className='ib-angle';
+      card.innerHTML=`<div class="ib-angle-lbl">Choose a writing style:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">
+          ${(window.MC_PERSONAS||[]).map(p=>`<button class="btn sm"
+            style="background:${p.color||'var(--surf3)'};color:#fff;border-color:transparent"
+            onclick="bgGenerateAngle('${p.id}')">${p.emoji} ${p.name}</button>`).join('')}
+        </div>`;
+    }
+    return;
+  }
+  const persona=(window.MC_PERSONAS||[]).find(p=>p.id===personaId)||null;
+  const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');
+  if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">✦ Generating with ${persona?persona.emoji+' '+persona.name:'AI'}…</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:(persona?.system||'')+'\n\nYou aree a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3–5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">✓ generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='↺ Regen';btn.style.display='';}dbCompanies.patchByName(c.name, {outreach_angle:angle}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error — ${e.message}</span></div>`;if(btn){btn.textContent='↺ Retry';btn.style.display='';}}}
 
 /* ═══ BG Find DMs (Opus + web_search — zero hallucination) ═══ */
 const FIND_DMS_SYSTEM=`You are a B2B sales researcher finding REAL decision makers and outreach signals for data partnership outreach.
@@ -1487,12 +1567,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a7';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a8';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a7';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a8';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a7';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a8';

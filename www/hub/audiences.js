@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a7';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409a7';
-import S from './state.js?v=20260409a7';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409a7';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409a7';
-import { clog } from './hub.js?v=20260409a7';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a8';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409a8';
+import S from './state.js?v=20260409a8';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409a8';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409a8';
+import { clog } from './hub.js?v=20260409a8';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -237,8 +237,8 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
     </div>
   </div>
   <div class="aud-campaign-bar">
-    <button class="btn sm p" onclick="generateCampaignHook(${audIdJ})">✦ Generate Hook</button>
-    <button class="btn sm" onclick="generateEmailTemplate(${audIdJ})">✉ Draft Campaign</button>
+    <button class="btn sm p" onclick="showPersonaPicker('aud-hook-ta',pid=>generateCampaignHook(${audIdJ},pid))">✦ Generate Hook</button>
+    <button class="btn sm" onclick="showPersonaPicker('aud-tpl-body',pid=>generateEmailTemplate(${audIdJ},pid))">✉ Draft Campaign</button>
     <button class="btn sm" onclick="audExportCsv(${audIdJ})">↗ Export CSV</button>
     <div style="margin-left:auto;display:flex;gap:4px">
       ${localStorage.getItem('oaLemlistKey')
@@ -270,7 +270,7 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
       <div class="aud-sidebar-section">
         <div class="aud-sidebar-lbl" style="display:flex;align-items:center;gap:6px">
           ✦ Campaign Hook
-          <button class="btn sm" style="margin-left:auto" onclick="generateCampaignHook(${audIdJ})" title="Auto-generate from company context">✦ AI</button>
+          <button class="btn sm" style="margin-left:auto" onclick="showPersonaPicker('aud-hook-ta',pid=>generateCampaignHook(${audIdJ},pid))" title="Choose style then generate">✦ AI</button>
         </div>
         <textarea id="aud-hook-ta" class="aud-input aud-textarea" rows="3"
           placeholder="Outreach hook for this audience…">${esc(aud.outreach_hook || '')}</textarea>
@@ -281,7 +281,7 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
       <div class="aud-sidebar-section">
         <div class="aud-sidebar-lbl" style="display:flex;align-items:center;gap:6px">
           ✦ Email Template
-          <button class="btn sm" style="margin-left:auto" onclick="generateEmailTemplate(${audIdJ})" title="Generate email from hook + ICP">✦ AI</button>
+          <button class="btn sm" style="margin-left:auto" onclick="showPersonaPicker('aud-tpl-body',pid=>generateEmailTemplate(${audIdJ},pid))" title="Choose style then generate">✦ AI</button>
         </div>
         <input id="aud-tpl-subject" class="aud-input" style="font-size:10px"
           placeholder="Subject line…" value="${esc(aud.template_subject || '')}"/>
@@ -1980,7 +1980,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409a7';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409a8';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409a7';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409a8';

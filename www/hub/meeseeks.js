@@ -1,10 +1,10 @@
 /* ═══ meeseeks.js — Meeseeks Composer ═══ */
 
-import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409a7';
-import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260409a7';
-import S from './state.js?v=20260409a7';
-import { anthropicFetch } from './api.js?v=20260409a7';
-import { contacts as dbContacts } from './db.js?v=20260409a7';
+import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409a8';
+import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260409a8';
+import S from './state.js?v=20260409a8';
+import { anthropicFetch } from './api.js?v=20260409a8';
+import { contacts as dbContacts } from './db.js?v=20260409a8';
 
 export function mcHint(el,id){const h=document.getElementById(id);if(h)h.textContent=`${el.value.length} chars`;}
 export function mcAllContacts(){const seen=new Set(S.mcDbContacts.map(c=>(c.full_name||'').toLowerCase()));const extra=S.mcAiContacts.filter(c=>!seen.has((c.full_name||'').toLowerCase()));return[...S.mcDbContacts,...extra];}
@@ -27,3 +27,5 @@ export async function mcGenerate(){const persona=MC_PERSONAS.find(p=>p.id===S.mc
 function mcRenderOutput(persona,subject,body,contact,company){const oc=document.getElementById('mcOutContent');oc.style.display='block';oc.innerHTML=`<div class="mc-wrap mc-out-${persona.id}"><div class="mc-badge" style="background:${persona.color}"><span class="mc-bdot"></span><span class="mc-bemoji">${persona.emoji}</span><span>${persona.name.toUpperCase()}</span><span class="mc-bvibe">/ ${persona.vibe}</span></div>${subject?`<div class="mc-subject"><span>Subject</span><span class="mc-subject-val">${esc(subject)}</span></div>`:''}<div class="mc-email">${esc(body)}</div></div>`;const _rb3=document.getElementById('mcRBar');if(_rb3)_rb3.style.display='flex';document.getElementById('mcOutActs').style.display='flex';document.getElementById('mcOutLabel').textContent=`${persona.name} · ${company}${contact&&contact!=='there'?' → '+contact:''}`;document.getElementById('mcEmpty').style.display='none';const _rs=document.getElementById('mcRScroll');if(_rs)_rs.scrollTop=_rs.scrollHeight;}
 
 export function mcCopy(){const el=document.querySelector('.mc-email');if(!el)return;const txt=el.innerText||el.textContent||'';navigator.clipboard.writeText(txt).then(()=>{const btn=event.target;btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1600);}).catch(()=>{});}
+
+export { MC_PERSONAS };

@@ -1,18 +1,19 @@
 /* ═══ aud-campaign.js — Campaign generation, email templates, Lemlist launch ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a7';
-import S from './state.js?v=20260409a7';
-import { esc, _slug, authHdr } from './utils.js?v=20260409a7';
-import { anthropicFetch, lemlistFetch } from './api.js?v=20260409a7';
-import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409a7';
-import { clog } from './hub.js?v=20260409a7';
-import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a7';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a8';
+import S from './state.js?v=20260409a8';
+import { esc, _slug, authHdr } from './utils.js?v=20260409a8';
+import { anthropicFetch, lemlistFetch } from './api.js?v=20260409a8';
+import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409a8';
+import { clog } from './hub.js?v=20260409a8';
+import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a8';
 
-export async function generateCampaignHook(audId) {
+export async function generateCampaignHook(audId, personaId) {
   const aud = S.audiences.find(a => a.id === audId);
   if (!aud) return;
   const ta = document.getElementById('aud-hook-ta');
   if (ta) { ta.value = ''; ta.placeholder = '⟳ generating…'; }
+  const persona = personaId ? (window.MC_PERSONAS_LIST||[]).find(p=>p.id===personaId) : null;
   const icp = aud.filters?.icp_prompt || aud.icp_prompt || aud.description || aud.name || '';
   const coIds = aud.company_ids || [];
   // Pull up to 6 company descriptions for context
@@ -21,6 +22,7 @@ export async function generateCampaignHook(audId) {
   try {
     const res = await anthropicFetch({
       model: MODEL_CREATIVE, max_tokens: 140,
+      system: persona ? persona.system + '\n\nYou are writing B2B outreach hooks for onAudience, which sells EU first-party audience data.' : undefined,
       messages: [{ role: 'user', content:
         `Write a punchy 2–3 sentence B2B outreach hook for a cold email.\n\nAudience segment: "${icp}"\n${coCtx ? '\nCompanies in this segment:\n'+coCtx+'\n' : ''}\nWe are onAudience — we provide EU first-party audience data to DSPs, SSPs, agencies and data providers.\n\nRules:\n- Focus on BUSINESS VALUE relevant to what these companies DO (their tech, clients, products)\n- NEVER mention country, city, region, or market name — not even indirectly (no 'Polish', 'German', 'UK-based' etc.)\n- Be direct and specific, no buzzwords\n- Start with an insight or challenge they face, not "I"\n- 2–3 sentences max` }],
     });
@@ -32,9 +34,10 @@ export async function generateCampaignHook(audId) {
   }
 }
 
-export async function generateEmailTemplate(audId) {
+export async function generateEmailTemplate(audId, personaId) {
   const aud = S.audiences.find(a => a.id === audId);
   if (!aud) return;
+  const persona = personaId ? (window.MC_PERSONAS_LIST||[]).find(p=>p.id===personaId) : null;
   const subjectEl = document.getElementById('aud-tpl-subject');
   const bodyEl = document.getElementById('aud-tpl-body');
   if (bodyEl) bodyEl.placeholder = '⟳ generating…';
@@ -43,6 +46,7 @@ export async function generateEmailTemplate(audId) {
   const n = (aud.company_ids || []).length;
   try {
     const res = await anthropicFetch({
+      system: persona ? persona.system + '\n\nYou are writing B2B email templates for onAudience, which sells EU first-party audience data.' : undefined,
       model: MODEL_CREATIVE, max_tokens: 400,
       messages: [{ role: 'user', content:
         `Write a cold B2B email template (subject + body) for onAudience EU first-party data partnerships.\nAudience: "${prompt}" (${n} companies).\nHook: "${hook}"\nFormat:\nSUBJECT: <subject line>\n\n<email body — 3–4 short paragraphs, {{first_name}} placeholder, no fluffy sign-off>` }],
