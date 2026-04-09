@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409p';
-import { authHdr } from './utils.js?v=20260409p';
-import S from './state.js?v=20260409p';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409p';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409p';
-import { clog } from './hub.js?v=20260409p';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409q';
+import { authHdr } from './utils.js?v=20260409q';
+import S from './state.js?v=20260409q';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409q';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409q';
+import { clog } from './hub.js?v=20260409q';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -247,6 +247,7 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
       <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${members.length} CO</span>
       <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${cov.contacts} CT</span>
       <button class="btn sm" onclick="audEdit(${audIdJ})">✎ EDIT</button>
+      <button class="btn sm" onclick="audB2bLookup(${audIdJ})">🔍 b2b</button>
       <button class="btn sm" onclick="audCloseDetail()">✕</button>
     </div>
     ${aud.outreach_hook ? `<div class="aud-hook-box">✦ ${esc(aud.outreach_hook)}</div>` : ''}
@@ -1415,9 +1416,9 @@ export function audNew() {
 
 export function audEdit(id) {
   const aud = S.audiences.find(a => a.id === id);
-  if (!aud) return;
+  if (aud?.is_system) { clog('info','System audiences cannot be edited'); return; }
   S._audienceBuiltIds = null;
-  openAudienceModal(id);
+  openAudienceModal(id); // works even if aud is undefined — modal handles missing gracefully
 }
 
 export async function audDelete(id) {
@@ -2276,6 +2277,67 @@ export async function audGenAngleForCo(audId, coSlug) {
     angleEl.textContent = 'Error generating angle';
   }
 }
+
+export async function audB2bLookup(audId) {
+  const aud = S.audiences.find(a => a.id === audId);
+  if (!aud) return;
+
+  // Open scout modal in edit mode so results show in Section C
+  openAudienceModal(audId);
+  await new Promise(r => setTimeout(r, 150)); // wait for modal render
+
+  const cBody = document.getElementById('scout-c-body');
+  if (!cBody) return;
+
+  const prompt  = aud.icp_prompt || aud.description || aud.name || '';
+  const country = aud.filters?.country || '';
+  const city    = aud.filters?.city    || '';
+  const type    = aud.filters?.type    || '';
+  const geoCtx  = [city, country].filter(Boolean).join(', ');
+  const fullQ   = [prompt, geoCtx ? `in ${geoCtx}` : ''].filter(Boolean).join(' ');
+
+  cBody.innerHTML = '<div class="scout-running">&#9889; Querying b2b database…</div>';
+  const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
+
+  try {
+    const res = await anthropicMcpFetch({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
+      messages: [{ role: 'user', content:
+        `Use the b2b search_companies tool to find 10-15 companies matching: "${fullQ}"${type ? ` (type: ${type})` : ''}.
+For onAudience EU first-party data partnerships (DSPs, SSPs, agencies, data providers).
+Exclude these already in CRM: ${[...existingNames].slice(0,20).join(', ')}
+Return ONLY JSON array: [{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
+    });
+    const text = (res.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const m = text.match(/\[[\s\S]*\]/);
+    const candidates = m ? JSON.parse(m[0]) : [];
+    const fresh = candidates.filter(co => !existingNames.has((co.name||'').toLowerCase()));
+
+    if (!fresh.length) {
+      cBody.innerHTML = '<div class="scout-empty">No new companies found — try refining the audience prompt</div>';
+      return;
+    }
+    cBody.innerHTML = fresh.map(co => {
+      const slug = _slug(co.name||'');
+      return `<div class="scout-row" style="padding:5px 8px;border-bottom:1px solid var(--rule2)">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;color:var(--t1)">${esc(co.name)}</span>
+          ${co.hq?`<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>`:''}
+        </div>
+        <div style="font-size:10px;color:var(--t2);margin:1px 0 3px">${esc(co.why||co.category||'')}</div>
+        ${co.website?`<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>`:''}
+        <div style="margin-top:4px">
+          <button class="btn sm" data-add-slug="${esc(slug)}" onclick="audAddExternalCo('${esc(slug)}','${esc(co.name||'')}','${esc(co.category||'')}','${esc(co.hq||'')}','${esc(co.website||'')}')">+ Add to DB</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    cBody.innerHTML = `<div class="scout-empty">b2b lookup failed: ${esc(e.message)} — check API key</div>`;
+  }
+}
+
 
 export async function audAddExternalCo(slug, name, category, hq, website) {
   if (!name) return;
