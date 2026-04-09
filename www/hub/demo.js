@@ -141,15 +141,17 @@ export function isDemoMode() {
 }
 
 /* ── Populate S with demo data ───────────────────────────────── */
-export function loadDemoData(S, classify, renderStats, renderList, renderTagPanel) {
-  S.companies = DEMO_COMPANIES.map(c=>({...c, type:c.type||classify(c.note||'')}));
+export function loadDemoData(S) {
+  // All DEMO_COMPANIES already have type set — no classify needed
+  S.companies = DEMO_COMPANIES.map(c=>({...c}));
   S.contacts  = DEMO_CONTACTS;
   S.allRelations = DEMO_RELATIONS;
   S.audiences = DEMO_AUDIENCES;
   S.totalCompaniesInDb = DEMO_COMPANIES.length;
-  if(typeof renderStats==='function') renderStats();
-  if(typeof renderList==='function') renderList();
-  if(typeof renderTagPanel==='function') renderTagPanel();
+  // Use window-exposed renderers — safe to call after DOM ready
+  if(typeof window.renderStats==='function') window.renderStats();
+  if(typeof window.renderList==='function') window.renderList();
+  if(typeof window.renderTagPanel==='function') window.renderTagPanel();
   const dot = document.getElementById('statusDot');
   if(dot) dot.className='live';
 }

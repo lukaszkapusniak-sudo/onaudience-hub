@@ -1,16 +1,16 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409c3';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard } from './demo.js?v=20260409c3';
-import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409c3';
-import { _slug } from './utils.js?v=20260409c3';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c3';
+import S from './state.js?v=20260409c4';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard } from './demo.js?v=20260409c4';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409c4';
+import { _slug } from './utils.js?v=20260409c4';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c4';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409c3';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409c3';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409c3';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409c3';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409c3';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409c3';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409c4';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409c4';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409c4';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409c4';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409c4';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409c4';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -20,7 +20,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409c3';
+} from './auth.js?v=20260409c4';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -207,6 +207,7 @@ document.addEventListener('visibilitychange', () => {
 /* ── window exports ─────────────────────────────────────────── */
 window.MC_PERSONAS_LIST = MC_PERSONAS;
 window.startTutorial = startTutorial;
+window.renderStats = renderStats;
 initKonami(); // ↑↑↓↓←→←→BA
 window.oaEnterDemo = oaEnterDemoMode;
 window.demoGuard = demoGuard;
@@ -446,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _hubBooted = true;
       showDemoBanner();
       patchNavForDemo();
-      loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+      loadDemoData(S);
       setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
     }
   });
@@ -457,7 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _hubBooted = true;
       showDemoBanner();
       patchNavForDemo();
-      loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+      loadDemoData(S);
       setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
     }
   });
@@ -492,7 +493,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideLoginScreen();
     showDemoBanner();
     patchNavForDemo();
-    loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+    loadDemoData(S);
     setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
     return;
   }
@@ -513,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideLoginScreen();
     showDemoBanner();
     patchNavForDemo();
-    loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+    loadDemoData(S);
     setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
   } else {
     renderLoginScreen(); // mid-OAuth: show login while token processes

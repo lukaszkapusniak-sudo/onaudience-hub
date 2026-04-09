@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c3';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c4';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -244,20 +244,22 @@ const STEPS = [
 
 const _KONAMI_SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown',
                      'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight',
-                     'KeyB','KeyA'];
+                     'b','a']; // case-insensitive: matches b/B, a/A
 let _konamiIdx = 0;
 
 function _initKonami() {
   document.addEventListener('keydown', (e) => {
-    if (e.code === _KONAMI_SEQ[_konamiIdx]) {
+    // Use e.code for arrow keys (physical), e.key.toLowerCase() for letters
+    const _k = e.code.startsWith('Arrow') ? e.code : (e.key||'').toLowerCase();
+    if (_k === _KONAMI_SEQ[_konamiIdx]) {
       _konamiIdx++;
-      SFX.cursor();  // tiny tick on each correct key
+      SFX.cursor();
       if (_konamiIdx === _KONAMI_SEQ.length) {
         _konamiIdx = 0;
         _triggerKonami();
       }
     } else {
-      _konamiIdx = (e.code === _KONAMI_SEQ[0]) ? 1 : 0;
+      _konamiIdx = (_k === _KONAMI_SEQ[0]) ? 1 : 0;
     }
   });
 }
@@ -366,7 +368,7 @@ function _showKonamiOverlay() {
     <div class="kn-contact">
       <div class="kn-contact-name">Łukasz Kapuśniak</div>
       <div class="kn-contact-role">onAudience · Data Partnerships</div>
-      <div class="kn-contact-email">l.kapusniak@onaudience.com</div>
+      <div class="kn-contact-email">lukasz.kapusniak@ct.pl</div>
     </div>
     <button class="kn-btn" id="kn-email-btn">
       📧 Send Meeting Request
@@ -407,7 +409,7 @@ function _showKonamiOverlay() {
     const body = encodeURIComponent(
       'Hi %C5%81ukasz,%0A%0AI was exploring the onAudience Sales Intelligence Hub and found the Konami Code easter egg.%0A%0AI would love to connect.%0A%0ABest,'
     );
-    window.open(`mailto:l.kapusniak@onaudience.com?subject=${sub}&body=${body}`);
+    window.open(`mailto:lukasz.kapusniak@ct.pl?subject=${sub}&body=${body}`);
   });
 
   // Close on click outside card or ESC
