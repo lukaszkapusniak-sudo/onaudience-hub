@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zp';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409zp';
-import S from './state.js?v=20260409zp';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zp';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zp';
-import { clog } from './hub.js?v=20260409zp';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zq';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409zq';
+import S from './state.js?v=20260409zq';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zq';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zq';
+import { clog } from './hub.js?v=20260409zq';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -831,7 +831,7 @@ After searching, return ONLY a JSON array:
     const textBlocks = (b2bRes.content||[]).filter(b => b.type === 'text').map(b => b.text).join('');
     const toolResults = (b2bRes.content||[]).filter(b => b.type === 'mcp_tool_result')
       .map(b => b.content?.[0]?.text || '').join('\n');
-    const raw = textBlocks || toolResults;
+    const raw = textBlocks.trim() || toolResults;
     const m = raw.match(/\[[\s\S]*\]/);
     if (m) {
       const parsed = JSON.parse(m[0]);
@@ -1970,7 +1970,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zp';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zq';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zp';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zq';

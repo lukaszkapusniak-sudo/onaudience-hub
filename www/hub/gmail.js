@@ -1,7 +1,7 @@
 /* gmail.js -- Gmail OAuth via Google Identity Services */
-import { GMAIL_CLIENT_ID } from './config.js?v=20260409zp';
-import { esc, authHdr } from './utils.js?v=20260409zp';
-import { SB_URL } from './config.js?v=20260409zp';
+import { GMAIL_CLIENT_ID } from './config.js?v=20260409zq';
+import { esc, authHdr } from './utils.js?v=20260409zq';
+import { SB_URL } from './config.js?v=20260409zq';
 
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
