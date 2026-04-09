@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a5';
-import S from './state.js?v=20260409a5';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a5';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a5';
-import { resolveAlias } from './merge.js?v=20260409a5';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a5';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a6';
+import S from './state.js?v=20260409a6';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a6';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a6';
+import { resolveAlias } from './merge.js?v=20260409a6';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a6';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -211,6 +211,8 @@ ${sec('ib-ct-body','👤','Contacts',ctGridHtml,
 ${sec('ib-intel-body','📰','Intelligence','<div class="ib-loading">Loading…</div>',
   `<span class="ib-sh-cnt" id="ib-intel-cnt"></span><span id="ib-intel-live" style="display:none" class="live-label"><span class="live-dot"></span>Live</span><span class="ib-sh-act" id="ib-intel-refresh" onclick="event.stopPropagation();bgRefreshIntel()">↺ Refresh</span>`,false)}
 ${sec('ib-email-body','📧','Email History',_getEmailSectionHTML(slug,c.name),``,false)}
+${localStorage.getItem('oaLemlistKey')?sec('ib-lemlist-body','📤','Lemlist','<div class="ib-loading">Loading…</div>',
+  `<span class="ib-sh-cnt" id="ib-ll-cnt"></span><span class="ib-sh-act" onclick="event.stopPropagation();audPushLemlist&&_llPushCompany()">📤 Push</span>`,false):''}
 ${prodsHtml?sec('ib-prods-body','📦','Products',prodsHtml,`<span class="ib-sh-cnt">${prods.length}</span>`,false):''}
 ${sec('ib-segments-body','🎯','Segment Mapper','<div class="ib-loading" id="ib-seg-loading">Loading taxonomy…</div>',
   `<span class="ib-sh-cnt" id="ib-seg-cnt"></span><span class="ib-sh-act" onclick="event.stopPropagation();mapSegments()">↺ Remap</span>`,false)}
@@ -225,8 +227,81 @@ ${sec('ib-rels-body','🔗','Relations','<div class="ib-loading">Loading…</div
     // Always fetch contacts + products fresh from DB for this company
     setTimeout(()=>_loadCompanyContacts(slug,c.name),120);
     setTimeout(()=>_loadCompanyProducts(slug,c),150);
+    if(localStorage.getItem('oaLemlistKey')) setTimeout(()=>_loadLemlistSection(slug,c.name),200);
   }
 }
+// ── Lemlist section loader ────────────────────────────────────────
+async function _loadLemlistSection(slug, name) {
+  const body = document.getElementById('ib-lemlist-body');
+  if (!body) return;
+  try {
+    // Get company contacts from DB
+    const contacts = await dbContacts.byCompany(slug, name);
+    const inLL = contacts.filter(c => c.lemlist_campaign_id && c.lemlist_pushed_at);
+    const notInLL = contacts.filter(c => !c.lemlist_campaign_id);
+    const cnt = document.getElementById('ib-ll-cnt');
+    if (cnt) cnt.textContent = inLL.length || '';
+
+    if (!contacts.length) {
+      body.innerHTML = `<div style="font-size:11px;color:var(--t3)">No contacts for this company yet.</div>`;
+      return;
+    }
+
+    const pushedHtml = inLL.map(ct => {
+      const av = getAv(ct.full_name||''), n2 = ini(ct.full_name||'');
+      return `<div class="ib-ct" style="cursor:default">
+        <div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${n2}</div>
+        <div class="ib-ct-info">
+          <div class="ib-ct-name">${esc(ct.full_name||'—')}</div>
+          <div class="ib-ct-title" style="color:var(--g)">
+            ✓ ${esc(ct.lemlist_campaign_name||ct.lemlist_campaign_id||'Lemlist')}
+            <span style="color:var(--t4)"> · ${ct.lemlist_pushed_at?relTime(ct.lemlist_pushed_at):''}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const pendingHtml = notInLL.filter(c=>c.email).map(ct => {
+      const av = getAv(ct.full_name||''), n2 = ini(ct.full_name||'');
+      return `<div class="ib-ct" style="opacity:.55;cursor:default">
+        <div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${n2}</div>
+        <div class="ib-ct-info">
+          <div class="ib-ct-name">${esc(ct.full_name||'—')}</div>
+          <div class="ib-ct-title">${esc(ct.title||'')}${ct.email?' · '+esc(ct.email):''}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const emailContacts = contacts.filter(c=>c.email);
+    const pushableCount = notInLL.filter(c=>c.email).length;
+
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        ${inLL.length?`<span style="font:500 9px 'IBM Plex Mono',monospace;color:var(--g)">✓ ${inLL.length} in Lemlist</span>`:''}
+        ${pushableCount?`<span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${pushableCount} not pushed</span>`:''}
+        <span style="flex:1"></span>
+        ${emailContacts.length?`<button class="btn sm p" onclick="_llPushCompany('${esc(slug)}','${esc(name)}')">📤 Push ${pushableCount||emailContacts.length}</button>`:''}
+      </div>
+      ${pushedHtml?`<div class="ib-cts-grid" style="margin-bottom:6px">${pushedHtml}</div>`:''}
+      ${pendingHtml?`<div class="ib-cts-grid" style="opacity:.7">${pendingHtml}</div>`:''}
+      ${!emailContacts.length?`<div style="font-size:11px;color:var(--t3)">No contacts with email addresses.</div>`:''}`;
+  } catch(e) {
+    const body2 = document.getElementById('ib-lemlist-body');
+    if(body2) body2.innerHTML = `<div style="font-size:11px;color:var(--cr)">Error: ${esc(e.message)}</div>`;
+    clog('info', 'Lemlist section error: ' + e.message);
+  }
+}
+
+// Push company contacts to Lemlist
+export function _llPushCompany(slug, name) {
+  dbContacts.byCompany(slug||_slug(S.currentCompany?.name||''), name||S.currentCompany?.name||'')
+    .then(contacts => {
+      const toPush = contacts.filter(c=>c.email);
+      if(!toPush.length){ clog('info','No contacts with email to push'); return; }
+      if(typeof openLemlistModal==='function') openLemlistModal(toPush);
+    }).catch(e=>clog('info','Push error: '+e.message));
+}
+
 // ── DB-fresh contacts loader ──────────────────────────────────────
 async function _loadCompanyContacts(slug, name) {
   const body = document.getElementById('ib-ct-body');
@@ -1412,12 +1487,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a5';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a6';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a5';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a6';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a5';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a6';

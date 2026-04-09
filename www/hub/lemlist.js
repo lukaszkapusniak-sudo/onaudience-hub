@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a5';
-import S from './state.js?v=20260409a5';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a5';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a5';
-import { clog } from './hub.js?v=20260409a5';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a6';
+import S from './state.js?v=20260409a6';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a6';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a6';
+import { clog } from './hub.js?v=20260409a6';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -198,7 +198,40 @@ export async function selectLemlistCampaign(campaignId){
   center.innerHTML='<div style="padding:24px;font-size:11px;color:var(--t3);font-family:\'IBM Plex Mono\',monospace">Loading leads\u2026</div>';
   try{
     const d=await lemlistFetch('/campaigns/'+campaignId+'/leads');
-    _llLeads=Array.isArray(d)?d:(d.leads??[]);
+    const leads=Array.isArray(d)?d:(d.leads??[]);
+    // Enrich each lead with full contact details from Lemlist + match SB contacts
+    _llLeads=await Promise.all(leads.map(async l=>{
+      // First try matching against SB contacts by lemlist_campaign_id
+      const sbMatch=S.contacts?.find(c=>
+        c.lemlist_campaign_id===campaignId&&c.lemlist_pushed_at&&
+        (c.email===l.email||(!l.email&&c.lemlist_campaign_id))
+      );
+      if(sbMatch){
+        return{...l,
+          firstName:sbMatch.full_name?.split(' ')[0]||l.firstName||'',
+          lastName:sbMatch.full_name?.split(' ').slice(1).join(' ')||l.lastName||'',
+          email:sbMatch.email||l.email||'',
+          companyName:sbMatch.company_name||l.companyName||'',
+          jobTitle:sbMatch.title||l.jobTitle||'',
+        };
+      }
+      // Fetch from Lemlist API if contactId available
+      if(l.contactId){
+        try{
+          const cd=await lemlistFetch('/contacts/'+l.contactId);
+          if(cd&&(cd.email||cd.firstName)){
+            return{...l,...cd,
+              firstName:cd.firstName||l.firstName||'',
+              lastName:cd.lastName||l.lastName||'',
+              email:cd.email||l.email||'',
+              companyName:cd.companyName||l.companyName||'',
+              jobTitle:cd.fields?.jobTitle||cd.jobTitle||l.jobTitle||'',
+            };
+          }
+        }catch(e){/* use minimal data */}
+      }
+      return l;
+    }));
   }catch(e){
     _llLeads=[];
     clog('info','lemlist leads error: '+e.message);

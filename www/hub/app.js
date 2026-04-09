@@ -1,14 +1,14 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409a5';
-import { _slug } from './utils.js?v=20260409a5';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a5';
+import S from './state.js?v=20260409a6';
+import { _slug } from './utils.js?v=20260409a6';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a6';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './hub.js?v=20260409a5';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260409a5';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409a5';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409a5';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409a5';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409a5';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './hub.js?v=20260409a6';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact } from './meeseeks.js?v=20260409a6';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409a6';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409a6';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409a6';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409a6';
 import {
   getSession, getAuthToken, getCurrentUser,
   signIn, signInWithGoogle,
@@ -18,7 +18,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409a5';
+} from './auth.js?v=20260409a6';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -266,6 +266,7 @@ Object.assign(window, {
   renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail,
   llSearchLeads, llPushFromAudience, llUnsubLead,
   llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected,
+  _llPushCompany,
 
   /* Meeseeks */
   openComposer, closeComposer, mcOpenPanel,
