@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409s';
-import { authHdr } from './utils.js?v=20260409s';
-import S from './state.js?v=20260409s';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409s';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409s';
-import { clog } from './hub.js?v=20260409s';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409t';
+import { authHdr } from './utils.js?v=20260409t';
+import S from './state.js?v=20260409t';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409t';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409t';
+import { clog } from './hub.js?v=20260409t';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -199,7 +199,7 @@ function renderCampaignCoRowHtml(c, aud, audContacts) {
   const coContacts = audContacts.filter(ct =>
     ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name));
   const hasEmail = coContacts.some(ct => ct.email);
-  const audIdJ = JSON.stringify(aud.id), slugJ = JSON.stringify(slug);
+  const audIdJ = aud.id, slugJ = slug; // safe slug
   const desc = (c.description || c.note || '').slice(0, 90);
   const descTrunc = desc + ((c.description || c.note || '').length > 90 ? '…' : '');
   return `
@@ -232,12 +232,12 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
   const f = aud.filters || {};
   const icpFull = f.icp_prompt || aud.icp_prompt || '';
   const icpTrunc = icpFull.slice(0, 120) + (icpFull.length > 120 ? '…' : '');
-  const audIdJ = JSON.stringify(aud.id);
+  const audIdJ = aud.id; // safe alphanumeric-dash, no JSON.stringify needed
   const coRows = members.length === 0
     ? '<div class="aud-empty" style="padding:24px">No companies in this audience.</div>'
     : members.map(c => renderCampaignCoRowHtml(c, aud, audContacts)).join('');
   const sortBtns = ['updated_at', 'icp', 'name', 'size'].map(v =>
-    `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},${JSON.stringify(v)})">${sortLabel(v).split(' ')[0]}</button>`
+    `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},'${v}')">${sortLabel(v).split(' ')[0]}</button>`
   ).join('');
   return `
 <div class="aud-detail-full">
@@ -246,8 +246,8 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
       <span class="aud-detail-name">${esc(aud.name)}</span>
       <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${members.length} CO</span>
       <span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${cov.contacts} CT</span>
-      <button class="btn sm" onclick="audEdit(${audIdJ})">✎ EDIT</button>
-      <button class="btn sm" onclick="audB2bLookup(${audIdJ})">🔍 b2b</button>
+      <button class="btn sm" onclick="audEdit('${esc(aud.id)}')">✎ EDIT</button>
+      <button class="btn sm" onclick="audB2bLookup('${esc(aud.id)}')">🔍 b2b</button>
       <button class="btn sm" onclick="audCloseDetail()">✕</button>
     </div>
     ${aud.outreach_hook ? `<div class="aud-hook-box">✦ ${esc(aud.outreach_hook)}</div>` : ''}
