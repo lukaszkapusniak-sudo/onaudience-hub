@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409r';
-import { authHdr } from './utils.js?v=20260409r';
-import S from './state.js?v=20260409r';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409r';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409r';
-import { clog } from './hub.js?v=20260409r';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409s';
+import { authHdr } from './utils.js?v=20260409s';
+import S from './state.js?v=20260409s';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409s';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409s';
+import { clog } from './hub.js?v=20260409s';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -2358,7 +2358,7 @@ Return ONLY a JSON array (no extra text):
   }
 
   if (!candidates.length) {
-    resultsEl.innerHTML = '<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);padding:16px 0;text-align:center">No results — try editing the audience prompt</div>';
+    resultsEl.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);padding:16px 0;text-align:center">No results — try editing the audience prompt</div>`;
     return;
   }
 
