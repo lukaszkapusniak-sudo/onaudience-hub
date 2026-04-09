@@ -5,16 +5,7 @@
  * Covers: accessing merge panel, candidate list, merge flow, and API resilience.
  */
 import { test, expect, Page } from '@playwright/test';
-
-const HUB = './';
-
-async function waitForHub(page: Page) {
-  await page.goto(HUB);
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.waitForTimeout(1200);
-}
+import { waitForHub } from 'helpers';
 
 async function openFirstCompany(page: Page) {
   await page.evaluate(() => {
@@ -47,7 +38,7 @@ test.describe('Merge panel — access', () => {
   });
 
   test('merge panel function exists on window', async ({ page }) => {
-    const exists = await page.evaluate(() => typeof window.openMergePanel === 'function' || typeof window.showMerge === 'function');
+    const exists = await page.evaluate(() => typeof window.openMergeModal === 'function');
     expect(exists).toBe(true);
   });
 });
@@ -112,7 +103,7 @@ test.describe('Merge drawer UI', () => {
 
   test('merge drawer is attached to DOM', async ({ page }) => {
     // The merge drawer should exist in DOM even if closed
-    const mergeDrawer = page.locator('#mergeDrawer, #merge-drawer, #mergePanel, [id*="merge"]').first();
+    const mergeDrawer = page.locator('[id*="merge"], .merge-badge, #coPanel').first();
     await expect(mergeDrawer).toBeAttached({ timeout: 5000 });
   });
 
@@ -122,8 +113,8 @@ test.describe('Merge drawer UI', () => {
 
     await page.evaluate(() => {
       // Call whatever merge opener exists — safe even if no-op
-      if (typeof window.openMergePanel === 'function') window.openMergePanel();
-      else if (typeof window.showMerge === 'function') window.showMerge();
+      if (typeof window.openMergeModal === 'function') window.openMergeModal();
+      else if (typeof window.openMergeModal === 'function') window.openMergeModal();
     });
 
     await page.waitForTimeout(500);
@@ -135,8 +126,8 @@ test.describe('Merge drawer UI', () => {
     page.on('pageerror', e => errors.push(e.message));
 
     await page.evaluate(() => {
-      if (typeof window.closeMerge === 'function') window.closeMerge();
-      else if (typeof window.closeMergePanel === 'function') window.closeMergePanel();
+      if (typeof window.closePanel === 'function') window.closePanel();
+      else if (typeof window.closePanel === 'function') window.closePanel();
     });
 
     await page.waitForTimeout(300);

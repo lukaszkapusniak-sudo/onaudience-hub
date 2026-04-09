@@ -1,16 +1,8 @@
 import { test, expect, Page } from '@playwright/test';
+import { waitForHub } from 'helpers';
 
-const HUB = './';
 
 // ── helpers ──────────────────────────────────────────────────────
-async function waitForHub(page: Page) {
-  await page.goto(HUB);
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.waitForTimeout(1500);
-}
-
 async function openFirstCompanyWithWebsite(page: Page) {
   // Find a company that has a website (needed for domain-based contact filtering)
   await page.evaluate(() => window.switchTab('companies'));

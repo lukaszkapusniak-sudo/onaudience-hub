@@ -5,16 +5,7 @@
  * domain-filtered contacts strip — after mock scan data is injected.
  */
 import { test, expect, Page } from '@playwright/test';
-
-const HUB = './';
-
-async function waitForHub(page: Page) {
-  await page.goto(HUB);
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.waitForTimeout(1000);
-}
+import { waitForHub } from 'helpers';
 
 async function fakeConnect(page: Page, email = 'test@onaudience.com') {
   await page.evaluate((em) => {

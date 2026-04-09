@@ -8,20 +8,7 @@
  * Verifies NO duplicate / confusing buttons remain.
  */
 import { test, expect, Page } from '@playwright/test';
-
-const HUB = './';
-
-async function waitForHub(page: Page) {
-  await page.goto(HUB);
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.evaluate(() => {
-    window.clearAI?.();
-    window.setFilter?.('all', document.querySelector('#sbAll'));
-  });
-  await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 20000 });
-}
+import { waitForHub } from 'helpers';
 
 async function openFirstCompany(page: Page) {
   await page.locator('.c-row').first().click();
@@ -205,7 +192,7 @@ test.describe('Company CTA bar actions', () => {
     await page.locator('.ib-cta button', { hasText: /merge/i }).click();
     await page.waitForTimeout(400);
     expect(errors).toHaveLength(0);
-    await page.evaluate(() => window.closeMerge?.());
+    await page.evaluate(() => window.closePanel?.());
   });
 });
 

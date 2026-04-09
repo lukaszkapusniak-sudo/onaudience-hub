@@ -4,7 +4,12 @@ test.beforeEach(async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   // Open composer
   await page.locator('button[onclick*=openComposer]').first().click();
   await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 8000 });
@@ -47,7 +52,12 @@ test.describe('Meeseeks drawer — full width layout', () => {
     await page.goto('./');
     await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
     await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+    // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
     await page.locator('button[onclick*=openComposer]').first().click();
     await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 8000 });
     await expect(page.locator('.mc-right .mc-ptile').first()).toBeVisible({ timeout: 5000 });

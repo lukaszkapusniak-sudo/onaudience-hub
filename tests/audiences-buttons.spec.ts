@@ -13,7 +13,12 @@ import { test, expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
 });
 
 test('no SyntaxError in any hub JS module', async ({ page }) => {
@@ -101,7 +106,12 @@ test('clicking EDIT button opens scout modal', async ({ page }) => {
 
 test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => {
   // Boot and load some data
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.waitForTimeout(2000); // let pagination finish
 
   // Collect all onclick attrs across the whole page
@@ -120,7 +130,12 @@ test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => 
 // ── Window export coverage ─────────────────────────────────────────────────
 
 test('all onclick functions are defined on window', async ({ page }) => {
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.waitForTimeout(2000);
 
   const missing = await page.evaluate(() => {

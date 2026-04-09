@@ -5,20 +5,7 @@
  * Covers edge cases not addressed in companies/list.spec.ts.
  */
 import { test, expect, Page } from '@playwright/test';
-
-const HUB = './';
-
-async function waitForHubWithRows(page: Page) {
-  await page.goto(HUB);
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.evaluate(() => {
-    window.clearAI?.();
-    window.setFilter?.('all', document.querySelector('#sbAll'));
-  });
-  await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 20000 });
-}
+import { waitForHub } from 'helpers';
 
 // ── SUITE: Search box ─────────────────────────────────────────────
 test.describe('Company search', () => {

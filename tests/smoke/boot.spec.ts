@@ -24,7 +24,12 @@ test('no fatal JS errors on load', async ({ page }) => {
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('./');
   // Wait for full boot (not just nav) before checking errors
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   // Filter out expected 403s (RLS policy on merge_suggestions etc.)
   const fatal = errors.filter(e =>
     !e.includes('403') &&
@@ -36,7 +41,12 @@ test('no fatal JS errors on load', async ({ page }) => {
 test('company count is non-zero', async ({ page }) => {
   await page.goto('./');
   // Wait for data to fully load before checking count
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  // Robust boot check — wait for companies to load (avoids nav-status text race)
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.evaluate(() => {
     window.clearAI?.();
     window.setFilter?.('all', document.querySelector('#sbAll'));

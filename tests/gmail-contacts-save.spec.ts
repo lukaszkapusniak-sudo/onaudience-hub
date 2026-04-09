@@ -6,22 +6,10 @@
  * causing "Saved 0 contacts to CRM".
  */
 import { test, expect, Page } from '@playwright/test';
+import { waitForHub } from 'helpers';
 
 const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
-
-async function waitForHub(page: Page) {
-  await page.goto('./');
-  await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
-  await page.evaluate(() => {
-    window.clearAI?.();
-    window.setFilter?.('all', document.querySelector('#sbAll'));
-  });
-  await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 20000 });
-}
-
 /** Inject mock Gmail token so email section shows connected state */
 async function fakeGmailConnect(page: Page) {
   await page.evaluate(() => {
