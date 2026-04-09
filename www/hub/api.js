@@ -1,9 +1,9 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zm';
-import S from './state.js?v=20260409zm';
-import { classify, _slug, authHdr } from './utils.js?v=20260409zm';
-import { mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zm';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zn';
+import S from './state.js?v=20260409zn';
+import { classify, _slug, authHdr } from './utils.js?v=20260409zn';
+import { mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zn';
 
 
 
@@ -318,7 +318,6 @@ const _PAGE = 200;
 
 export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
   try{
-    const hdr1 = authHdr({'Range':`0-${_PAGE-1}`,'Prefer':'count=exact'});
     const[cr,ct,rl] = await Promise.all([
       dbCo.list('0-199'),
       dbContacts.listAll(),
@@ -326,7 +325,10 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
     ]);
     if(!Array.isArray(cr)) throw new Error('companies load failed');
     const dbc=cr, dbt=Array.isArray(ct)?ct:[], dbr=Array.isArray(rl)?rl:[];
-    const total=parseInt((cr.headers.get('content-range')||'').match(/\/(\d+)/)?.[1]||0);
+    // cr is a plain array from db.js — get total from SB separately
+    const totalRes = await fetch(`${SB_URL}/rest/v1/companies?select=id`,
+      {headers:authHdr({'Prefer':'count=exact','Range':'0-0'})});
+    const total = parseInt(totalRes.headers.get('content-range')?.split('/')[1]||'0');
     S.totalCompaniesInDb=total;
     if(Array.isArray(dbc)&&dbc.length){ const fresh=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''})); S.companies=fresh; _loadingPages=false; /* reset flag so bg load can proceed */ }
     if(Array.isArray(dbt)) S.contacts=dbt;
