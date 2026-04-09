@@ -1,10 +1,10 @@
 /* ═══ merge.js — company merge system ═══ */
 
-import { SB_URL } from './config.js?v=20260409zz';
-import { mergeSuggestions as dbMerge } from './db.js?v=20260409zz';
-import S from './state.js?v=20260409zz';
-import { esc, _slug, authHdr } from './utils.js?v=20260409zz';
-import { clog } from './api.js?v=20260409zz';
+import { SB_URL } from './config.js?v=20260409a0';
+import { mergeSuggestions as dbMerge } from './db.js?v=20260409a0';
+import S from './state.js?v=20260409a0';
+import { esc, _slug, authHdr } from './utils.js?v=20260409a0';
+import { clog } from './api.js?v=20260409a0';
 
 /* ── 1. executeMerge ─────────────────────────────────────── */
 export async function executeMerge(winnerId, loserId) {

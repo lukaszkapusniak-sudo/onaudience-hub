@@ -1,13 +1,19 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409zz';
-import S from './state.js?v=20260409zz';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409zz';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409zz';
-import { clog } from './hub.js?v=20260409zz';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409a0';
+import S from './state.js?v=20260409a0';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409a0';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409a0';
+import { clog } from './hub.js?v=20260409a0';
 
-let _llContacts = [];
-let _llLeads = [];
+let _llContacts   = [];
+let _llLeads      = [];
+let _llCampaigns  = [];
+let _llInited     = false;
+let _llSelCampaign= null;
+let _llLeadSearch = '';
+let _llSyncing    = false;
+let _llLastSync   = null;
 
 export function initLemlistModal(){
   if(document.getElementById('llModal'))return;
@@ -138,15 +144,35 @@ export async function refreshLemlistCampaigns(){
 export function renderLemlistPanel(){
   const panel=document.getElementById('lemlistPanel');
   if(!panel)return;
+  const connected=llIsConnected();
   const n=_llCampaigns.length;
-  panel.innerHTML=`<div class="ll-toolbar">
-    <span class="ll-count">${n} CAMPAIGN${n!==1?'S':''}</span>
-    <button class="btn sm" onclick="refreshLemlistCampaigns()">\u21ba Refresh</button>
+  const keyHint=connected?'● '+localStorage.getItem('oaLemlistKey').slice(0,8)+'…':'not connected';
+  const syncAgo=_llLastSync?(' · synced '+Math.round((Date.now()-_llLastSync)/60000)+'m ago'):'';
+  panel.innerHTML=`
+  <div class="ll-header">
+    <div class="ll-key-row">
+      <span class="ll-key-status ${connected?'ll-connected':'ll-disconnected'}">${keyHint}</span>
+      ${connected
+        ?`<button class="btn sm" onclick="llSetKey()">Change</button>
+          <button class="btn sm" style="color:var(--cr)" onclick="llClearKey()">✕</button>`
+        :`<button class="btn sm p" onclick="llSetKey()">⚙ Connect Lemlist</button>`}
+    </div>
+    ${connected?`<div class="ll-sync-row">
+      <button class="btn sm" id="llSyncCtBtn" onclick="llSyncContacts()">📥 Sync Contacts</button>
+      <button class="btn sm" id="llSyncCoBtn" onclick="llSyncCompanies()">🏢 Sync Companies</button>
+      <span class="ll-sync-meta">${syncAgo}</span>
+    </div>`:''}
+  </div>
+  <div class="ll-toolbar">
+    <span class="ll-count">${connected?n+' CAMPAIGN'+(n!==1?'S':''):'—'}</span>
+    ${connected?`<button class="btn sm" onclick="refreshLemlistCampaigns()">↺ Refresh</button>`:''}
   </div>
   <div class="ll-list" id="llList">
-    ${n===0
-      ?`<div class="ll-empty">No campaigns yet.<br>Create one in <a href="https://app.lemlist.com" target="_blank" style="color:var(--g)">lemlist \u2197</a> then refresh.</div>`
-      :_llCampaigns.map(c=>_renderLemlistRow(c)).join('')
+    ${!connected
+      ?`<div class="ll-empty">Connect your Lemlist API key above to sync campaigns and contacts.</div>`
+      :n===0
+        ?`<div class="ll-empty">No campaigns.<br>Create one in <a href="https://app.lemlist.com" target="_blank" style="color:var(--g)">lemlist ↗</a> then refresh.</div>`
+        :_llCampaigns.map(c=>_renderLemlistRow(c)).join('')
     }
   </div>`;
 }
@@ -282,6 +308,124 @@ export async function llUnsubLead(campaignId,email){
     selectLemlistCampaign(campaignId);
   }catch(e){
     clog('info','lemlist unsub error: '+esc(e.message));
+  }
+}
+
+
+// ── KEY MANAGEMENT ────────────────────────────────────────────────────────
+
+export function llIsConnected() {
+  return !!localStorage.getItem('oaLemlistKey');
+}
+
+export function llSetKey() {
+  const k = prompt('Enter Lemlist API key:');
+  if (!k) return;
+  localStorage.setItem('oaLemlistKey', k.trim());
+  clog('db', '🔑 Lemlist key saved');
+  renderLemlistPanel();
+}
+
+export function llClearKey() {
+  if (!confirm('Disconnect Lemlist?')) return;
+  localStorage.removeItem('oaLemlistKey');
+  clog('info', 'Lemlist key cleared');
+  renderLemlistPanel();
+}
+
+// ── SYNC FROM LEMLIST → SUPABASE ─────────────────────────────────────────
+
+export async function llSyncContacts() {
+  if (_llSyncing) return;
+  _llSyncing = true;
+  const btn = document.getElementById('llSyncCtBtn');
+  if (btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
+
+  try {
+    // Collect all leads across all campaigns
+    const camps = await lemlistCampaigns();
+    const seen = new Set();
+    const allLeads = [];
+    for (const camp of camps) {
+      const d = await lemlistFetch('/campaigns/' + camp._id + '/leads');
+      const leads = Array.isArray(d) ? d : (d.leads ?? []);
+      for (const l of leads) {
+        if (!l.email || seen.has(l.email)) continue;
+        seen.add(l.email);
+        allLeads.push({ ...l, campaignId: camp._id, campaignName: camp.name });
+      }
+    }
+
+    // Upsert to SB contacts
+    const now = new Date().toISOString();
+    let saved = 0;
+    for (const l of allLeads) {
+      const rec = {
+        id: (((l.firstName || '') + '-' + (l.lastName || '') + '-' + (l.companyName || '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) || l.email.split('@')[0],
+        full_name: ((l.firstName || '') + ' ' + (l.lastName || '')).trim() || l.email,
+        email: l.email,
+        company_name: l.companyName || '',
+        title: l.jobTitle || l.title || '',
+        linkedin_url: l.linkedinUrl || '',
+        lemlist_campaign_id: l.campaignId,
+        lemlist_campaign_name: l.campaignName,
+        lemlist_pushed_at: l.addedAt || now,
+        source: 'lemlist',
+      };
+      try {
+        await saveContact(rec);
+        saved++;
+      } catch (e) { /* skip */ }
+    }
+
+    _llLastSync = new Date();
+    clog('db', `📥 Lemlist sync: ${saved} contacts upserted from ${camps.length} campaigns`);
+    renderLemlistPanel();
+  } catch (e) {
+    clog('info', 'Lemlist sync error: ' + e.message);
+  } finally {
+    _llSyncing = false;
+    const b = document.getElementById('llSyncCtBtn');
+    if (b) { b.textContent = '📥 Sync Contacts'; b.disabled = false; }
+  }
+}
+
+export async function llSyncCompanies() {
+  if (_llSyncing) return;
+  _llSyncing = true;
+  const btn = document.getElementById('llSyncCoBtn');
+  if (btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
+
+  try {
+    const camps = await lemlistCampaigns();
+    const seen = new Set();
+    let saved = 0;
+    for (const camp of camps) {
+      const d = await lemlistFetch('/campaigns/' + camp._id + '/leads');
+      const leads = Array.isArray(d) ? d : (d.leads ?? []);
+      for (const l of leads) {
+        const name = (l.companyName || '').trim();
+        if (!name || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        try {
+          const r = await fetch(SB_URL + '/rest/v1/companies', {
+            method: 'POST',
+            headers: { ...authHdr(), 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify({ id: slug, name, source: 'lemlist' }),
+          });
+          if (r.ok) saved++;
+        } catch (e) { /* skip */ }
+      }
+    }
+    clog('db', `🏢 Lemlist sync: ${saved} companies upserted`);
+    renderLemlistPanel();
+  } catch (e) {
+    clog('info', 'Lemlist company sync error: ' + e.message);
+  } finally {
+    _llSyncing = false;
+    const b = document.getElementById('llSyncCoBtn');
+    if (b) { b.textContent = '🏢 Sync Companies'; b.disabled = false; }
   }
 }
 

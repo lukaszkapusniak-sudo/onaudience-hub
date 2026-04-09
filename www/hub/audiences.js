@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zz';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409zz';
-import S from './state.js?v=20260409zz';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409zz';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409zz';
-import { clog } from './hub.js?v=20260409zz';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a0';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409a0';
+import S from './state.js?v=20260409a0';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409a0';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409a0';
+import { clog } from './hub.js?v=20260409a0';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -240,14 +240,10 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
     <button class="btn sm p" onclick="generateCampaignHook(${audIdJ})">✦ Generate Hook</button>
     <button class="btn sm" onclick="generateEmailTemplate(${audIdJ})">✉ Draft Campaign</button>
     <button class="btn sm" onclick="audExportCsv(${audIdJ})">↗ Export CSV</button>
-    <div style="margin-left:auto">
-      <select class="aud-provider-select" style="width:auto" onchange="audProviderChange(this.value)">
-        <option value="">⚙ Provider: not connected ▾</option>
-        <option disabled>Instantly (coming soon)</option>
-        <option disabled>Lemlist (coming soon)</option>
-        <option disabled>Brevo (coming soon)</option>
-        <option disabled>Mailchimp (coming soon)</option>
-      </select>
+    <div style="margin-left:auto;display:flex;gap:4px">
+      ${localStorage.getItem('oaLemlistKey')
+        ?`<button class="btn sm p" onclick="audPushLemlist(${audIdJ})">📤 Lemlist</button>`
+        :`<button class="btn sm" onclick="llSetKey()" title="Connect Lemlist to push contacts">⚙ Lemlist</button>`}
     </div>
   </div>
   <div class="aud-map-toggle">
@@ -272,23 +268,27 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
     </div>
     <div class="aud-sidebar">
       <div class="aud-sidebar-section">
-        <div class="aud-sidebar-lbl">✦ Campaign Hook</div>
+        <div class="aud-sidebar-lbl" style="display:flex;align-items:center;gap:6px">
+          ✦ Campaign Hook
+          <button class="btn sm" style="margin-left:auto" onclick="generateCampaignHook(${audIdJ})" title="Auto-generate from company context">✦ AI</button>
+        </div>
         <textarea id="aud-hook-ta" class="aud-input aud-textarea" rows="3"
           placeholder="Outreach hook for this audience…">${esc(aud.outreach_hook || '')}</textarea>
         <div style="display:flex;gap:4px">
-          <button class="btn sm" onclick="generateCampaignHook(${audIdJ})">↺ Regen</button>
           <button class="btn sm p" onclick="saveCampaignTemplate(${audIdJ})">💾 Save</button>
         </div>
       </div>
       <div class="aud-sidebar-section">
-        <div class="aud-sidebar-lbl">✦ Email Template</div>
+        <div class="aud-sidebar-lbl" style="display:flex;align-items:center;gap:6px">
+          ✦ Email Template
+          <button class="btn sm" style="margin-left:auto" onclick="generateEmailTemplate(${audIdJ})" title="Generate email from hook + ICP">✦ AI</button>
+        </div>
         <input id="aud-tpl-subject" class="aud-input" style="font-size:10px"
           placeholder="Subject line…" value="${esc(aud.template_subject || '')}"/>
         <textarea id="aud-tpl-body" class="aud-input aud-textarea" rows="8"
           placeholder="Email body… (AI will generate from hook + ICP)">${esc(aud.template_body || '')}</textarea>
         <div style="display:flex;gap:4px">
-          <button class="btn sm p" onclick="generateEmailTemplate(${audIdJ})">✦ Generate</button>
-          <button class="btn sm" onclick="saveCampaignTemplate(${audIdJ})">💾 Save template</button>
+          <button class="btn sm p" onclick="saveCampaignTemplate(${audIdJ})">💾 Save template</button>
         </div>
       </div>
       <div class="aud-sidebar-section">
@@ -1368,6 +1368,11 @@ export function audOpen(id) {
       el.classList.add('aud-row-active');
   });
   renderAudienceDetail(id);
+  // Auto-generate hook if empty
+  const _aud = S.audiences?.find(a => a.id === id);
+  if (_aud && !_aud.outreach_hook && (_aud.company_ids || []).length > 0) {
+    setTimeout(() => generateCampaignHook(id), 600);
+  }
 }
 
 export function audCloseDetail() {
@@ -1975,7 +1980,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409zz';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409a0';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409zz';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409a0';

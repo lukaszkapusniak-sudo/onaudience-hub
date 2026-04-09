@@ -1,12 +1,12 @@
 /* ═══ aud-icp.js — ICP-based audience finder ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zz';
-import S from './state.js?v=20260409zz';
-import { esc, _slug, getCoTags, authHdr } from './utils.js?v=20260409zz';
-import { anthropicFetch } from './api.js?v=20260409zz';
-import { audiences as dbAud } from './db.js?v=20260409zz';
-import { clog } from './hub.js?v=20260409zz';
-import { sbSaveAudience, audCloseModal, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zz';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a0';
+import S from './state.js?v=20260409a0';
+import { esc, _slug, getCoTags, authHdr } from './utils.js?v=20260409a0';
+import { anthropicFetch } from './api.js?v=20260409a0';
+import { audiences as dbAud } from './db.js?v=20260409a0';
+import { clog } from './hub.js?v=20260409a0';
+import { sbSaveAudience, audCloseModal, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a0';
 
 export function icpFindByIcp() {
   const all = S.companies;

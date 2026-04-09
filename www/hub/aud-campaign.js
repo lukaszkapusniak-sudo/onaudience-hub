@@ -1,25 +1,28 @@
 /* ═══ aud-campaign.js — Campaign generation, email templates, Lemlist launch ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zz';
-import S from './state.js?v=20260409zz';
-import { esc, _slug, authHdr } from './utils.js?v=20260409zz';
-import { anthropicFetch, lemlistFetch } from './api.js?v=20260409zz';
-import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409zz';
-import { clog } from './hub.js?v=20260409zz';
-import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zz';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409a0';
+import S from './state.js?v=20260409a0';
+import { esc, _slug, authHdr } from './utils.js?v=20260409a0';
+import { anthropicFetch, lemlistFetch } from './api.js?v=20260409a0';
+import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409a0';
+import { clog } from './hub.js?v=20260409a0';
+import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409a0';
 
 export async function generateCampaignHook(audId) {
   const aud = S.audiences.find(a => a.id === audId);
   if (!aud) return;
   const ta = document.getElementById('aud-hook-ta');
-  if (ta) ta.placeholder = '⟳ generating…';
-  const prompt = aud.filters?.icp_prompt || aud.icp_prompt || aud.name || '';
-  const n = (aud.company_ids || []).length;
+  if (ta) { ta.value = ''; ta.placeholder = '⟳ generating…'; }
+  const icp = aud.filters?.icp_prompt || aud.icp_prompt || aud.description || aud.name || '';
+  const coIds = aud.company_ids || [];
+  // Pull up to 6 company descriptions for context
+  const cos = (S.companies || []).filter(c => coIds.includes(c.id || c.name?.toLowerCase().replace(/[^a-z0-9]+/g,'-'))).slice(0, 6);
+  const coCtx = cos.map(c => `- ${c.name}: ${(c.description||'').slice(0,120)}`).join('\n');
   try {
     const res = await anthropicFetch({
-      model: MODEL_CREATIVE, max_tokens: 120,
+      model: MODEL_CREATIVE, max_tokens: 140,
       messages: [{ role: 'user', content:
-        `Write a 2–3 sentence outreach hook for a B2B email campaign.\nAudience: "${prompt}" (${n} companies).\nContext: onAudience sells EU first-party audience data to DSPs, SSPs, agencies and data providers.\nBe direct, specific, no buzzwords.` }],
+        `Write a punchy 2–3 sentence B2B outreach hook for a cold email.\n\nAudience segment: "${icp}"\n${coCtx ? '\nCompanies in this segment:\n'+coCtx+'\n' : ''}\nWe are onAudience — we provide EU first-party audience data to DSPs, SSPs, agencies and data providers.\n\nRules:\n- Focus on BUSINESS VALUE relevant to what these companies DO (their tech, clients, products)\n- Do NOT mention their country or region\n- Be direct and specific, no buzzwords\n- Start with an insight or challenge they face, not "I"\n- 2–3 sentences max` }],
     });
     const hook = res.content?.[0]?.text?.trim() || '';
     if (ta) { ta.value = hook; ta.placeholder = ''; }
