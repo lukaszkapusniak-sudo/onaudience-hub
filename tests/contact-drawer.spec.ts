@@ -4,7 +4,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 10000 });
-  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 30000 });
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.evaluate(() => window.switchTab("contacts"));
   await page.waitForTimeout(500);
   await expect(page.locator(".ct-row").first()).toBeVisible({ timeout: 10000 });

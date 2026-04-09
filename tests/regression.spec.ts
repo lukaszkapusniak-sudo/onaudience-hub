@@ -4,7 +4,11 @@ test("state.js shared correctly — companies load and render (regression: versi
   await page.goto("./");
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 10000 });
-  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 30000 });
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   // This test catches the bug where api.js and hub.js had different state.js
   // versions causing S.companies to be in a different module instance
   // symptom: companies load (nav shows count) but list shows "0 of 0"

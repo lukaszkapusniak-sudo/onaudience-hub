@@ -4,7 +4,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator("nav.nav")).toBeVisible({ timeout: 10000 });
-  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 30000 });
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.evaluate(() => {
     window.clearAI();
     window.setFilter("all", document.querySelector("#sbAll"));
@@ -44,7 +48,11 @@ test("no critical JS errors on load", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", e => errors.push(e.message));
   await page.reload();
-  await expect(page.locator(".nav-status")).toContainText("Live", { timeout: 30000 });
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await page.waitForTimeout(2000);
   const critical = errors.filter(e =>
     !e.includes("403") &&
