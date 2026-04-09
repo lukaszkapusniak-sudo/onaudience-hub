@@ -1,10 +1,10 @@
 /* ═══ list.js — Company list rendering, filters, tags, sort ═══ */
 
-import { SB_URL, TAG_RULES } from './config.js?v=20260409z';
-import S from './state.js?v=20260409z';
-import { classify, _slug, getCoTags, tClass, tLabel, stars, esc, relTime, authHdr } from './utils.js?v=20260409z';
-import { anthropicFetch } from './api.js?v=20260409z';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409z';
+import { SB_URL, TAG_RULES } from './config.js?v=20260409za';
+import S from './state.js?v=20260409za';
+import { classify, _slug, getCoTags, tClass, tLabel, stars, esc, relTime, authHdr } from './utils.js?v=20260409za';
+import { anthropicFetch } from './api.js?v=20260409za';
+import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409za';
 
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
 export function countPool(){const t30=Date.now()-30*24*60*60*1000;const cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));return S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ))return false;return true;});}
@@ -18,7 +18,7 @@ export function clearTags(){S.activeTags.clear();renderTagPanel();renderList();}
 export function setTagLogic(l){S.tagLogic=l;document.getElementById('tlOr').className='tp-logic-btn'+(l==='or'?' active':'');document.getElementById('tlAnd').className='tp-logic-btn'+(l==='and'?' active':'');if(S.activeTags.size)renderList();}
 
 /* ═══ AI Bar ═════════════════════════════════════════════════ */
-function renderMetaPills(){const el=document.getElementById('metaPills');const parts=[];S.activeTags.forEach(t=>{parts.push(`<span class="m-pill tag" data-tag="${t.replace(/"/g,'&quot;')}" onclick="toggleTagEl(this)" title="Remove">${t}</span>`);});if(S.aiSet){parts.push(`<span class="m-pill ai" onclick="clearAI()" title="Clear AI">AI: ${S.aiSet.size}</span>`);}el.innerHTML=parts.join('');}
+export function renderMetaPills(){const el=document.getElementById('metaPills');const parts=[];S.activeTags.forEach(t=>{parts.push(`<span class="m-pill tag" data-tag="${t.replace(/"/g,'&quot;')}" onclick="toggleTagEl(this)" title="Remove">${t}</span>`);});if(S.aiSet){parts.push(`<span class="m-pill ai" onclick="clearAI()" title="Clear AI">AI: ${S.aiSet.size}</span>`);}el.innerHTML=parts.join('');}
 
 /* ═══ Tabs / Filter / Search ═════════════════════════════════ */
 export function setFilter(f,el){S.activeFilter=f;document.querySelectorAll('.f-chip').forEach(c=>c.classList.remove('active'));if(el&&el.classList)el.classList.add('active');const sm={all:'sbAll',client:'sbClient',poc:'sbPoc',partner:'sbPartner',prospect:'sbProspect',nogo:'sbNogo',fresh:'sbFresh'};document.querySelectorAll('.sb-col').forEach(c=>c.classList.remove('active'));const s=document.getElementById(sm[f]);if(s)s.classList.add('active');if(S.tagPanelOpen)renderTagPanel();renderList();}
