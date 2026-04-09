@@ -1,10 +1,10 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409v';
-import S from './state.js?v=20260409v';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409v';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409v';
-import { resolveAlias } from './merge.js?v=20260409v';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409w';
+import S from './state.js?v=20260409w';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409w';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409w';
+import { resolveAlias } from './merge.js?v=20260409w';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
@@ -1295,51 +1295,6 @@ export function showCtx(e,slugOrName){
 }
 
 /* ═══ Contact Drawer ═════════════════════════════════════════ */
-export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'—';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' · '+ct.company_name:'');const _relColor={'warm':'var(--cc)','cold':'var(--t3)','active':'var(--gb)'};const _statusColor={'replied':'var(--cc)','contacted':'var(--gb)','pending':'var(--prc)','bounced':'var(--cr)'};const flds=[[ct.title,'Title',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.title)}</span>`],[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.email)}</a>`],[ct.phone,'Phone',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.phone)}</span>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.linkedin_url)}</a>`],[ct.department,'Dept',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.department)}</span>`],[ct.seniority,'Seniority',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase">${esc(ct.seniority)}</span>`],[ct.location,'Location',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.location)}</span>`],[ct.outreach_status,'Status',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${_statusColor[ct.outreach_status]||'var(--t2)'}">${esc(ct.outreach_status)}</span>`],[ct.relationship_strength,'Relationship',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${_relColor[ct.relationship_strength]||'var(--t2)'}">${esc(ct.relationship_strength)}</span>`],[ct.last_contacted_at,'Last Contact',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.last_contacted_at?.slice(0,10))}</span>`],[ct.warm_intro_path,'Warm Intro',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.warm_intro_path)}</span>`],[ct.notes,'Notes',`<span style="font-size:10px;line-height:1.5">${esc(ct.notes)}</span>`]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');
-  // Inject / update "Draft in Claude" button in drawer actions
-  const _drAct=document.querySelector('#ctDrawer .dr-actions');
-  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='✉ Draft Email';_cb.onclick=()=>window.openComposer({company:_co2.name,contactName:ct.full_name,contactTitle:ct.title,description:_co2.description||'',angle:_co2.outreach_angle||''});_drAct.appendChild(_cb);}}
-}
-export function closeDrawer(){document.getElementById('ctDrawer').classList.remove('open');document.getElementById('ctDrawerOverlay').classList.remove('vis');S.currentContact=null;}
-export function openContactFull(ctId){
-  const ct=S.contacts.find(c=>c.id===ctId||_slug(c.full_name||'')===ctId);
-  if(!ct){openDrawer(ctId);return;}
-  const co=S.companies.find(c=>
-    (c.id&&ct.company_id&&c.id===ct.company_id)||
-    (c.name||'').toLowerCase()===(ct.company_name||'').toLowerCase()
-  );
-  if(co){openCompany(co);}
-  else{
-    const es=document.getElementById('emptyState');
-    const cp=document.getElementById('coPanel');
-    if(es)es.style.display='flex';
-    if(cp)cp.style.display='none';
-    S.currentCompany=null;window.currentCompany=null;
-  }
-  openDrawer(ctId);
-}
-export function drEmail(){if(S.currentContact)window.openComposer({company:S.currentContact.company_name,contactName:S.currentContact.full_name,contactTitle:S.currentContact.title,linkedin:S.currentContact.linkedin_url});}
-export function drLinkedIn(){if(S.currentContact?.linkedin_url)window.open(S.currentContact.linkedin_url,'_blank');}
-export function drGmail(){
-  if(!S.currentContact)return;
-  const co=S.companies.find(c=>(c.name||'').toLowerCase()===(S.currentContact.company_name||'').toLowerCase());
-  if(co){openCompany(co);}
-  closeDrawer();
-  setTimeout(()=>{
-    const ib=document.getElementById('ib-intel-body');
-    if(ib)ib.scrollIntoView({behavior:'smooth',block:'nearest'});
-    bgRefreshIntel();
-  },150);
-}
-export function drResearch(){
-  if(!S.currentContact)return;
-  aiQuick(`"${S.currentContact.full_name}" ${S.currentContact.company_name||''}`);
-  const aiInp=document.getElementById('aiInp');
-  if(aiInp)aiInp.scrollIntoView({behavior:'smooth',block:'nearest'});
-  closeDrawer();
-}
-
-/* ═══ Modals ═════════════════════════════════════════════════ */
 export function promptResearch(){S._modalMode='research';document.getElementById('modalTitle').textContent='Research a Company';document.getElementById('modalDesc').textContent='Enter company name to generate a full contact report.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
 export function promptSimilar(){S._modalMode='similar';document.getElementById('modalTitle').textContent='Find Similar Companies';document.getElementById('modalDesc').textContent='Enter a reference company to find lookalikes.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
 export function closeModal(){document.getElementById('overlay').classList.remove('vis');}
@@ -1377,280 +1332,6 @@ let _llSelCampaign=null;
 let _llLeads=[];
 let _llInited=false;
 let _llLeadSearch='';
-
-export function initLemlistModal(){
-  if(document.getElementById('llModal'))return;
-  const d=document.createElement('div');
-  d.innerHTML=`<div id="llModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeLemlistModal()">
-    <div class="modal" style="width:460px">
-      <div class="modal-header">
-        <span class="modal-title">📤 Push to lemlist</span>
-        <button class="btn sm" onclick="closeLemlistModal()">✕</button>
-      </div>
-      <div class="modal-body" style="padding:16px 20px">
-        <div id="llStatus" style="font-size:11px;color:var(--t3);margin-bottom:10px">Loading campaigns…</div>
-        <select id="llCampaignSel" class="inp" style="display:none;width:100%;margin-bottom:10px"></select>
-        <div id="llPreview" style="font-size:11px;color:var(--t3)"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeLemlistModal()">Cancel</button>
-        <button class="btn p" id="llPushBtn" onclick="lemlistPush()" style="pointer-events:none;opacity:.5">📤 Push</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(d.firstElementChild);
-}
-
-export async function openLemlistModal(contacts){
-  _llContacts=(contacts||[]).filter(c=>c.email);
-  let modal=document.getElementById('llModal');
-  if(!modal){initLemlistModal();modal=document.getElementById('llModal');}
-  const status=document.getElementById('llStatus');
-  const sel=document.getElementById('llCampaignSel');
-  const preview=document.getElementById('llPreview');
-  const btn=document.getElementById('llPushBtn');
-  modal.style.display='flex';
-  status.textContent='Loading campaigns…';
-  status.style.display='block';
-  sel.style.display='none';
-  btn.style.opacity='.5';
-  btn.style.pointerEvents='none';
-  preview.textContent=_llContacts.length+' contact(s) with email selected.';
-  try{
-    const campaigns=await lemlistCampaigns();
-    if(!campaigns.length){status.textContent='No campaigns found in lemlist. Create one first.';return;}
-    status.style.display='none';
-    sel.innerHTML=campaigns.map(c=>'<option value="'+esc(c._id)+'">'+esc(c.name)+(c.status?' ['+esc(c.status)+']':'')+'</option>').join('');
-    sel.style.display='block';
-    if(_llContacts.length>0){btn.style.opacity='1';btn.style.pointerEvents='auto';}
-  }catch(e){
-    status.textContent='Error: '+esc(String(e.message));
-  }
-}
-
-export function closeLemlistModal(){
-  const m=document.getElementById('llModal');
-  if(m)m.style.display='none';
-  const btn=document.getElementById('llPushBtn');
-  if(btn){btn.textContent='📤 Push';btn.style.opacity='.5';btn.style.pointerEvents='none';}
-}
-
-export async function lemlistPush(){
-  const sel=document.getElementById('llCampaignSel');
-  const btn=document.getElementById('llPushBtn');
-  const prev=document.getElementById('llPreview');
-  const campaignId=sel?.value;
-  const campaignName=sel?.options[sel.selectedIndex]?.text?.replace(/\s*\[.*\]$/,'')||'';
-  if(!campaignId||!_llContacts.length)return;
-  btn.textContent='Pushing…';
-  btn.style.pointerEvents='none';
-  let ok=0,fail=0;
-  for(const ct of _llContacts){
-    try{await lemlistAddLead(campaignId,ct);ok++;}
-    catch(e){fail++;clog('info','lemlist skip '+esc(ct.email)+': '+e.message);}
-  }
-  const ids=_llContacts.map(c=>c.id).filter(Boolean);
-  if(ids.length){
-    try{await lemlistWriteBack(ids,campaignId,campaignName);}
-    catch(e){clog('info','lemlist writeback error: '+e.message);}
-  }
-  clog('db','📤 lemlist: '+ok+'/'+_llContacts.length+' pushed → '+campaignName);
-  prev.textContent='✓ '+ok+' pushed'+(fail?', '+fail+' skipped':'')+' → '+campaignName;
-  btn.textContent='✓ Done';
-  setTimeout(closeLemlistModal,2000);
-}
-
-export async function audPushLemlist(audId,campaignId=null){
-  const aud=S.audiences?.find(a=>a.id===audId);
-  if(!aud)return;
-  const coIds=aud.company_ids||[];
-  const contacts=(S.contacts||[]).filter(c=>coIds.includes(c.company_id)&&c.email);
-  if(!contacts.length){alert('No contacts with email found for this audience.');return;}
-  if(campaignId){
-    const camp=_llCampaigns.find(c=>c._id===campaignId);
-    const campaignName=camp?.name||campaignId;
-    clog('db','📤 Pushing <b>'+contacts.length+'</b> contacts to <b>'+esc(campaignName)+'</b>…');
-    let ok=0,fail=0;
-    for(const ct of contacts){
-      try{await lemlistAddLead(campaignId,ct);ok++;}
-      catch(e){fail++;clog('info','skip '+esc(ct.email||'')+': '+e.message);}
-    }
-    const ids=contacts.map(c=>c.id).filter(Boolean);
-    if(ids.length){try{await lemlistWriteBack(ids,campaignId,campaignName);}catch(e){clog('info','writeback: '+e.message);}}
-    clog('db','📤 '+ok+'/'+contacts.length+' pushed → '+esc(campaignName)+(fail?' ('+fail+' failed)':''));
-    if(_llSelCampaign?._id===campaignId)await selectLemlistCampaign(campaignId);
-  }else{
-    openLemlistModal(contacts);
-  }
-}
-
-// ── LEMLIST CAMPAIGNS TAB ─────────────────────────────────────────────────
-
-export async function refreshLemlistCampaigns(){
-  const panel=document.getElementById('lemlistPanel');
-  if(!panel)return;
-  panel.innerHTML='<div style="padding:20px 16px;font-size:11px;font-family:\'IBM Plex Mono\',monospace;color:var(--t3)">Loading campaigns\u2026</div>';
-  try{
-    _llCampaigns=await lemlistCampaigns();
-    _llInited=true;
-    renderLemlistPanel();
-  }catch(e){
-    panel.innerHTML='<div style="padding:20px 16px;font-size:11px;font-family:\'IBM Plex Mono\',monospace;color:var(--cr)">\u26a0 '+esc(e.message)+'</div>';
-  }
-}
-
-export function renderLemlistPanel(){
-  const panel=document.getElementById('lemlistPanel');
-  if(!panel)return;
-  const n=_llCampaigns.length;
-  panel.innerHTML=`<div class="ll-toolbar">
-    <span class="ll-count">${n} CAMPAIGN${n!==1?'S':''}</span>
-    <button class="btn sm" onclick="refreshLemlistCampaigns()">\u21ba Refresh</button>
-  </div>
-  <div class="ll-list" id="llList">
-    ${n===0
-      ?`<div class="ll-empty">No campaigns yet.<br>Create one in <a href="https://app.lemlist.com" target="_blank" style="color:var(--g)">lemlist \u2197</a> then refresh.</div>`
-      :_llCampaigns.map(c=>_renderLemlistRow(c)).join('')
-    }
-  </div>`;
-}
-
-function _renderLemlistRow(c){
-  const active=_llSelCampaign?._id===c._id;
-  const statusCls={active:'tc',paused:'tpo',draft:'tpr',stopped:'tn'}[c.status]||'tpr';
-  return `<div class="ll-row${active?' ll-row-active':''}" onclick="selectLemlistCampaign('${esc(c._id)}')">
-    <div class="ll-row-head">
-      <span class="ll-row-name">${esc(c.name)}</span>
-      <span class="tag ${statusCls}">${esc(c.status||'draft')}</span>
-    </div>
-    <div class="ll-row-meta">${c.createdAt?relTime(c.createdAt):''}</div>
-  </div>`;
-}
-
-export async function selectLemlistCampaign(campaignId){
-  _llSelCampaign=_llCampaigns.find(c=>c._id===campaignId)||null;
-  renderLemlistPanel();
-  const center=document.getElementById('coPanel');
-  if(!center)return;
-  center.style.display='flex';
-  center.innerHTML='<div style="padding:24px;font-size:11px;color:var(--t3);font-family:\'IBM Plex Mono\',monospace">Loading leads\u2026</div>';
-  try{
-    const d=await lemlistFetch('/campaigns/'+campaignId+'/leads');
-    _llLeads=Array.isArray(d)?d:(d.leads??[]);
-  }catch(e){
-    _llLeads=[];
-    clog('info','lemlist leads error: '+e.message);
-  }
-  _llLeadSearch='';
-  _renderCampaignDetail();
-}
-
-export function clearCampaignDetail(){
-  _llSelCampaign=null;
-  _llLeads=[];
-  _llLeadSearch='';
-  renderLemlistPanel();
-  const center=document.getElementById('coPanel');
-  if(center)center.style.display='none';
-}
-
-function _renderCampaignDetail(){
-  const center=document.getElementById('coPanel');
-  if(!center||!_llSelCampaign)return;
-  const c=_llSelCampaign;
-  const leads=_llLeads;
-  const filtered=_llLeadSearch
-    ?leads.filter(l=>((l.email||'')+(l.firstName||'')+(l.lastName||'')+(l.companyName||'')).toLowerCase().includes(_llLeadSearch.toLowerCase()))
-    :leads;
-  const audOptions=(S.audiences||[])
-    .filter(a=>!a.is_system)
-    .map(a=>`<option value="${esc(a.id)}">${esc(a.name)} (${(a.company_ids||[]).length} co)</option>`)
-    .join('');
-  center.style.display='flex';
-  center.style.flexDirection='column';
-  center.style.overflow='hidden';
-  center.innerHTML=`<div class="ll-detail">
-    <div class="ll-detail-header">
-      <span class="ll-detail-back" onclick="clearCampaignDetail()">\u2190 BACK</span>
-      <span class="ll-detail-name">${esc(c.name)}</span>
-      <span class="tag ${{active:'tc',paused:'tpo',draft:'tpr',stopped:'tn'}[c.status]||'tpr'}">${esc(c.status||'draft')}</span>
-    </div>
-    <div class="ll-detail-stats">
-      <span>${leads.length} LEADS</span>
-      ${c.createdAt?'<span>CREATED '+esc(relTime(c.createdAt).toUpperCase())+'</span>':''}
-    </div>
-    <div class="ll-detail-actions">
-      <select class="inp" id="llAudSel" style="font-size:10px;padding:4px 8px;height:26px;min-width:160px">
-        <option value="">\u2014 push from audience \u2014</option>
-        ${audOptions}
-      </select>
-      <button class="btn sm p" onclick="llPushFromAudience()">\ud83d\udce4 Push</button>
-      <button class="btn sm" onclick="selectLemlistCampaign('${esc(c._id)}')">\u21ba</button>
-    </div>
-    <input class="inp" id="llLeadSearch" placeholder="search leads\u2026"
-      style="margin-bottom:8px;font-size:10px;padding:4px 8px;height:26px"
-      oninput="llSearchLeads(this.value)" value="${esc(_llLeadSearch)}">
-    ${filtered.length===0
-      ?`<div class="ll-empty">${leads.length===0?'No leads yet.':'No results.'}</div>`
-      :`<div style="overflow-y:auto;flex:1;min-height:0">
-          <table class="ll-table">
-            <thead><tr>
-              <th>NAME</th><th>EMAIL</th><th>COMPANY</th><th>STATUS</th><th>ADDED</th><th></th>
-            </tr></thead>
-            <tbody>
-              ${filtered.map(l=>_renderLeadRow(l,c._id)).join('')}
-            </tbody>
-          </table>
-        </div>`
-    }
-  </div>`;
-}
-
-function _renderLeadRow(l,campaignId){
-  const statusCls={sent:'tpr',opened:'tp',clicked:'tc',replied:'tc',bounced:'tn',unsubscribed:'tn',interested:'tc'}[l.status]||'tpr';
-  const name=esc(((l.firstName||'')+' '+(l.lastName||'')).trim())||'\u2014';
-  const pushed=l.addedAt?relTime(l.addedAt):'\u2014';
-  return `<tr>
-    <td>${name}</td>
-    <td style="color:var(--t3)">${esc(l.email||'\u2014')}</td>
-    <td style="color:var(--t3)">${esc(l.companyName||'\u2014')}</td>
-    <td><span class="tag ${statusCls}">${esc(l.status||'\u2014')}</span></td>
-    <td style="color:var(--t4)">${pushed}</td>
-    <td><button class="btn sm" style="color:var(--cr)" title="Unsubscribe"
-      onclick="llUnsubLead('${esc(campaignId)}','${esc(l.email||'')}')">&#10005;</button></td>
-  </tr>`;
-}
-
-export function llSearchLeads(q){
-  _llLeadSearch=q;
-  _renderCampaignDetail();
-}
-
-export async function llPushFromAudience(){
-  const sel=document.getElementById('llAudSel');
-  const audId=sel?.value;
-  if(!audId||!_llSelCampaign){alert('Select an audience first.');return;}
-  const aud=(S.audiences||[]).find(a=>a.id===audId);
-  if(!aud)return;
-  const coIds=aud.company_ids||[];
-  const contacts=(S.contacts||[]).filter(c=>coIds.includes(c.company_id)&&c.email);
-  if(!contacts.length){alert('No contacts with email in this audience.');return;}
-  openLemlistModal(contacts);
-}
-
-export async function llUnsubLead(campaignId,email){
-  if(!confirm('Unsubscribe '+email+' from this campaign?'))return;
-  try{
-    await lemlistFetch('/campaigns/'+campaignId+'/leads/'+encodeURIComponent(email),'DELETE');
-    clog('db','lemlist: unsubscribed '+esc(email));
-    selectLemlistCampaign(campaignId);
-  }catch(e){
-    clog('info','lemlist unsub error: '+esc(e.message));
-  }
-}
-
-let _taxLoading=false;
-let _taxData=null;
 
 async function loadTaxonomy(){
   if(_taxData)return _taxData;
@@ -1721,3 +1402,12 @@ export async function mapSegments(){
   clog('info',`Segment mapper: <b>${matches.length}</b> matches for ${esc(c.name)}`);
   body.innerHTML=renderSegTree(matches);
 }
+
+/* ── Re-exports from extracted modules ──────────────────────── */
+export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
+  audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
+  selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
+  llPushFromAudience, llUnsubLead } from './lemlist.js?v=20260409w';
+
+export { openDrawer, closeDrawer, openContactFull,
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409w';

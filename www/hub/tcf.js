@@ -1,9 +1,9 @@
 /* ═══ tcf.js — TCF Privacy Analyser v2 ═══ */
 
-import { SB_URL, OA_GVL, TCF_P, TCF_SP, TCF_F, TCF_SF } from './config.js?v=20260409v';
-import { authHdr } from './utils.js?v=20260409v';
-import S from './state.js?v=20260409v';
-import { _slug, getAv, ini, tClass, tLabel, esc } from './utils.js?v=20260409v';
+import { SB_URL, OA_GVL, TCF_P, TCF_SP, TCF_F, TCF_SF } from './config.js?v=20260409w';
+import { authHdr } from './utils.js?v=20260409w';
+import S from './state.js?v=20260409w';
+import { _slug, getAv, ini, tClass, tLabel, esc } from './utils.js?v=20260409w';
 
 /* ── GVL loader ─────────────────────────────────────────────── */
 window.gvlData=null;window._gvlPromise=null;

@@ -1,6 +1,6 @@
 /* ═══ utils.js — pure utility functions ═══ */
 
-import { TAG_RULES, PAL, SB_KEY } from './config.js?v=20260409v';
+import { TAG_RULES, PAL, SB_KEY } from './config.js?v=20260409w';
 
 export function classify(n){const s=(n||'').toLowerCase();if(s.includes('no outreach')||s.includes('no fit')||s.includes('no business')||s.includes('internal')||s.includes('closed')||s.includes('unwanted'))return'nogo';if(s.includes('poc client'))return'poc';if(s.includes('client'))return'client';if(s.includes('partner'))return'partner';if(s.includes('prospect')||s.includes('to check')||s.includes('to continue'))return'prospect';return'partner';}
 
@@ -32,4 +32,21 @@ export function authHdr(extra) {
     'Content-Type': 'application/json',
   };
   return extra ? { ...base, ...extra } : base;
+}
+
+/* ── Safe HTML helpers — prevents onclick attr injection ────── */
+
+/** Button with plain string args only (safe for onclick="...") */
+export function safeBtn(label, fn, args=[], cls='') {
+  // args must be plain strings/numbers — no objects/arrays
+  const argsStr = args.map(a => `'${String(a).replace(/'/g,"\\'")}' `).join(',');
+  return `<button class="btn${cls?' '+cls:''}" onclick="${fn}(${argsStr})">${esc(label)}</button>`;
+}
+
+/** Button that passes complex data via data-* attrs, not onclick args */
+export function dataBtn(label, fn, data={}, cls='') {
+  const attrs = Object.entries(data)
+    .map(([k,v]) => `data-${k}="${esc(String(v))}"`)
+    .join(' ');
+  return `<button class="btn${cls?' '+cls:''}" ${attrs} onclick="${fn}(this.dataset)">${esc(label)}</button>`;
 }

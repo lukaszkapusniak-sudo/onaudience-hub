@@ -10,7 +10,7 @@
 const fs   = require('fs');
 const vm   = require('vm');
 const HUB  = 'www/hub/';
-const FILES = ['app.js','hub.js','audiences.js','api.js','auth.js','meeseeks.js','utils.js','state.js'];
+const FILES = ['app.js','hub.js','audiences.js','api.js','auth.js','meeseeks.js','utils.js','state.js','lemlist.js','drawer.js','aud-icp.js','aud-campaign.js'];
 let issues = 0;
 
 for (const f of FILES) {
@@ -52,7 +52,8 @@ for (const f of FILES) {
       .replace(/\bimport\s*\(/g,                                      'Promise.resolve(')
       .replace(/^export\s+default\s+/gm,                             'var _default = ')
       .replace(/^export\s+(async\s+)?(function|class|const|let|var)\s+/gm, '$1$2 ')
-      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm,                    '/* export */');
+      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm,                    '/* export */')
+      .replace(/^export\s*\{[^}]*\}\s*from\s*['"][^'"]+['"']\s*;?\s*$/gm, '/* re-export */');
     new vm.Script(stripped, { filename: f });
   } catch(e) {
     console.error(`FAIL ${f} — SyntaxError: ${e.message.split('\n')[0]}`);
