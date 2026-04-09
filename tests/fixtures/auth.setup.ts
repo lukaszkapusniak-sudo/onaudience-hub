@@ -26,6 +26,7 @@ setup('authenticate', async ({ page }) => {
       'Content-Type': 'application/json',
     },
     data: { email, password: pwd },
+    timeout: 60_000,  // Supabase auth can spike to 7s — give it 60s in CI
   });
 
   if (!res.ok()) {
