@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c2';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c3';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -99,6 +99,21 @@ const SFX = {
     ];
     melody.forEach(([f,d,t]) => _beep(f, d, 'square', 0.16, t));
     bass.forEach(([f,d,t])   => _beep(f, d, 'square', 0.10, t));
+  },
+
+  // Konami code — dramatic power-up fanfare + power chord
+  konami() {
+    // Ascending sweep
+    [131,165,196,247,262,330,392,494,523].forEach((f,i) =>
+      _beep(f, 0.06, 'square', 0.14, i * 0.055)
+    );
+    // Power chord hit at 0.5s
+    [131,196,262,392].forEach(f => _beep(f, 0.4, 'square', 0.12, 0.5));
+    // Final high notes
+    _beep(1047, 0.15, 'square', 0.18, 0.92);
+    _beep(1319, 0.35, 'square', 0.20, 1.08);
+    // Overtone shimmer
+    [2093,2637,3136].forEach((f,i) => _beep(f, 0.12, 'sine', 0.05, 1.1 + i*0.06));
   },
 
   // Error / close — descending minor (Zelda wrong answer)
@@ -218,6 +233,194 @@ const STEPS = [
     isFinale: true,
   },
 ];
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   KONAMI CODE EASTER EGG  ↑↑↓↓←→←→BA
+   Active at all times — no tutorial required.
+   Sequence detected globally. Matrix overlay. 1337 XP. HACKER badge.
+   Personal invitation from Łukasz to whoever found this.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const _KONAMI_SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown',
+                     'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight',
+                     'KeyB','KeyA'];
+let _konamiIdx = 0;
+
+function _initKonami() {
+  document.addEventListener('keydown', (e) => {
+    if (e.code === _KONAMI_SEQ[_konamiIdx]) {
+      _konamiIdx++;
+      SFX.cursor();  // tiny tick on each correct key
+      if (_konamiIdx === _KONAMI_SEQ.length) {
+        _konamiIdx = 0;
+        _triggerKonami();
+      }
+    } else {
+      _konamiIdx = (e.code === _KONAMI_SEQ[0]) ? 1 : 0;
+    }
+  });
+}
+
+function _triggerKonami() {
+  // XP + achievement
+  _injectStyles();
+  _ensureDom();
+  _addXP(1337);
+  setTimeout(() => _unlock({
+    id:'hacker', icon:'🎩', name:'HACKER',
+    desc:'Found the Konami Code. Łukasz wants to meet you.', xp:0
+  }), 800);
+
+  // Sound: dramatic power-up fanfare
+  SFX.konami();
+
+  // Matrix overlay
+  _showKonamiOverlay();
+}
+
+function _showKonamiOverlay() {
+  if (document.getElementById('oa-konami')) return;
+
+  const el = document.createElement('div');
+  el.id = 'oa-konami';
+  el.innerHTML = `
+  <style>
+  #oa-konami{
+    position:fixed;inset:0;z-index:10010;background:#000;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  #oa-konami canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.35;}
+  #oa-konami .kn-card{
+    position:relative;z-index:1;
+    font-family:'IBM Plex Mono',monospace;
+    background:rgba(0,8,0,.85);
+    border:1px solid #00ff41;
+    border-radius:4px;
+    padding:32px 40px;
+    max-width:540px;
+    text-align:center;
+    box-shadow:0 0 60px rgba(0,255,65,.25), inset 0 0 40px rgba(0,255,65,.04);
+    animation:kn-pulse 2s ease-in-out infinite;
+  }
+  @keyframes kn-pulse{0%,100%{box-shadow:0 0 60px rgba(0,255,65,.25)}50%{box-shadow:0 0 90px rgba(0,255,65,.45)}}
+  .kn-badge{
+    font-size:10px;letter-spacing:.14em;color:#00ff41;text-transform:uppercase;
+    margin-bottom:10px;opacity:.7;
+  }
+  .kn-title{
+    font-size:30px;font-weight:600;color:#00ff41;letter-spacing:.06em;
+    margin-bottom:4px;
+    text-shadow:0 0 20px rgba(0,255,65,.8);
+  }
+  .kn-xp{
+    font-size:13px;color:#00cc33;letter-spacing:.08em;margin-bottom:24px;
+  }
+  .kn-divider{
+    height:1px;background:linear-gradient(90deg,transparent,#00ff41,transparent);
+    margin:0 0 24px;
+  }
+  .kn-msg{
+    font-size:12px;line-height:20px;color:#aaffaa;text-align:left;
+    margin-bottom:24px;
+  }
+  .kn-msg b{color:#00ff41;}
+  .kn-contact{
+    background:rgba(0,255,65,.06);border:1px solid rgba(0,255,65,.3);
+    border-radius:2px;padding:16px;margin-bottom:20px;text-align:left;
+  }
+  .kn-contact-name{font-size:14px;font-weight:600;color:#00ff41;margin-bottom:4px;}
+  .kn-contact-role{font-size:10px;color:#66cc77;letter-spacing:.06em;text-transform:uppercase;}
+  .kn-contact-email{font-size:11px;color:#aaffaa;margin-top:8px;}
+  .kn-btn{
+    height:40px;width:100%;border:1px solid #00ff41;border-radius:2px;
+    background:rgba(0,255,65,.1);color:#00ff41;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;
+    transition:all .15s;margin-bottom:8px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .kn-btn:hover{background:rgba(0,255,65,.2);box-shadow:0 0 20px rgba(0,255,65,.3);}
+  .kn-dismiss{
+    font-size:9px;color:#336633;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;margin-top:4px;
+  }
+  .kn-dismiss:hover{color:#00ff41;}
+  .kn-seq{
+    font-size:10px;color:#336633;letter-spacing:.12em;margin-bottom:20px;
+  }
+  </style>
+  <canvas id="oa-konami-canvas"></canvas>
+  <div class="kn-card">
+    <div class="kn-badge">🎩 Achievement Unlocked</div>
+    <div class="kn-title">ACCESS GRANTED</div>
+    <div class="kn-xp">+1337 XP  //  HACKER RANK ACHIEVED</div>
+    <div class="kn-seq">↑ ↑ ↓ ↓ ← → ← → B A</div>
+    <div class="kn-divider"></div>
+    <div class="kn-msg">
+      You just found a secret that most people never look for.<br><br>
+      That means you're <b>curious</b>, you <b>read code</b>, and you notice things that others scroll past.<br><br>
+      Those are exactly the people we want to talk to.
+    </div>
+    <div class="kn-contact">
+      <div class="kn-contact-name">Łukasz Kapuśniak</div>
+      <div class="kn-contact-role">onAudience · Data Partnerships</div>
+      <div class="kn-contact-email">l.kapusniak@onaudience.com</div>
+    </div>
+    <button class="kn-btn" id="kn-email-btn">
+      📧 Send Meeting Request
+    </button>
+    <div class="kn-dismiss" onclick="document.getElementById('oa-konami').remove()">
+      [ press ESC or click anywhere to close ]
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+
+  // Matrix rain
+  const canvas = document.getElementById('oa-konami-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const chars = 'アイウエオカキクケコサシスセソタチツテト0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]|/\#$%@'.split('');
+  const fontSize = 14;
+  const cols = Math.floor(canvas.width / fontSize);
+  const drops = Array.from({length: cols}, () => Math.random() * -canvas.height / fontSize);
+
+  const rain = setInterval(() => {
+    ctx.fillStyle = 'rgba(0,0,0,.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = fontSize + 'px monospace';
+    drops.forEach((y, i) => {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(char, i * fontSize, y * fontSize);
+      if (y * fontSize > canvas.height && Math.random() > .975) drops[i] = 0;
+      drops[i] += .5;
+    });
+  }, 33);
+
+  // Email button — prefill mailto
+  document.getElementById('kn-email-btn').addEventListener('click', () => {
+    const sub = encodeURIComponent('I found the Konami Code in your hub');
+    const body = encodeURIComponent(
+      'Hi %C5%81ukasz,%0A%0AI was exploring the onAudience Sales Intelligence Hub and found the Konami Code easter egg.%0A%0AI would love to connect.%0A%0ABest,'
+    );
+    window.open(`mailto:l.kapusniak@onaudience.com?subject=${sub}&body=${body}`);
+  });
+
+  // Close on click outside card or ESC
+  el.addEventListener('click', (e) => {
+    if (e.target === el) { clearInterval(rain); el.remove(); }
+  });
+  document.addEventListener('keydown', function _esc(e) {
+    if (e.key === 'Escape') { clearInterval(rain); el?.remove(); document.removeEventListener('keydown', _esc); }
+  });
+
+  // Auto-stop rain after 30s to save CPU (overlay stays)
+  setTimeout(() => clearInterval(rain), 30000);
+}
 
 /* ── State ───────────────────────────────────────────────────────────── */
 let _step = 0;
@@ -774,6 +977,8 @@ function _tutFinish() {
 }
 
 /* ── Public API ───────────────────────────────────────────────────────── */
+export function initKonami() { _initKonami(); }
+
 export function startTutorial(force = false) {
   if (!force && localStorage.getItem(TKEY_DONE)) return;
   _load();

@@ -1,16 +1,16 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409c2';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode } from './demo.js?v=20260409c2';
-import { startTutorial, resetTutorial, isTutorialDone } from './tutorial.js?v=20260409c2';
-import { _slug } from './utils.js?v=20260409c2';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c2';
+import S from './state.js?v=20260409c3';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard } from './demo.js?v=20260409c3';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409c3';
+import { _slug } from './utils.js?v=20260409c3';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c3';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409c2';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409c2';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409c2';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409c2';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409c2';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409c2';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409c3';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409c3';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409c3';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409c3';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409c3';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409c3';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -20,7 +20,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409c2';
+} from './auth.js?v=20260409c3';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -207,7 +207,9 @@ document.addEventListener('visibilitychange', () => {
 /* ── window exports ─────────────────────────────────────────── */
 window.MC_PERSONAS_LIST = MC_PERSONAS;
 window.startTutorial = startTutorial;
+initKonami(); // ↑↑↓↓←→←→BA
 window.oaEnterDemo = oaEnterDemoMode;
+window.demoGuard = demoGuard;
 window.exitDemoMode = exitDemoMode;
 window.isDemoMode = isDemoMode;
 window.resetTutorial = resetTutorial;
@@ -479,8 +481,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* 2. Explicitly check for an existing session.
         INITIAL_SESSION may have already fired before the callback above
         was registered (race on page reload). This is the reliable fallback. */
-  // Demo mode: skip auth, load sample data
-  if (isDemoMode()) {
+  // Non-authenticated users always get demo mode.
+  // Exception: skip demo if mid-OAuth redirect (URL has access_token / code).
+  const _oauthInFlight = window.location.hash.includes('access_token') ||
+    window.location.hash.includes('error_description') ||
+    window.location.search.includes('code=');
+
+  if (!_oauthInFlight && isDemoMode()) {
     _hubBooted = true;
     hideLoginScreen();
     showDemoBanner();
@@ -492,13 +499,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const session = await getSession();
   if (session) {
-    await bootHub(session);   // no-op if INITIAL_SESSION already triggered it
+    exitDemoMode(); // clear demo flag on real auth
+    await bootHub(session);
     setTimeout(() => {
       if (!(document.getElementById('listScroll')?.children?.length > 0)) {
         window.refreshData(true);
       }
     }, 3000);
+  } else if (!_oauthInFlight) {
+    // No session, not mid-OAuth → always demo
+    enterDemoMode();
+    _hubBooted = true;
+    hideLoginScreen();
+    showDemoBanner();
+    patchNavForDemo();
+    loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+    setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
   } else {
-    renderLoginScreen();
+    renderLoginScreen(); // mid-OAuth: show login while token processes
   }
 });

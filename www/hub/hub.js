@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409c2';
-import S from './state.js?v=20260409c2';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409c2';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c2';
-import { resolveAlias } from './merge.js?v=20260409c2';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409c2';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409c3';
+import S from './state.js?v=20260409c3';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409c3';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409c3';
+import { resolveAlias } from './merge.js?v=20260409c3';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409c3';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -295,6 +295,7 @@ export async function bgGenerateAngleWithPersona(personaId) {
 
 // ── Lemlist section loader ────────────────────────────────────────
 async function _loadLemlistSection(slug, name) {
+  if (window.isDemoMode && window.isDemoMode()) return;
   const body = document.getElementById('ib-lemlist-body');
   if (!body) return;
   try {
@@ -367,6 +368,22 @@ export function _llPushCompany(slug, name) {
 
 // ── DB-fresh contacts loader ──────────────────────────────────────
 async function _loadCompanyContacts(slug, name) {
+  // In demo mode: use local S.contacts instead of Supabase
+  if (window.isDemoMode && window.isDemoMode()) {
+    const body2 = document.getElementById('ib-ct-body');
+    const contacts = (S.contacts||[]).filter(c => c.company_id===slug || (c.company_name||'').toLowerCase()===(name||'').toLowerCase());
+    if (body2 && contacts.length) {
+      const a2=(ct)=>getAv(ct.full_name||''), n2=(ct)=>ini(ct.full_name||'');
+      body2.innerHTML = '<div class="ib-cts-grid">' + contacts.map(ct => {
+        const av=a2(ct), nn=n2(ct), ctSlug=ct.id||_slug(ct.full_name||'');
+        const nm=esc(ct.full_name||'—'), ti=esc(ct.title||''), em=ct.email?` · <span class="ib-ct-email">${esc(ct.email)}</span>`:'';
+        return `<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}','${esc(ct.full_name||'')}')"><div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${nn}</div><div class="ib-ct-info"><div class="ib-ct-name">${nm}</div><div class="ib-ct-title">${ti}${em}</div></div></div>`;
+      }).join('') + '</div>';
+      const cnt=body2.closest('.ib-sec')?.querySelector('.ib-sh-cnt');
+      if(cnt) cnt.textContent=contacts.length||'';
+    }
+    return;
+  }
   const body = document.getElementById('ib-ct-body');
   if (!body) return;
   try {
@@ -518,6 +535,7 @@ async function _findSimilarViaB2B(companyInput) {
 
 // ── CRM pipeline status ──────────────────────────────────────────────────────
 export async function setCompanyStatus(slug, status) {
+  if (window.demoGuard && window.demoGuard('STATUS UPDATE')) return;
   const c = S.companies.find(x => (x.id||_slug(x.name)) === slug || _slug(x.name) === slug);
   if (!c) return;
   const prev = c.relationship_status;
@@ -648,6 +666,7 @@ Search strategy for signals:
 - Check for recent funding, expansion, conference talks`;
 
 export async function bgFindDMs(){
+  if (window.demoGuard && window.demoGuard('FIND DMS')) return;
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-ct-body');if(!body)return;
   body.innerHTML=`<div class="ib-loading" style="text-align:left"><span class="bg-running">🔍 Researching</span> decision makers at ${esc(c.name)}…<br><span style="font-size:8px;color:var(--t4);animation:none">Using Opus + web search — this takes 15–30s</span></div>`;
@@ -890,6 +909,7 @@ RULES: Only extract EXPLICIT mentions. partnerships/integrations→bidirectional
 export function renderIntelBody(stored,live){const body=document.getElementById('ib-intel-body'),cnt=document.getElementById('ib-intel-cnt'),liveLabel=document.getElementById('ib-intel-live');if(!body)return;const storedItems=[];(Array.isArray(stored)?stored:[]).forEach(row=>{if(Array.isArray(row.content))storedItems.push(...row.content);else if(row.title||row.url)storedItems.push(row);});const total=storedItems.length+live.length;if(cnt)cnt.textContent=total||'';if(liveLabel)liveLabel.style.display=live.length?'flex':'none';if(!total){body.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--t3)">No intelligence yet</span><button class="ib-ct-btn" style="height:22px;padding:0 8px;font-size:7px;margin-left:auto" onclick="bgRefreshIntel()">↺ Fetch news</button></div>`;return;}const itemHtml=(items,dotColor)=>items.map(r=>{const url=r.url||r.link||'';const title=r.title||r.summary||'—';const src=r.source||r.type||'';const date=r.date||(r.created_at?new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'');return`<div class="ib-news-item"><div class="ib-news-dot" style="background:${dotColor}"></div><div class="ib-news-body">${url?`<a class="ib-news-title" href="${url}" target="_blank">${title} ↗</a>`:`<div class="ib-news-title" style="cursor:default">${title}</div>`}<div class="ib-news-meta"><span class="ib-news-src">${src}</span><span class="ib-news-date">${date}</span></div></div></div>`;}).join('');let html='';if(live.length){html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px"><span class="live-label"><span class="live-dot"></span>Live — Google News</span><span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4)">${live.length} results</span></div>${itemHtml(live,'#E53935')}`;}if(storedItems.length){if(live.length)html+=`<div style="height:10px;border-top:1px solid var(--rule2);margin:8px 0"></div>`;html+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px">📁 Stored</div>${itemHtml(storedItems,'var(--g)')}`;}body.innerHTML=html;}
 
 export async function bgRefreshIntel(){
+  if (window.demoGuard && window.demoGuard('REFRESH INTEL')) return;
   const c=S.currentCompany;if(!c)return;
   const body=document.getElementById('ib-intel-body'),btn=document.getElementById('ib-intel-refresh');
   if(body)body.innerHTML=`<div class="ib-loading" style="text-align:left">Fetching news…</div>`;
@@ -938,7 +958,7 @@ export function oaGmailConnect(){ window.gmailConnectAndScan?.(window._currentEm
 
 export function oaGmailDisconnect(){ window.gmailDisconnectUI?.(); }
 
-export function oaEmailScan(slug, companyName){ window.gmailScanCompany?.(slug, companyName); }
+export function oaEmailScan(slug, companyName){ if(window.demoGuard&&window.demoGuard('GMAIL SCAN'))return; window.gmailScanCompany?.(slug, companyName); }
 
 export async function oaEmailSaveContacts(){
   const contacts=S.emailScanContacts;if(!contacts?.length)return;
@@ -1071,6 +1091,11 @@ export async function loadRelationsBrief(slug,forceRefresh){
   try{
     // Always fetch from DB for current company (don't rely on in-memory cache)
     body.innerHTML='<div class="ib-loading">Loading relations…</div>';
+    if (window.isDemoMode && window.isDemoMode()) {
+      // Just show local relations — no DB call
+      loadRelationsBrief(slug);
+      return;
+    }
     const rels = await dbRelations.byCompany(slug);
     // Merge into S.allRelations so graph/other consumers have fresh data
     const seen=new Set(rels.map(r=>`${r.from_company}|${r.to_company}|${r.relation_type}`));
@@ -1683,12 +1708,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409c2';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409c3';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409c2';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409c3';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409c2';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409c3';
