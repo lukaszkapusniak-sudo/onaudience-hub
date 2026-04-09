@@ -4,6 +4,121 @@
    Safe to skip, restart, or ignore entirely.
    ═══════════════════════════════════════════════════════════ */
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHIPTUNE SOUND ENGINE — Nintendo JRPG style (Web Audio API)
+   All sounds generated procedurally. No external files.
+   ═══════════════════════════════════════════════════════════════════ */
+let _ctx = null;
+
+function _ac() {
+  if (!_ctx) {
+    try { _ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; }
+  }
+  if (_ctx.state === 'suspended') _ctx.resume();
+  return _ctx;
+}
+
+function _beep(freq, dur, type='square', gain=0.15, delay=0) {
+  const ac = _ac(); if(!ac) return;
+  const g = ac.createGain();
+  const o = ac.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, ac.currentTime + delay);
+  g.gain.setValueAtTime(0, ac.currentTime + delay);
+  g.gain.linearRampToValueAtTime(gain, ac.currentTime + delay + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(ac.currentTime + delay);
+  o.stop(ac.currentTime + delay + dur + 0.05);
+}
+
+function _chord(notes, dur, type='square', gain=0.12, delay=0) {
+  notes.forEach(f => _beep(f, dur, type, gain, delay));
+}
+
+const SFX = {
+  // Menu cursor — short blip (Pokemon menu boop)
+  cursor() {
+    _beep(440, 0.06, 'square', 0.12);
+    _beep(880, 0.04, 'square', 0.05, 0.04);
+  },
+
+  // Next step confirm — two-tone rising (Zelda chest open intro)
+  next() {
+    _beep(330, 0.08, 'square', 0.14);
+    _beep(440, 0.08, 'square', 0.14, 0.09);
+    _beep(660, 0.14, 'square', 0.16, 0.18);
+  },
+
+  // Tutorial start — 4-note fanfare (classic JRPG intro jingle)
+  start() {
+    const notes = [262,330,392,524];
+    const times = [0, 0.12, 0.24, 0.36];
+    notes.forEach((f,i) => _beep(f, i===3?0.35:0.10, 'square', 0.14, times[i]));
+  },
+
+  // Achievement unlock — ascending arpeggio + sparkle (FF item get)
+  achievement() {
+    [523, 659, 784, 1047].forEach((f, i) => _beep(f, 0.10, 'square', 0.14, i * 0.07));
+    // Sparkle overtone
+    [2093, 2637].forEach((f, i) => _beep(f, 0.08, 'sine', 0.06, 0.35 + i * 0.06));
+  },
+
+  // Level up — classic FF level-up arpeggio
+  levelUp() {
+    const seq = [
+      [262, 0.08, 0.00],
+      [330, 0.08, 0.09],
+      [392, 0.08, 0.18],
+      [524, 0.08, 0.27],
+      [392, 0.08, 0.36],
+      [524, 0.08, 0.45],
+      [659, 0.20, 0.54],
+    ];
+    seq.forEach(([f, d, t]) => _beep(f, d, 'square', 0.16, t));
+    // Harmony
+    const harm = [
+      [330, 0.08, 0.27],
+      [415, 0.08, 0.36],
+      [524, 0.24, 0.45],
+    ];
+    harm.forEach(([f, d, t]) => _beep(f, d, 'square', 0.08, t));
+  },
+
+  // Victory fanfare — tutorial complete (short FF victory theme)
+  victory() {
+    const melody = [
+      [392,0.12,0.0],[392,0.12,0.13],[392,0.12,0.26],
+      [523,0.30,0.40],[392,0.12,0.72],[523,0.50,0.85],
+    ];
+    const bass = [
+      [196,0.12,0.0],[196,0.12,0.13],[196,0.12,0.26],
+      [262,0.30,0.40],[196,0.12,0.72],[262,0.50,0.85],
+    ];
+    melody.forEach(([f,d,t]) => _beep(f, d, 'square', 0.16, t));
+    bass.forEach(([f,d,t])   => _beep(f, d, 'square', 0.10, t));
+  },
+
+  // Error / close — descending minor (Zelda wrong answer)
+  close() {
+    _beep(330, 0.08, 'square', 0.12);
+    _beep(262, 0.12, 'square', 0.12, 0.09);
+  },
+
+  // Gmail connect — water/magic sound (Zelda secret)
+  gmail() {
+    [523,659,784,1047,784,659,523].forEach((f,i) =>
+      _beep(f, 0.07, 'sine', 0.10, i * 0.06)
+    );
+  },
+
+  // XP tick — tiny point sound
+  xpTick() {
+    _beep(880, 0.04, 'square', 0.06);
+  },
+};
+
 const TKEY_DONE  = 'oaTutorialDone';
 const TKEY_XP    = 'oaTutXP';
 const TKEY_ACHV  = 'oaAchievements';
@@ -159,7 +274,7 @@ function _injectStyles() {
   border:1px solid var(--rule);
   border-radius:4px;
   box-shadow:0 8px 32px rgba(0,0,0,.22);
-  width:360px;
+  width:560px;
   transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1),
              opacity .2s;
   overflow:hidden;
@@ -173,42 +288,42 @@ function _injectStyles() {
 }
 @keyframes oa-tut-shimmer{0%{left:-60px}100%{left:400px}}
 .oa-tut-header{
-  padding:10px 12px 0;display:flex;align-items:center;gap:8px;
+  padding:14px 18px 0;display:flex;align-items:center;gap:10px;
 }
 .oa-tut-step-badge{
-  font-size:8px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--g);background:var(--gb,rgba(23,128,102,.08));
   border:1px solid var(--gr,rgba(23,128,102,.28));border-radius:2px;
   padding:2px 6px;white-space:nowrap;flex-shrink:0;
 }
 .oa-tut-title{
-  font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--t1);
+  font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--t1);
   text-transform:uppercase;flex:1;
 }
 .oa-tut-close{
-  width:20px;height:20px;border:none;background:none;cursor:pointer;
-  color:var(--t3);font-size:14px;display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border:none;background:none;cursor:pointer;
+  color:var(--t3);font-size:20px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;padding:0;
 }
 .oa-tut-close:hover{color:var(--t1);}
 .oa-tut-sub{
-  font-size:7px;letter-spacing:.06em;color:var(--t3);text-transform:uppercase;
-  padding:2px 12px 0;
+  font-size:10px;letter-spacing:.06em;color:var(--t3);text-transform:uppercase;
+  padding:4px 18px 0;
 }
 .oa-tut-body{
-  padding:10px 12px;font-size:9px;line-height:16px;color:var(--t2);
+  padding:14px 18px;font-size:13px;line-height:22px;color:var(--t2);
   white-space:pre-wrap;
 }
 .oa-tut-body b{color:var(--t1);}
 .oa-tut-hint{
-  margin:0 12px 8px;padding:5px 8px;background:var(--surf2);
-  border-left:2px solid var(--g);font-size:8px;color:var(--t3);
+  margin:0 18px 10px;padding:8px 12px;background:var(--surf2);
+  border-left:3px solid var(--g);font-size:11px;color:var(--t3);
   border-radius:0 2px 2px 0;
 }
-.oa-tut-footer{padding:0 12px 12px;display:flex;flex-direction:column;gap:6px;}
+.oa-tut-footer{padding:0 18px 18px;display:flex;flex-direction:column;gap:8px;}
 .oa-tut-btn{
-  height:28px;padding:0 12px;border:none;border-radius:2px;cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;
+  height:40px;padding:0 18px;border:none;border-radius:2px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
   letter-spacing:.06em;text-transform:uppercase;
   background:var(--g);color:#fff;transition:background .15s;
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -220,10 +335,10 @@ function _injectStyles() {
 .oa-tut-btn.alt:hover{background:var(--surf3);color:var(--t1);}
 .oa-tut-xp-row{
   display:flex;align-items:center;gap:8px;
-  padding:8px 12px;border-top:1px solid var(--rule);background:var(--surf2);
+  padding:10px 18px;border-top:1px solid var(--rule);background:var(--surf2);
 }
 .oa-tut-level{
-  font-size:8px;font-weight:600;color:var(--g);letter-spacing:.04em;
+  font-size:11px;font-weight:600;color:var(--g);letter-spacing:.04em;
   white-space:nowrap;flex-shrink:0;
 }
 .oa-tut-xp-bar{
@@ -234,30 +349,30 @@ function _injectStyles() {
   transition:width .6s cubic-bezier(.4,0,.2,1);
 }
 .oa-tut-xp-num{
-  font-size:7px;color:var(--t3);letter-spacing:.04em;white-space:nowrap;flex-shrink:0;
+  font-size:10px;color:var(--t3);letter-spacing:.04em;white-space:nowrap;flex-shrink:0;
 }
 
 /* ── Achievement toast ─────────────────────── */
 #oa-tut-achv{
-  position:fixed;top:56px;right:12px;z-index:10001;
+  position:fixed;top:60px;right:16px;z-index:10001;
   font-family:'IBM Plex Mono',monospace;
   background:var(--surf);
   border:1px solid var(--g);border-radius:4px;
   box-shadow:0 4px 20px rgba(0,0,0,.2);
-  width:260px;overflow:hidden;
-  transform:translateX(280px);
+  width:380px;overflow:hidden;
+  transform:translateX(400px);
   transition:transform .4s cubic-bezier(.4,0,.2,1);
 }
 #oa-tut-achv.vis{transform:translateX(0);}
 .oa-achv-bar{height:3px;background:var(--g);}
-.oa-achv-inner{padding:10px 12px;display:flex;gap:10px;align-items:flex-start;}
-.oa-achv-icon{font-size:22px;flex-shrink:0;line-height:1;}
+.oa-achv-inner{padding:14px 16px;display:flex;gap:14px;align-items:flex-start;}
+.oa-achv-icon{font-size:32px;flex-shrink:0;line-height:1;}
 .oa-achv-text{}
-.oa-achv-label{font-size:7px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;}
-.oa-achv-name{font-size:10px;font-weight:600;color:var(--t1);margin:2px 0;}
-.oa-achv-desc{font-size:8px;color:var(--t2);}
+.oa-achv-label{font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;}
+.oa-achv-name{font-size:14px;font-weight:600;color:var(--t1);margin:3px 0;}
+.oa-achv-desc{font-size:11px;color:var(--t2);}
 .oa-achv-xp{
-  margin-left:auto;font-size:9px;font-weight:600;color:var(--g);
+  margin-left:auto;font-size:12px;font-weight:600;color:var(--g);
   white-space:nowrap;flex-shrink:0;
 }
 
@@ -272,22 +387,22 @@ function _injectStyles() {
 #oa-tut-levelup.vis{opacity:1;}
 .oa-lu-badge{
   font-family:'IBM Plex Mono',monospace;
-  font-size:11px;letter-spacing:.12em;color:var(--g);text-transform:uppercase;
-  margin-bottom:6px;
+  font-size:18px;letter-spacing:.12em;color:var(--g);text-transform:uppercase;
+  margin-bottom:10px;
 }
 .oa-lu-name{
   font-family:'IBM Plex Mono',monospace;
-  font-size:32px;font-weight:600;letter-spacing:.04em;color:var(--g);
-  text-shadow:0 0 40px rgba(23,128,102,.5);
+  font-size:52px;font-weight:600;letter-spacing:.04em;color:var(--g);
+  text-shadow:0 0 60px rgba(23,128,102,.5);
 }
-.oa-lu-icon{font-size:48px;margin-bottom:8px;}
+.oa-lu-icon{font-size:72px;margin-bottom:12px;}
 
 /* ── Progress dots ─────────────────────────── */
 .oa-tut-dots{
-  display:flex;gap:4px;align-items:center;padding:8px 12px 0;
+  display:flex;gap:6px;align-items:center;padding:10px 18px 0;
 }
 .oa-tut-dot{
-  width:6px;height:6px;border-radius:50%;background:var(--rule);
+  width:9px;height:9px;border-radius:50%;background:var(--rule);
   transition:background .3s,transform .3s;
 }
 .oa-tut-dot.done{background:var(--g);}
@@ -295,22 +410,22 @@ function _injectStyles() {
 
 /* ── Finale ──────────────────────────────────  */
 .oa-tut-finale{
-  padding:16px 12px 8px;text-align:center;
+  padding:24px 18px 12px;text-align:center;
 }
-.oa-tut-finale-icon{font-size:40px;margin-bottom:8px;}
+.oa-tut-finale-icon{font-size:60px;margin-bottom:12px;}
 .oa-tut-finale-level{
-  font-size:8px;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;
-  margin-bottom:4px;
+  font-size:11px;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;
+  margin-bottom:6px;
 }
 .oa-tut-finale-name{
-  font-size:18px;font-weight:600;color:var(--g);letter-spacing:.04em;
-  margin-bottom:12px;
+  font-size:28px;font-weight:600;color:var(--g);letter-spacing:.04em;
+  margin-bottom:16px;
 }
 .oa-tut-achv-grid{
   display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;
 }
 .oa-tut-achv-chip{
-  font-size:8px;padding:3px 8px;background:var(--surf2);
+  font-size:11px;padding:5px 10px;background:var(--surf2);
   border:1px solid var(--rule);border-radius:2px;color:var(--t2);
   display:flex;align-items:center;gap:4px;
 }
@@ -370,7 +485,7 @@ function _spotlight(selector) {
 /* ── Card positioning ─────────────────────────────────────────────────── */
 function _positionCard(card, position, target) {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const cw = 360, ch = card.offsetHeight || 300;
+  const cw = 560, ch = card.offsetHeight || 400;
 
   if (position === 'center' || !target) {
     card.style.top  = Math.round((vh - ch) / 2) + 'px';
@@ -432,7 +547,7 @@ function _renderCard() {
         <div class="oa-tut-finale-icon">🏆</div>
         <div class="oa-tut-finale-level">LEVEL ${_level} — ${LEVEL_NAMES[_level]}</div>
         <div class="oa-tut-finale-name">${_xp} XP EARNED</div>
-        <div class="oa-tut-body" style="text-align:left">${s.body.replace(/\n/g,'<br/>')}</div>
+        <div class="oa-tut-body" style="text-align:left;font-size:12px">${s.body.replace(/\n/g,'<br/>')}</div>
         ${achvGrid ? `<div class="oa-tut-achv-grid">${achvGrid}</div>` : ''}
         <div class="oa-tut-footer">
           <button class="oa-tut-btn" onclick="window._tutNext()">🎖️ ${s.btn}</button>
@@ -489,6 +604,7 @@ function _renderCard() {
 function _addXP(amount, targetLevel) {
   const prevLevel = _level;
   _xp += amount;
+  SFX.xpTick();
   _level = _xpToLevel(_xp);
   _save();
 
@@ -509,6 +625,7 @@ function _showLevelUp(level) {
   const lu = _getEl('oa-tut-levelup');
   _getEl('oa-lu-icon').textContent = LEVEL_ICONS[level];
   _getEl('oa-lu-name').textContent = LEVEL_NAMES[level];
+  SFX.levelUp();
   lu.classList.add('vis');
   setTimeout(() => lu.classList.remove('vis'), 2200);
 }
@@ -531,6 +648,7 @@ function _showNextAchv() {
   _getEl('oa-achv-desc').textContent = a.desc;
   _getEl('oa-achv-xp').textContent = '+' + (a.xp || 0) + ' XP';
   el.classList.add('vis');
+  SFX.achievement();
   if (a.xp) _addXP(a.xp);
   _achvTimer = setTimeout(() => {
     el.classList.remove('vis');
@@ -542,6 +660,7 @@ function _showNextAchv() {
 function _tutNext() {
   const s = STEPS[_step];
   if (!s) return;
+  if (s.isFinale) { SFX.victory(); } else { SFX.next(); }
 
   // Award XP for this step
   _addXP(s.xp, s.levelUp);
@@ -566,6 +685,7 @@ function _tutNext() {
 }
 
 function _tutGmail() {
+  SFX.gmail();
   const s = STEPS[_step];
   // Call hub's gmail connect
   if (typeof window.oaGmailConnect === 'function') {
@@ -591,7 +711,7 @@ function _tutGmail() {
 }
 
 function _tutClose() {
-  // Allow dismiss — don't mark as done (user can re-open)
+  SFX.close();
   _active = false;
   const card = _getEl('oa-tut-card');
   const sp = _getEl('oa-tut-spotlight');
@@ -616,6 +736,7 @@ export function startTutorial(force = false) {
   _active = true;
   _injectStyles();
   _ensureDom();
+  SFX.start();
   _renderCard();
 }
 
