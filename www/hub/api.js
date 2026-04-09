@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409b2';
-import S from './state.js?v=20260409b2';
-import { classify, _slug, authHdr } from './utils.js?v=20260409b2';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409b3';
+import S from './state.js?v=20260409b3';
+import { classify, _slug, authHdr } from './utils.js?v=20260409b3';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409b2';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409b3';
 
 
 
@@ -357,6 +357,12 @@ export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
   }catch(e){
     console.warn('[load]',e.message);
     setStatus(false);
+    // 522 = Cloudflare/Supabase transient timeout — auto-retry once after 3s
+    if(e.message&&(e.message.includes('522')||e.message.includes('failed to fetch')||e.message.includes('NetworkError')||e.message.includes('Load failed')||e.message.includes('companies load failed'))){
+      if(window.clog) window.clog('db','⟳ Connection dropped (522) — retrying in 3s…');
+      setTimeout(()=>loadFromSupabase(renderStats,renderList,renderTagPanel),3000);
+      return;
+    }
     if(window.clog) window.clog('db',`Load failed — ${e.message}`);
     renderStats();renderList();
   }
