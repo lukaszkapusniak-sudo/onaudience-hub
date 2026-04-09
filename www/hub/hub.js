@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a4';
-import S from './state.js?v=20260409a4';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a4';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a4';
-import { resolveAlias } from './merge.js?v=20260409a4';
-import { companies as dbCompanies, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a4';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a5';
+import S from './state.js?v=20260409a5';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a5';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a5';
+import { resolveAlias } from './merge.js?v=20260409a5';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a5';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -219,8 +219,74 @@ ${sec('ib-rels-body','🔗','Relations','<div class="ib-loading">Loading…</div
 <div class="ib-sec"><div class="ib-sh" style="cursor:pointer" onclick="ibToggle('ib-links-body')"><span id="ib-links-body-arrow" style="font-size:9px;color:var(--t3)">▾</span><span class="ib-sh-lbl">🔗 Quick Links</span></div><div class="ib-links" id="ib-links-body"><a class="ib-link" href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name+' data partnerships')}" target="_blank">LI People ↗</a><a class="ib-link" href="https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(c.name)}" target="_blank">LI Company ↗</a>${c.website?`<a class="ib-link" href="${safeUrl(c.website)}" target="_blank">${c.website.replace(/^https?:\/\//i,'')} ↗</a>`:''}<a class="ib-link" href="https://news.google.com/search?q=${encodeURIComponent(c.name)}" target="_blank">Google News ↗</a><span class="ib-link" onclick="coAction('gmail')">Gmail History</span></div></div>
 </div>`;
   renderList();document.getElementById('centerScroll').scrollTop=0;
-  if(c.name){setTimeout(()=>loadRelationsBrief(slug),60);setTimeout(()=>loadIntelligence(slug,c.name),80);}
+  if(c.name){
+    setTimeout(()=>loadRelationsBrief(slug),60);
+    setTimeout(()=>loadIntelligence(slug,c.name),80);
+    // Always fetch contacts + products fresh from DB for this company
+    setTimeout(()=>_loadCompanyContacts(slug,c.name),120);
+    setTimeout(()=>_loadCompanyProducts(slug,c),150);
+  }
 }
+// ── DB-fresh contacts loader ──────────────────────────────────────
+async function _loadCompanyContacts(slug, name) {
+  const body = document.getElementById('ib-ct-body');
+  if (!body) return;
+  try {
+    const rows = await dbContacts.byCompany(slug, name);
+    if (!rows.length) return;  // keep state-based render if DB returns nothing
+    // Merge into S.contacts (deduplicate)
+    const seen = new Set(rows.map(c=>c.id||c.email));
+    const others = S.contacts.filter(c=>!seen.has(c.id||c.email));
+    S.contacts = [...others, ...rows];
+    // Re-render contacts section
+    const a2=(ct)=>getAv(ct.full_name||''), n2=(ct)=>ini(ct.full_name||'');
+    const ctGridHtml = rows.length
+      ? `<div class="ib-cts-grid">${rows.map(ct=>{
+          const av=a2(ct), nn=n2(ct), ctSlug=ct.id||_slug(ct.full_name||'');
+          return `<div class="ib-ct" data-ctslug="${ctSlug}" onclick="openDrawer('${ctSlug}','${esc(ct.full_name||'')}')">`
+            +`<div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${nn}</div>`
+            +`<div class="ib-ct-info"><div class="ib-ct-name">${esc(ct.full_name||'—')}</div>`
+            +`<div class="ib-ct-title">${esc(ct.title||'')}${ct.email?` · <span class="ib-ct-email">${esc(ct.email)}</span>`:''}</div></div>`
+            +`</div>`;}).join('')}</div>`
+      : `<div style="font-size:11px;color:var(--t3)">No contacts found</div>`;
+    const cnt = body.closest('.ib-sec')?.querySelector('.ib-sh-cnt');
+    if (cnt) cnt.textContent = rows.length || '';
+    // Only update if section is expanded
+    if (body.style.display !== 'none') body.innerHTML = ctGridHtml;
+    // Also update collapsed header count
+    const hdr = body.closest('.ib-sec')?.querySelector('.ib-sh');
+    if (hdr) { const cntEl=hdr.querySelector('.ib-sh-cnt'); if(cntEl)cntEl.textContent=rows.length||''; }
+    clog('db', `Contacts for <b>${slug}</b>: <b>${rows.length}</b> from DB`);
+  } catch(e) { clog('info', 'Contacts load error: ' + e.message); }
+}
+
+// ── DB-fresh products loader ───────────────────────────────────────
+async function _loadCompanyProducts(slug, c) {
+  const body = document.getElementById('ib-prod-body');
+  if (!body) return;
+  if (c.products?.products?.length) return;  // already have products in state
+  try {
+    const SB_URL_local = SB_URL;
+    const res = await fetch(`${SB_URL_local}/rest/v1/companies?id=eq.${encodeURIComponent(slug)}&select=products`,
+      { headers: authHdr() });
+    if (!res.ok) return;
+    const rows = await res.json();
+    const prods = rows?.[0]?.products?.products || [];
+    if (!prods.length) return;
+    // Update state
+    c.products = rows[0].products;
+    // Re-render products section
+    const prodsHtml = prods.map(p=>`<div class="ib-prod-row">`
+      +`<div class="ib-prod-name">${esc(p.name||'')}</div>`
+      +`<div class="ib-prod-desc">${esc(p.description||'')}${p.target_user?` <span style="color:var(--t3)">· ${esc(p.target_user)}</span>`:''}</div>`
+      +`</div>`).join('');
+    const cnt = body.closest('.ib-sec')?.querySelector('.ib-sh-cnt');
+    if (cnt) cnt.textContent = prods.length || '';
+    if (body.style.display !== 'none') body.innerHTML = prodsHtml || '<div style="font-size:11px;color:var(--t3)">No products recorded</div>';
+    clog('db', `Products for <b>${slug}</b>: <b>${prods.length}</b> from DB`);
+  } catch(e) { clog('info', 'Products load error: ' + e.message); }
+}
+
 export function closePanel(){S.currentCompany=null;window.currentCompany=null;document.getElementById('coPanel').style.display='none';document.getElementById('emptyState').style.display='flex';renderList();}
 
 /* ═══ Actions ════════════════════════════════════════════════ */
@@ -731,8 +797,13 @@ function _renderGraphControls(){
 export async function loadRelationsBrief(slug,forceRefresh){
   const body=document.getElementById('ib-rels-body'),cnt=document.getElementById('ib-rels-cnt');if(!body)return;
   try{
-    if(forceRefresh||!S.allRelations.length){body.innerHTML='<div class="ib-loading">Refreshing relations…</div>';await refreshRelationsCache();}
-    const rels=S.allRelations.filter(r=>r.from_company===slug||r.to_company===slug);
+    // Always fetch from DB for current company (don't rely on in-memory cache)
+    body.innerHTML='<div class="ib-loading">Loading relations…</div>';
+    const rels = await dbRelations.byCompany(slug);
+    // Merge into S.allRelations so graph/other consumers have fresh data
+    const seen=new Set(rels.map(r=>`${r.from_company}|${r.to_company}|${r.relation_type}`));
+    const others=S.allRelations.filter(r=>!seen.has(`${r.from_company}|${r.to_company}|${r.relation_type}`));
+    S.allRelations=[...others,...rels];
     _relCache=rels;
     if(!_relCache.length){body.innerHTML=`<div style="font-size:11px;color:var(--t3)">No relations recorded</div>`;if(cnt)cnt.textContent='';return;}
     if(cnt)cnt.textContent=_relCache.length;
@@ -1341,12 +1412,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a4';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a5';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a4';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a5';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a4';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a5';
