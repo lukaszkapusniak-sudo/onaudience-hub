@@ -1,10 +1,10 @@
 /* ═══ meeseeks.js — Meeseeks Composer ═══ */
 
-import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409n';
-import { authHdr } from './utils.js?v=20260409n';
-import S from './state.js?v=20260409n';
-import { _slug, getCoTags, getAv, ini, esc } from './utils.js?v=20260409n';
-import { anthropicFetch } from './api.js?v=20260409n';
+import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409o';
+import { authHdr } from './utils.js?v=20260409o';
+import S from './state.js?v=20260409o';
+import { _slug, getCoTags, getAv, ini, esc } from './utils.js?v=20260409o';
+import { anthropicFetch } from './api.js?v=20260409o';
 
 export function mcHint(el,id){const h=document.getElementById(id);if(h)h.textContent=`${el.value.length} chars`;}
 export function mcAllContacts(){const seen=new Set(S.mcDbContacts.map(c=>(c.full_name||'').toLowerCase()));const extra=S.mcAiContacts.filter(c=>!seen.has((c.full_name||'').toLowerCase()));return[...S.mcDbContacts,...extra];}
@@ -15,7 +15,7 @@ export function mcPickPersona(id){S.mcActivePId=id;mcRenderPersonas();}
 export function openComposer(payload){const mcDrawer=document.getElementById('mcDrawer');if(!mcDrawer)return;S.mcPayload=payload||{};S.mcDbContacts=[];S.mcSelectedIdx=-1;S.mcLastEmail='';const p=S.mcPayload;if(p.company){document.getElementById('mcCoEmpty').style.display='none';const ne=document.getElementById('mcCoName');ne.style.display='';ne.textContent=p.company;const no=document.getElementById('mcCoNote');if(p.note){no&&(no.style.display='');no&&(no.textContent=p.note);}else{no&&(no.style.display='none');}document.getElementById('mcCoAv').textContent=ini(p.company);document.getElementById('mcCoBlock').className='mc-co filled';const tags=getCoTags(p);const te=document.getElementById('mcCoTags');if(tags.length){te&&(te.style.display='flex');te&&(te.innerHTML=tags.map(t=>`<span class="mc-co-tag">${t}</span>`).join(''));}else{te&&(te.style.display='none');}mcLoadContacts(p.company,p.contactName);}else{document.getElementById('mcCoEmpty').style.display='';document.getElementById('mcCoName').style.display='none';const _no=document.getElementById('mcCoNote');_no&&(_no.style.display='none');document.getElementById('mcCoBlock').className='mc-co';const _te=document.getElementById('mcCoTags');_te&&(_te.style.display='none');document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">No company selected</div>';}if(p.company&&S.currentCompany?.name===p.company&&S.mcAiContacts.length===0){S.mcAiContacts=[];}document.getElementById('mcCtx').value=p.description||'';document.getElementById('mcAngle').value=p.angle||'';mcHint(document.getElementById('mcCtx'),'mcCtxHint');mcHint(document.getElementById('mcAngle'),'mcAngleHint');document.getElementById('mcOutContent').style.display='none';document.getElementById('mcEmpty').style.display='flex';const _rb=document.getElementById('mcRBar');if(_rb)_rb.style.display='none';document.getElementById('mcDrawer').classList.add('open');document.getElementById('mcOverlay').classList.add('vis');mcRenderPersonas();}
 export function closeComposer(){document.getElementById('mcDrawer').classList.remove('open');document.getElementById('mcOverlay').classList.remove('vis');}
 
-export function openPanel(id,payload){if(id==='meeseeks'||id==='composer')openComposer(payload);else window.openClaude?.('Compose outreach email'+(payload?.company?' for '+payload.company:''));}
+export function openPanel(id,payload){openComposer(payload||{});}
 
 async function mcLoadContacts(companyName,preferName){S.mcDbContacts=[];S.mcSelectedIdx=-1;document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">Loading contacts…</div>';if(S.currentCompany?.name===companyName)S.mcAiContacts=S.mcAiContacts;try{const res=await fetch(`${SB_URL}/rest/v1/contacts?company_name=eq.${encodeURIComponent(companyName)}&select=*`,{headers:authHdr()});const data=await res.json();if(Array.isArray(data))S.mcDbContacts=data;}catch(e){console.warn('mc contacts',e);}if(preferName){const idx=mcAllContacts().findIndex(c=>(c.full_name||'').toLowerCase()===preferName.toLowerCase());if(idx>=0)S.mcSelectedIdx=idx;}mcRenderPicker();}
 

@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409n';
-import { authHdr } from './utils.js?v=20260409n';
-import S from './state.js?v=20260409n';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409n';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409n';
-import { clog } from './hub.js?v=20260409n';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409o';
+import { authHdr } from './utils.js?v=20260409o';
+import S from './state.js?v=20260409o';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409o';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409o';
+import { clog } from './hub.js?v=20260409o';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -988,11 +988,17 @@ async function _renderGaps(list) {
 }
 
 function _gapFindContacts() {
+  if (!_gapLists.noContact.length) return;
   const names = _gapLists.noContact.map(c => c.name).join(', ');
-  const prompt = `Find decision makers at these companies: ${names}. Use the linkedin-lookup skill.`;
-  navigator.clipboard?.writeText(prompt).catch(() => {});
-  window.open('https://claude.ai/new', '_blank');
-  clog('db', `Prompt copied — finding contacts for ${_gapLists.noContact.length} companies`);
+  // Use internal AI bar to find contacts — no external session
+  const inp = document.getElementById('aiInp');
+  if (inp) {
+    inp.value = `Find decision makers at: ${names.slice(0, 200)}`;
+    window.runAI?.();
+    // Close modal and show AI results in main hub
+    audCloseModal();
+  }
+  clog('db', `Finding contacts for ${_gapLists.noContact.length} companies via AI bar`);
 }
 
 function _gapEnrichDesc() {

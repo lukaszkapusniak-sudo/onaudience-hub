@@ -1,10 +1,10 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409n';
-import S from './state.js?v=20260409n';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409n';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409n';
-import { resolveAlias } from './merge.js?v=20260409n';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409o';
+import S from './state.js?v=20260409o';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409o';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409o';
+import { resolveAlias } from './merge.js?v=20260409o';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
@@ -289,32 +289,31 @@ export function coAction(a){
 }
 export function openClaudeGmail(type, company, contactEmail, contactName) {
   if (!company) return;
-  let prompt;
   if (type === 'history') {
-    const domain = company.website
-      ? company.website.replace(/^https?:\/\//i,'').split('/')[0]
-      : (company.name||'').toLowerCase().replace(/\s+/g,'') + '.com';
-    prompt = `Check Gmail for existing contact history with ${company.name} (domain: ${domain}). Show: relationship score (🔥/♻️/🌡️/🧊), contacts found with titles and emails, last thread date, topic and outcome, and who from onAudience owns the relationship. Cross-reference any found contacts against web to verify current roles.`;
+    // Open company detail and scroll to Email History section — no external session
+    if (company && typeof company === 'object') openCompany(company);
+    setTimeout(() => {
+      const hdr = [...document.querySelectorAll('.ib-sh')].find(h => h.textContent.toLowerCase().includes('email'));
+      if (hdr) {
+        if (!document.getElementById('ib-email-body')?.offsetParent) hdr.click();
+        hdr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 300);
   } else if (type === 'draft') {
-    const techStack = (company.tech_stack||[]).map(t=>t.tool||t).filter(Boolean).join(', ');
-    prompt = `Draft a cold outreach email to ${contactName||'the recipient'} <${contactEmail||''}> at ${company.name}. Company: ${company.description||''}. Category: ${company.category||''}. ICP score: ${company.icp||''}. Outreach angle: ${company.outreach_angle||'data partnership'}. Tech stack: ${techStack}. Keep it under 150 words, specific hook, one clear value prop. Then use Gmail connector to save it as a draft.`;
+    // Open Meeseeks composer pre-filled with contact + company context
+    window.openComposer?.({
+      company:      typeof company === 'object' ? company.name : String(company),
+      contactName:  contactName  || null,
+      contactEmail: contactEmail || null,
+      description:  typeof company === 'object' ? (company.description || '') : '',
+      angle:        typeof company === 'object' ? (company.outreach_angle || '') : '',
+    });
   } else {
-    return;
+    // Generic fallback → AI bar query
+    window.aiQuick?.(company?.name ? 'Gmail history with ' + company.name : '');
   }
-  window.open('https://claude.ai/new?q=' + encodeURIComponent(prompt), '_blank');
 }
 
-export async function setCompanyStatus(id,status){
-  const co=S.companies.find(c=>(c.id||_slug(c.name))===id);
-  if(!co)return;
-  co.relationship_status=status;
-  if(S.currentCompany&&(S.currentCompany.id||_slug(S.currentCompany.name))===id)S.currentCompany.relationship_status=status;
-  // toggle .on on status bar buttons
-  document.querySelectorAll('.ib-status-bar .btn').forEach(b=>{b.classList.toggle('on',b.textContent===status);});
-  renderList();
-  clog('db',`Status set: <b>${esc(co.name)}</b> → ${esc(status)}`);
-  await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({relationship_status:status})}).catch(e=>clog('db',`Status PATCH error: ${esc(e.message)}`));
-}
 
 export function ctAction(action,ctSlug){
   const ct=S.contacts.find(c=>c.id===ctSlug||(c.full_name&&_slug(c.full_name)===ctSlug));if(!ct)return;
@@ -1299,7 +1298,7 @@ export function showCtx(e,slugOrName){
 export function openDrawer(ctId){const ct=S.contacts.find(c=>c.id===ctId||(c.full_name&&_slug(c.full_name)===ctId));if(!ct)return;S.currentContact=ct;const av=getAv(ct.full_name||''),n=ini(ct.full_name||'');const el=document.getElementById('drAv');el.textContent=n;el.style.background=av.bg;el.style.color=av.fg;document.getElementById('drName').textContent=ct.full_name||'—';document.getElementById('drSub').textContent=(ct.title||'')+(ct.company_name?' · '+ct.company_name:'');const _relColor={'warm':'var(--cc)','cold':'var(--t3)','active':'var(--gb)'};const _statusColor={'replied':'var(--cc)','contacted':'var(--gb)','pending':'var(--prc)','bounced':'var(--cr)'};const flds=[[ct.title,'Title',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.title)}</span>`],[ct.email,'Email',`<a href="mailto:${ct.email}" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.email)}</a>`],[ct.phone,'Phone',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.phone)}</span>`],[ct.linkedin_url,'LinkedIn',`<a href="${ct.linkedin_url}" target="_blank" style="color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.linkedin_url)}</a>`],[ct.department,'Dept',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.department)}</span>`],[ct.seniority,'Seniority',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase">${esc(ct.seniority)}</span>`],[ct.location,'Location',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.location)}</span>`],[ct.outreach_status,'Status',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${_statusColor[ct.outreach_status]||'var(--t2)'}">${esc(ct.outreach_status)}</span>`],[ct.relationship_strength,'Relationship',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${_relColor[ct.relationship_strength]||'var(--t2)'}">${esc(ct.relationship_strength)}</span>`],[ct.last_contacted_at,'Last Contact',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.last_contacted_at?.slice(0,10))}</span>`],[ct.warm_intro_path,'Warm Intro',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(ct.warm_intro_path)}</span>`],[ct.notes,'Notes',`<span style="font-size:10px;line-height:1.5">${esc(ct.notes)}</span>`]].filter(f=>f[0]);document.getElementById('drBody').innerHTML=flds.map(([,l,v])=>`<div class="dr-field"><label>${l}</label><p>${v}</p></div>`).join('');document.getElementById('ctDrawer').classList.add('open');document.getElementById('ctDrawerOverlay').classList.add('vis');
   // Inject / update "Draft in Claude" button in drawer actions
   const _drAct=document.querySelector('#ctDrawer .dr-actions');
-  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='✉ Draft in Claude';_cb.onclick=()=>openClaudeGmail('draft',_co2,ct.email,ct.full_name);_drAct.appendChild(_cb);}}
+  if(_drAct){_drAct.querySelectorAll('.dr-claude-btn').forEach(b=>b.remove());if(ct.email){const _co2=S.companies.find(x=>(x.name||'').toLowerCase()===(ct.company_name||'').toLowerCase())||{name:ct.company_name||''};const _cb=document.createElement('button');_cb.className='btn sm full dr-claude-btn';_cb.textContent='✉ Draft Email';_cb.onclick=()=>window.openComposer({company:_co2.name,contactName:ct.full_name,contactTitle:ct.title,description:_co2.description||'',angle:_co2.outreach_angle||''});_drAct.appendChild(_cb);}}
 }
 export function closeDrawer(){document.getElementById('ctDrawer').classList.remove('open');document.getElementById('ctDrawerOverlay').classList.remove('vis');S.currentContact=null;}
 export function openContactFull(ctId){
@@ -1358,7 +1357,11 @@ export function submitModal(){
 }
 
 /** Legacy escape hatch — only for truly unroutable actions that have no hub-native equivalent. */
-export function openClaude(p){window.open('https://claude.ai/new?q='+encodeURIComponent(p),'_blank');}
+export function openClaude(p){
+  // Route to internal Meeseeks composer instead of opening external claude.ai
+  if(window.openComposer) window.openComposer({ description: p });
+  else window.aiQuick?.(p); // fallback to AI bar query
+}
 
 /* ══════════════════════════════════════════════════════════════
    ── Lemlist campaign push modal ──────────────────────────────
