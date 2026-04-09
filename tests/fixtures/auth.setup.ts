@@ -50,7 +50,9 @@ setup('authenticate', async ({ page }) => {
   // Wait for auth.js to call hideLoginScreen() → .app becomes visible
   await expect(page.locator('.app')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 35000 });
+  // Wait for .nav-status.live class (setStatus(true) adds it after first successful load)
+  // Text contains 'Live' but may also show 'Live · 200 / 2069' during pagination — class is reliable
+  await expect(page.locator('.nav-status.live')).toBeVisible({ timeout: 40000 });
 
   await page.evaluate(() => {
     window.clearAI?.();
