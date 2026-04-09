@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409b4';
-import S from './state.js?v=20260409b4';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409b4';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b4';
-import { resolveAlias } from './merge.js?v=20260409b4';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409b4';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409b5';
+import S from './state.js?v=20260409b5';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409b5';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b5';
+import { resolveAlias } from './merge.js?v=20260409b5';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409b5';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -423,6 +423,88 @@ async function _loadCompanyProducts(slug, c) {
     if (body.style.display !== 'none') body.innerHTML = prodsHtml || '<div style="font-size:11px;color:var(--t3)">No products recorded</div>';
     clog('db', `Products for <b>${slug}</b>: <b>${prods.length}</b> from DB`);
   } catch(e) { clog('info', 'Products load error: ' + e.message); }
+}
+
+
+// ── b2b MCP: Find Similar Companies ──────────────────────────────────────
+async function _findSimilarViaB2B(companyInput) {
+  const aiInp = document.getElementById('aiInp');
+  const aiBtn = document.getElementById('aiBtn');
+  const stat  = document.getElementById('aiStat');
+  const dot   = document.getElementById('aiDot');
+  const txt   = document.getElementById('aiTxt');
+  if (aiBtn) aiBtn.disabled = true;
+  if (stat) stat.className = 'ai-stat vis';
+  if (dot) { dot.className = 'ai-dot'; dot.style.background = ''; }
+  if (txt) txt.textContent = 'Finding similar…';
+  if (aiInp) aiInp.value = `similar to ${companyInput}`;
+  clog('ai', `🔗 Finding similar companies to <b>${esc(companyInput)}</b> via b2b MCP…`);
+  try {
+    // Resolve domain: use existing company website if we can find it
+    const existing = S.companies.find(c =>
+      (c.name||'').toLowerCase().includes(companyInput.toLowerCase()) ||
+      companyInput.toLowerCase().includes((c.name||'').toLowerCase())
+    );
+    const domain = existing?.website?.replace(/^https?:\/\//,'').split('/')[0]
+      || companyInput.toLowerCase().replace(/^https?:\/\//,'').split('/')[0]
+      || (companyInput.includes('.')?companyInput:companyInput.toLowerCase().replace(/\s+/g,'')+'.com');
+
+    const b2bRes = await anthropicMcpFetch({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
+      messages: [{
+        role: 'user',
+        content: `Use the b2b find_similar_companies tool to find 12 companies similar to "${domain}". Return only the tool result, no commentary.`
+      }]
+    });
+    // Extract company names from tool results
+    const toolResult = (b2bRes.content||[])
+      .filter(b => b.type === 'mcp_tool_result')
+      .map(b => b.content?.[0]?.text || '')
+      .join('\n');
+    // Also check text content for names
+    const textContent = (b2bRes.content||[])
+      .filter(b => b.type === 'text')
+      .map(b => b.text || '')
+      .join('\n');
+    const combined = toolResult + '\n' + textContent;
+    // Extract company names — look for **Name** or "Name" patterns
+    const rawNames = [...combined.matchAll(/\*\*([^*]+?)\*\*|"([^"]+?)"\s*\(/g)]
+      .map(m => (m[1]||m[2]||'').trim()).filter(Boolean);
+    // Also try to match against existing companies in hub
+    if (rawNames.length > 0) {
+      // Try to find any of these in existing S.companies
+      const matched = S.companies.filter(c =>
+        rawNames.some(n => (c.name||'').toLowerCase().includes(n.toLowerCase())
+          || n.toLowerCase().includes((c.name||'').toLowerCase()))
+      );
+      if (matched.length > 0) {
+        S.aiSet = new Set(matched.map(c => c.name));
+        renderList();
+        if (txt) txt.textContent = `${matched.length} match${matched.length!==1?'es':''}`;
+        if (dot) { dot.className = 'ai-dot done'; }
+        clog('ai', `🔗 Found <b>${matched.length}</b> similar companies in hub. b2b found: ${rawNames.slice(0,5).join(', ')}…`);
+      } else {
+        // None in hub — show as AI bar result with company names
+        S.aiSet = null;
+        if (txt) txt.textContent = `${rawNames.length} found (not in hub)`;
+        if (dot) { dot.className = 'ai-dot done'; }
+        clog('ai', `🔗 b2b similar: ${rawNames.slice(0,8).join(', ')} — none currently in hub. Add them via <b>+ Research</b>.`);
+      }
+    } else {
+      S.aiSet = null;
+      if (txt) txt.textContent = 'No results';
+      if (dot) { dot.className = 'ai-dot'; dot.style.background = 'var(--cr)'; }
+      clog('ai', '🔗 b2b similar: no results found');
+    }
+  } catch(e) {
+    S.aiSet = null;
+    if (txt) txt.textContent = 'Error';
+    if (dot) { dot.className = 'ai-dot'; dot.style.background = 'var(--cr)'; }
+    clog('ai', `b2b similar error: ${esc(e.message)}`);
+  }
+  if (aiBtn) aiBtn.disabled = false;
 }
 
 // ── CRM pipeline status ──────────────────────────────────────────────────────
@@ -1486,8 +1568,7 @@ export function closeModal(){document.getElementById('overlay').classList.remove
 export function submitModal(){
   const v=document.getElementById('modalInput').value.trim();if(!v)return;closeModal();
   if(S._modalMode==='similar'){
-    document.getElementById('aiInp').value=`similar to ${v}`;
-    runAI();
+    _findSimilarViaB2B(v);
   } else {
     /* try to find existing company first and open it */
     const found=S.companies.find(x=>(x.name||'').toLowerCase().includes(v.toLowerCase()));
@@ -1593,12 +1674,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409b4';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409b5';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409b4';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409b5';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409b4';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409b5';

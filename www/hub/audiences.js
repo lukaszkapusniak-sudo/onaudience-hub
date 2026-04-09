@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409b4';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409b4';
-import S from './state.js?v=20260409b4';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409b4';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409b4';
-import { clog } from './hub.js?v=20260409b4';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409b5';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260409b5';
+import S from './state.js?v=20260409b5';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409b5';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260409b5';
+import { clog } from './hub.js?v=20260409b5';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -1980,7 +1980,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409b4';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409b5';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409b4';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409b5';
