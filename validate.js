@@ -167,9 +167,27 @@ for (const cf of FILES) {
 }
 
 if (issues === 0) {
-  console.log(`✓ All ${FILES.length} files pass (duplicate-import, syntax, onclick checks)`);
+  console.log(`✓ All ${FILES.length} files pass (6 checks: imports, syntax, onclick, cross-module, utils, db, version)`);
   process.exit(0);
 } else {
   console.error(`\n✗ ${issues} issue(s) — fix before pushing`);
   process.exit(1);
+}
+
+// ── Check 6: version string consistency across hub files ─────────────────
+const versRe = /v=20260409(\w+)/g;
+const allVers = new Map();
+const hubFiles = ['app.js','hub.js','audiences.js','api.js','auth.js','state.js',
+  'utils.js','config.js','style.css','index.html'].map(f => HUB+f);
+for (const fp of hubFiles) {
+  if (!fs.existsSync(fp)) continue;
+  const src = fs.readFileSync(fp,'utf8');
+  const vs = [...src.matchAll(versRe)].map(m=>m[1]);
+  if (vs.length) allVers.set(fp.split('/').pop(), new Set(vs));
+}
+const allVerSets = [...allVers.values()];
+const allVerUnion = new Set(allVerSets.flatMap(s=>[...s]));
+if (allVerUnion.size > 1) {
+  console.error('FAIL version mismatch across hub files: ' + [...allVerUnion].join(', '));
+  issues++;
 }
