@@ -1,3 +1,4 @@
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c2';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -226,6 +227,7 @@ let _achievements = [];
 let _achvQueue = [];
 let _achvTimer = null;
 let _active = false;
+let _lang = localStorage.getItem('oaTutLang') || 'en';
 
 function _load() {
   _xp = parseInt(localStorage.getItem(TKEY_XP) || '0');
@@ -251,6 +253,35 @@ function _xpInLevel(xp, level) {
   const lo = XP_LEVELS[level] || 0;
   const hi = XP_LEVELS[level + 1] || XP_LEVELS[level] + 500;
   return Math.min(1, (xp - lo) / (hi - lo));
+}
+
+
+/* ── i18n: localise a step for the current language ─────────────────── */
+function _L(step) {
+  if (_lang === 'en' || !STEP_I18N[_lang]) return step;
+  const ov = STEP_I18N[_lang][step.id] || {};
+  const result = { ...step, ...ov };
+  if (step.achievement && ov.achievement) {
+    result.achievement = { ...step.achievement, ...ov.achievement };
+  }
+  return result;
+}
+
+function _setLang(code) {
+  if (_lang === code) return;
+  _lang = code;
+  localStorage.setItem('oaTutLang', code);
+  SFX.cursor();
+  _renderCard();
+}
+
+function _langSwitcherHTML() {
+  return `<div class="oa-tut-langs">` +
+    Object.entries(LANG_META).map(([code, m]) =>
+      `<button class="oa-tut-lang-btn ${_lang === code ? 'active' : ''}"
+        onclick="window._tutLang('${code}')" title="${m.name}">${m.flag} ${m.label}</button>`
+    ).join('') +
+  `</div>`;
 }
 
 /* ── DOM creation ─────────────────────────────────────────────────────── */
@@ -433,6 +464,19 @@ function _injectStyles() {
   background:var(--gb,rgba(23,128,102,.08));border-color:var(--gr,rgba(23,128,102,.28));
   color:var(--g);
 }
+
+.oa-tut-langs{
+  display:flex;gap:4px;align-items:center;padding:8px 18px;
+  border-top:1px solid var(--rule);background:var(--surf2);flex-wrap:wrap;
+}
+.oa-tut-lang-btn{
+  height:24px;padding:0 8px;border-radius:2px;border:1px solid var(--rule);
+  background:var(--surf3);color:var(--t2);cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+  transition:all .15s;white-space:nowrap;
+}
+.oa-tut-lang-btn:hover{background:var(--surf);color:var(--t1);border-color:var(--g);}
+.oa-tut-lang-btn.active{background:var(--g);color:#fff;border-color:var(--g);}
   `;
   document.head.appendChild(s);
 }
@@ -515,7 +559,7 @@ function _positionCard(card, position, target) {
 
 /* ── Render card ──────────────────────────────────────────────────────── */
 function _renderCard() {
-  const s = STEPS[_step];
+  const s = _L(STEPS[_step]);
   if (!s) return;
   const card = _getEl('oa-tut-card');
   card.style.display = 'block';
@@ -525,7 +569,8 @@ function _renderCard() {
     `<div class="oa-tut-dot ${i < _step ? 'done' : i === _step ? 'current' : ''}"></div>`
   ).join('');
 
-  // XP bar
+  // Language switcher + XP bar
+  const langBar = _langSwitcherHTML();
   const pct = Math.round(_xpInLevel(_xp, _level) * 100);
   const xpBar = `
     <div class="oa-tut-xp-row">
@@ -553,7 +598,7 @@ function _renderCard() {
           <button class="oa-tut-btn" onclick="window._tutNext()">🎖️ ${s.btn}</button>
         </div>
       </div>
-      ${xpBar}`;
+      ${langBar}${xpBar}`;
   } else if (s.isGmail) {
     const gmailConnected = !!localStorage.getItem('oaGmailToken');
     inner = `
@@ -572,7 +617,7 @@ function _renderCard() {
           : `<button class="oa-tut-btn" onclick="window._tutGmail()">⚡ CONNECT GMAIL</button>
              <button class="oa-tut-btn alt" onclick="window._tutNext()">${s.btnAlt}</button>`}
       </div>
-      ${xpBar}`;
+      ${langBar}${xpBar}`;
   } else {
     inner = `
       <div class="oa-tut-stripe"><div class="oa-tut-stripe-inner"></div></div>
@@ -588,7 +633,7 @@ function _renderCard() {
       <div class="oa-tut-footer">
         <button class="oa-tut-btn" onclick="window._tutNext()">${s.btn}</button>
       </div>
-      ${xpBar}`;
+      ${langBar}${xpBar}`;
   }
 
   card.innerHTML = inner;
@@ -757,3 +802,4 @@ export function isTutorialDone() {
 window._tutNext  = _tutNext;
 window._tutClose = _tutClose;
 window._tutGmail = _tutGmail;
+window._tutLang  = _setLang;
