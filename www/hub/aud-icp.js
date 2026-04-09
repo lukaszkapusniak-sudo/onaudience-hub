@@ -1,11 +1,12 @@
 /* ═══ aud-icp.js — ICP-based audience finder ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zi';
-import S from './state.js?v=20260409zi';
-import { esc, _slug, getCoTags, authHdr } from './utils.js?v=20260409zi';
-import { anthropicFetch } from './api.js?v=20260409zi';
-import { clog } from './hub.js?v=20260409zi';
-import { sbSaveAudience, audCloseModal, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zi';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zj';
+import S from './state.js?v=20260409zj';
+import { esc, _slug, getCoTags, authHdr } from './utils.js?v=20260409zj';
+import { anthropicFetch } from './api.js?v=20260409zj';
+import { audiences as dbAud } from './db.js?v=20260409zj';
+import { clog } from './hub.js?v=20260409zj';
+import { sbSaveAudience, audCloseModal, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zj';
 
 export function icpFindByIcp() {
   const all = S.companies;
@@ -346,12 +347,7 @@ export async function icpPatchAudience(id) {
   if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
   if (errEl) errEl.textContent = '';
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: authHdr(),
-      body: JSON.stringify({ name, outreach_hook: hook || null, updated_at: new Date().toISOString() }),
-    });
-    if (!res.ok) throw new Error(await res.text());
+    await dbAud.patch(id, { name, outreach_hook: hook || null });
     const aud = S.audiences.find(a => a.id === id);
     if (aud) { aud.name = name; aud.outreach_hook = hook || null; }
     audCloseModal();

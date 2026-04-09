@@ -1,9 +1,10 @@
 /* ═══ meeseeks.js — Meeseeks Composer ═══ */
 
-import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409zi';
-import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260409zi';
-import S from './state.js?v=20260409zi';
-import { anthropicFetch } from './api.js?v=20260409zi';
+import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409zj';
+import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260409zj';
+import S from './state.js?v=20260409zj';
+import { anthropicFetch } from './api.js?v=20260409zj';
+import { contacts as dbContacts } from './db.js?v=20260409zj';
 
 export function mcHint(el,id){const h=document.getElementById(id);if(h)h.textContent=`${el.value.length} chars`;}
 export function mcAllContacts(){const seen=new Set(S.mcDbContacts.map(c=>(c.full_name||'').toLowerCase()));const extra=S.mcAiContacts.filter(c=>!seen.has((c.full_name||'').toLowerCase()));return[...S.mcDbContacts,...extra];}
@@ -16,7 +17,7 @@ export function closeComposer(){document.getElementById('mcDrawer').classList.re
 
 export function openPanel(id,payload){openComposer(payload||{});}
 
-async function mcLoadContacts(companyName,preferName){S.mcDbContacts=[];S.mcSelectedIdx=-1;document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">Loading contacts…</div>';if(S.currentCompany?.name===companyName)S.mcAiContacts=S.mcAiContacts;try{const res=await fetch(`${SB_URL}/rest/v1/contacts?company_name=eq.${encodeURIComponent(companyName)}&select=*`,{headers:authHdr()});const data=await res.json();if(Array.isArray(data))S.mcDbContacts=data;}catch(e){console.warn('mc contacts',e);}if(preferName){const idx=mcAllContacts().findIndex(c=>(c.full_name||'').toLowerCase()===preferName.toLowerCase());if(idx>=0)S.mcSelectedIdx=idx;}mcRenderPicker();}
+async function mcLoadContacts(companyName,preferName){S.mcDbContacts=[];S.mcSelectedIdx=-1;document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">Loading contacts…</div>';if(S.currentCompany?.name===companyName)S.mcAiContacts=S.mcAiContacts;try{const res=await dbContacts.byCompanyName(companyName);const data=await res.json();if(Array.isArray(data))S.mcDbContacts=data;}catch(e){console.warn('mc contacts',e);}if(preferName){const idx=mcAllContacts().findIndex(c=>(c.full_name||'').toLowerCase()===preferName.toLowerCase());if(idx>=0)S.mcSelectedIdx=idx;}mcRenderPicker();}
 
 export function mcRenderPicker(loadingMsg){const list=document.getElementById('mcCtList');if(loadingMsg){list.innerHTML=`<div class="mc-ctempty">${loadingMsg}</div>`;return;}const cts=mcAllContacts();if(!cts.length){list.innerHTML=`<div class="mc-ctempty">No contacts in DB — run "Find DMs" first</div>`;return;}list.innerHTML=cts.map((ct,i)=>{const av=getAv(ct.full_name||'');const n=ini(ct.full_name||'?');const active=S.mcSelectedIdx===i?' active':'';const isAI=i>=S.mcDbContacts.length;return`<div class="mc-ctcard${active}" data-i="${i}" onclick="mcPickContact(${i})"><div class="mc-ctav" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}22">${n}</div><div class="mc-ctbody"><div class="mc-ctnm">${ct.full_name||'—'}${isAI?` <span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--poc);border:1px solid var(--por);border-radius:2px;padding:0 3px;margin-left:3px">AI</span>`:''}</div><div class="mc-ctti">${ct.title||''}</div>${ct.email?`<div class="mc-ctemail">${ct.email}</div>`:''}</div><span class="mc-ctcheck">✓</span></div>`;}).join('');}
 export function mcPickContact(i){S.mcSelectedIdx=S.mcSelectedIdx===i?-1:i;mcRenderPicker();}

@@ -1,11 +1,12 @@
 /* ═══ aud-campaign.js — Campaign generation, email templates, Lemlist launch ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zi';
-import S from './state.js?v=20260409zi';
-import { esc, _slug, authHdr } from './utils.js?v=20260409zi';
-import { anthropicFetch, lemlistFetch } from './api.js?v=20260409zi';
-import { clog } from './hub.js?v=20260409zi';
-import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zi';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409zj';
+import S from './state.js?v=20260409zj';
+import { esc, _slug, authHdr } from './utils.js?v=20260409zj';
+import { anthropicFetch, lemlistFetch } from './api.js?v=20260409zj';
+import { audiences as dbAud, companies as dbCo } from './db.js?v=20260409zj';
+import { clog } from './hub.js?v=20260409zj';
+import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260409zj';
 
 export async function generateCampaignHook(audId) {
   const aud = S.audiences.find(a => a.id === audId);
@@ -61,12 +62,7 @@ export async function saveCampaignTemplate(audId) {
   const subject = document.getElementById('aud-tpl-subject')?.value?.trim() || null;
   const body    = document.getElementById('aud-tpl-body')?.value?.trim() || null;
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`, {
-      method: 'PATCH',
-      headers: authHdr(),
-      body: JSON.stringify({ outreach_hook: hook, template_subject: subject, template_body: body, updated_at: new Date().toISOString() }),
-    });
-    if (!res.ok) throw new Error(await res.text());
+    await dbAud.patch(audId, { outreach_hook: hook, template_subject: subject, template_body: body });
     if (aud) { aud.outreach_hook = hook; aud.template_subject = subject; aud.template_body = body; }
     clog('db', `Campaign template saved for <b>${esc(aud.name)}</b>`);
   } catch (e) {
@@ -121,10 +117,7 @@ export async function audGenAngleForCo(audId, coSlug) {
     const angle = res.content?.[0]?.text?.trim() || '';
     angleEl.textContent = `✦ ${angle}`;
     // persist to company record
-    fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(co.id)}`, {
-      method: 'PATCH', headers: authHdr(),
-      body: JSON.stringify({ outreach_angle: angle, updated_at: new Date().toISOString() }),
-    }).catch(() => {});
+    dbCo.patch(co.id, { outreach_angle: angle }).catch(() => {});
     co.outreach_angle = angle;
   } catch (e) {
     angleEl.textContent = 'Error generating angle';

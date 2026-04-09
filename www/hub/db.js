@@ -3,8 +3,8 @@
    Consistent auth headers, error handling, Prefer headers.
    ══════════════════════════════════════════════════════════════ */
 
-import { SB_URL } from './config.js?v=20260409zi';
-import { authHdr } from './utils.js?v=20260409zi';
+import { SB_URL } from './config.js?v=20260409zj';
+import { authHdr } from './utils.js?v=20260409zj';
 
 const UPSERT = { 'Prefer': 'resolution=merge-duplicates,return=minimal' };
 const REPR   = { 'Prefer': 'resolution=merge-duplicates,return=representation' };
@@ -37,6 +37,7 @@ export const companies = {
 /* ── Contacts ──────────────────────────────────────────────────── */
 export const contacts = {
   listAll:      ()    => _req('GET', 'contacts?select=*&order=full_name.asc', null, { Range: '0-4999' }),
+  byCompanyName: (name) => _req('GET', `contacts?company_name=eq.${encodeURIComponent(name)}&select=*`),
   byCompanyIds: (ids) => _req('GET', `contacts?company_id=in.(${ids.map(encodeURIComponent).join(',')})&select=company_id`),
   upsert:       (row) => _req('POST', 'contacts', row, UPSERT),
 };
