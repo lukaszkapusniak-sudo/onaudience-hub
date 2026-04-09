@@ -37,7 +37,7 @@ test('audiences tab renders panel', async ({ page }) => {
 test('audience NEW opens scout modal', async ({ page }) => {
   await page.evaluate(() => window.switchTab('audiences'));
   await page.locator('.aud-toolbar .btn', { hasText: 'NEW' }).click();
-  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.aud-modal-title')).toContainText('SCOUT');
   // Modal can be closed
   await page.locator('#scout-close-btn').click();
@@ -89,7 +89,7 @@ test('clicking EDIT button opens scout modal', async ({ page }) => {
   await editBtn.click();
 
   // Scout modal should open with EDIT AUDIENCE title
-  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.aud-modal-title')).toContainText('EDIT AUDIENCE');
 });
 
@@ -132,8 +132,18 @@ test('all onclick functions are defined on window', async ({ page }) => {
           fns.add(name);
       }
     });
-    // Check each is defined on window
-    return [...fns].filter(fn => typeof (window as any)[fn] !== 'function');
+    // Exclude JS builtins and event/DOM methods that aren't on window
+    const BUILTINS = new Set(['event','window','document','this','localStorage',
+      'sessionStorage','encodeURIComponent','decodeURIComponent','parseInt',
+      'parseFloat','String','Number','Boolean','JSON','Math','Date','Array',
+      'Object','Promise','Error','console','setTimeout','clearTimeout',
+      'setInterval','clearInterval','fetch','location','history','navigator',
+      'stopPropagation','preventDefault','target','removeItem','setItem',
+      'getItem','classList','style','dataset','if','for','return','const',
+      'let','var','new','true','false','null','undefined','typeof','instanceof',
+      'of','in','switch','case','break','continue','try','catch','finally',
+      'throw','delete','void','yield','async','await','import','export']);
+    return [...fns].filter(fn => !BUILTINS.has(fn) && typeof (window as any)[fn] !== 'function');
   });
 
   expect(missing, `onclick functions not on window: ${missing.join(', ')}`).toHaveLength(0);

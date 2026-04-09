@@ -273,7 +273,7 @@ test.describe('Contact drawer — enriched fields', () => {
   test('drawer Draft Email button is present', async ({ page }) => {
     const opened = await openAnyDrawer(page);
     if (!opened) { console.log('No drawer opened — skip'); return; }
-    await expect(page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i })).toBeVisible();
+    await expect(page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).first()).toBeVisible();
   });
 
   test('drawer close button dismisses drawer', async ({ page }) => {

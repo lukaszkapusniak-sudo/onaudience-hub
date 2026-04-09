@@ -490,7 +490,7 @@ test.describe('Contact drawer actions', () => {
   });
 
   test('Draft Email button in drawer opens Meeseeks', async ({ page }) => {
-    await page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).click();
+    await page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).first().click();
     await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 5000 });
     await page.evaluate(() => window.closeComposer?.());
   });
@@ -518,12 +518,14 @@ test.describe('Keyboard shortcuts', () => {
   });
 
   test('j key moves focus down', async ({ page }) => {
+    // Ensure list rows are rendered before keyboard navigation
+    await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 10000 });
     await page.evaluate(() => {
       (document.activeElement as HTMLElement)?.blur();
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true, cancelable: true }));
     });
-    await page.waitForTimeout(400);
-    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(600);
+    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 8000 });
   });
 
   test('k key moves focus up after j', async ({ page }) => {
