@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409a9';
-import S from './state.js?v=20260409a9';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409a9';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409a9';
-import { resolveAlias } from './merge.js?v=20260409a9';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409a9';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409b1';
+import S from './state.js?v=20260409b1';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409b1';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b1';
+import { resolveAlias } from './merge.js?v=20260409b1';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409b1';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -423,6 +423,32 @@ async function _loadCompanyProducts(slug, c) {
     if (body.style.display !== 'none') body.innerHTML = prodsHtml || '<div style="font-size:11px;color:var(--t3)">No products recorded</div>';
     clog('db', `Products for <b>${slug}</b>: <b>${prods.length}</b> from DB`);
   } catch(e) { clog('info', 'Products load error: ' + e.message); }
+}
+
+// ── CRM pipeline status ──────────────────────────────────────────────────────
+export async function setCompanyStatus(slug, status) {
+  const c = S.companies.find(x => (x.id||_slug(x.name)) === slug || _slug(x.name) === slug);
+  if (!c) return;
+  const prev = c.relationship_status;
+  c.relationship_status = status;
+  // Update active button state instantly
+  document.querySelectorAll('#coPanel .btn.sm').forEach(b => {
+    const isThis = b.textContent.trim() === status;
+    const wasActive = ['Contacted','Meeting','Proposal','Partner','Paused'].includes(b.textContent.trim());
+    if (wasActive) b.classList.toggle('on', isThis);
+  });
+  try {
+    const id = c.id || _slug(c.name);
+    await fetch(`${SB_URL}/rest/v1/companies?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: authHdr({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ relationship_status: status }),
+    });
+    clog('db', `Status → <b>${status}</b> for <b>${esc(c.name)}</b>`);
+  } catch(e) {
+    c.relationship_status = prev;  // rollback
+    clog('info', `Status update failed: ${e.message}`);
+  }
 }
 
 export function closePanel(){S.currentCompany=null;window.currentCompany=null;document.getElementById('coPanel').style.display='none';document.getElementById('emptyState').style.display='flex';renderList();}
@@ -1567,12 +1593,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409a9';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409b1';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409a9';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409b1';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409a9';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409b1';
