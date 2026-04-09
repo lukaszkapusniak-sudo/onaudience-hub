@@ -1,17 +1,18 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409b8';
-import { startTutorial, resetTutorial, isTutorialDone } from './tutorial.js?v=20260409b8';
-import { _slug } from './utils.js?v=20260409b8';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b8';
+import S from './state.js?v=20260409b9';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode } from './demo.js?v=20260409b9';
+import { startTutorial, resetTutorial, isTutorialDone } from './tutorial.js?v=20260409b9';
+import { _slug } from './utils.js?v=20260409b9';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409b9';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409b8';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409b8';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409b8';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409b8';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409b8';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409b8';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409b9';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409b9';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409b9';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409b9';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409b9';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409b9';
 import {
-  getSession, getAuthToken, getCurrentUser,
+  getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
   signOut, onAuthStateChange,
   getUserProfile,
@@ -19,7 +20,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409b8';
+} from './auth.js?v=20260409b9';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -206,6 +207,9 @@ document.addEventListener('visibilitychange', () => {
 /* ── window exports ─────────────────────────────────────────── */
 window.MC_PERSONAS_LIST = MC_PERSONAS;
 window.startTutorial = startTutorial;
+window.oaEnterDemo = oaEnterDemoMode;
+window.exitDemoMode = exitDemoMode;
+window.isDemoMode = isDemoMode;
 window.resetTutorial = resetTutorial;
 window.isTutorialDone = isTutorialDone;
 Object.assign(window, {
@@ -434,6 +438,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   /* 1. Subscribe to future auth changes (SIGNED_IN after login, SIGNED_OUT) */
+  /* ── Demo mode event listener ─────────────────────── */
+  window.addEventListener('oa-demo-enter', () => {
+    if (!_hubBooted) {
+      _hubBooted = true;
+      showDemoBanner();
+      patchNavForDemo();
+      loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+      setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
+    }
+  });
+
+  /* ── Demo mode event listener ────────────────────── */
+  window.addEventListener('oa-demo-enter', () => {
+    if (!_hubBooted) {
+      _hubBooted = true;
+      showDemoBanner();
+      patchNavForDemo();
+      loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+      setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
+    }
+  });
+
   onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
       /* Fresh login — reset boot guard so hub re-initialises cleanly */
@@ -453,6 +479,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* 2. Explicitly check for an existing session.
         INITIAL_SESSION may have already fired before the callback above
         was registered (race on page reload). This is the reliable fallback. */
+  // Demo mode: skip auth, load sample data
+  if (isDemoMode()) {
+    _hubBooted = true;
+    hideLoginScreen();
+    showDemoBanner();
+    patchNavForDemo();
+    loadDemoData(S, classify, renderStats, renderList, renderTagPanel);
+    setTimeout(() => { if(typeof isTutorialDone==='function'&&!isTutorialDone()) startTutorial(); }, 800);
+    return;
+  }
+
   const session = await getSession();
   if (session) {
     await bootHub(session);   // no-op if INITIAL_SESSION already triggered it

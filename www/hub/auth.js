@@ -3,8 +3,9 @@
    Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { SB_URL, SB_KEY } from './config.js?v=20260409b8';
-import { authHdr } from './utils.js?v=20260409b8';
+import { enterDemoMode, isDemoMode } from './demo.js?v=20260409b9';
+import { SB_URL, SB_KEY } from './config.js?v=20260409b9';
+import { authHdr } from './utils.js?v=20260409b9';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
@@ -182,8 +183,18 @@ export function renderLoginScreen() {
     </svg>
     Sign in with Google
   </button>
+  <div style="margin:10px 0;display:flex;align-items:center;gap:8px;">
+    <div style="flex:1;height:1px;background:var(--rule)"></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4);letter-spacing:.06em">OR</div>
+    <div style="flex:1;height:1px;background:var(--rule)"></div>
+  </div>
+  <button class="oa-google" id="oa-demo-btn" onclick="window.oaEnterDemo()"
+    style="background:var(--surf3);border-color:rgba(122,66,0,.3);color:#7A4200;">
+    <span style="font-size:16px">👁</span>
+    Try Demo — No sign-in required
+  </button>
   <div class="oa-err" id="oa-err"></div>
-  <div class="oa-ver">Hub v2.4 · onAudience</div>
+  <div class="oa-ver">Hub v2.4 · onAudience · Demo available without account</div>
 </div>`;
 }
 
@@ -239,4 +250,15 @@ export function renderUserBadge(profile) {
         onmouseout="this.style.color='var(--t3)';this.style.background='none'"
         title="Sign out">↪</button>
     </div>`;
+}
+
+/* ── Demo mode entry (called from login screen button) ── */
+export function oaEnterDemoMode() {
+  enterDemoMode();
+  const el = document.getElementById('oaLoginScreen');
+  if (el) el.style.display = 'none';
+  const app = document.querySelector('.app');
+  if (app) app.style.display = '';
+  // Signal app.js to load demo data
+  window.dispatchEvent(new CustomEvent('oa-demo-enter'));
 }
