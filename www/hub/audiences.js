@@ -9,7 +9,7 @@ import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409n';
 import { authHdr } from './utils.js?v=20260409n';
 import S from './state.js?v=20260409n';
 import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409n';
-import { anthropicFetch, geocodeCity, saveGeocode } from './api.js?v=20260409n';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409n';
 import { clog } from './hub.js?v=20260409n';
 
 /* ── Map state ─────────────────────────────────────────────── */
@@ -514,7 +514,7 @@ export function openAudienceModal(existingId) {
   if (!modal) return;
 
   modal.innerHTML = `
-<div class="aud-modal-overlay" onclick="if(event.target===this)audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="if(event.target===this)audCloseModal()">
 <div class="aud-modal-box scout-modal-box">
   <div class="aud-modal-head">
     <span class="aud-modal-title">${isNew ? '&#128270; SCOUT AUDIENCE' : 'EDIT AUDIENCE'}</span>
@@ -547,6 +547,12 @@ export function openAudienceModal(existingId) {
           <select id="scout-f-region" class="aud-select">${regionOpts}</select>
           <label class="aud-label" style="min-width:48px">MIN ICP</label>
           <input id="scout-f-icp" class="aud-input" style="width:48px" type="number" min="1" max="10" value="${esc(f.minIcp || '')}" placeholder="1&#8211;10"/>
+        </div>
+        <div class="aud-filter-row" style="margin-top:4px">
+          <label class="aud-label" style="min-width:50px">COUNTRY</label>
+          <input id="scout-f-country" class="aud-input" style="flex:1" value="${esc(f.country || '')}" placeholder="e.g. Poland, Germany, UK&#8230;"/>
+          <label class="aud-label" style="min-width:32px;margin-left:6px">CITY</label>
+          <input id="scout-f-city" class="aud-input" style="flex:1" value="${esc(f.city || '')}" placeholder="e.g. Warsaw, Berlin&#8230;"/>
         </div>
         <div class="aud-filter-row" style="flex-wrap:wrap;gap:4px;margin-top:6px">
           <label class="aud-label" style="width:100%;margin-bottom:2px">TAGS</label>
@@ -656,12 +662,32 @@ async function _scoutRun() {
   const countEl  = document.getElementById('scout-a-count');
   if (!bodyEl) return;
 
-  // Hard filter
-  let list = S.companies || [];
+  const country = document.getElementById('scout-f-country')?.value?.trim().toLowerCase() || '';
+  const city    = document.getElementById('scout-f-city')?.value?.trim().toLowerCase()    || '';
+
+  // Hard filter — deduplicate first
+  const seen = new Set();
+  let list = (S.companies || []).filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
   if (type)        list = list.filter(c => c.type === type);
   if (region)      list = list.filter(c => c.region === region);
   if (minIcp)      list = list.filter(c => (c.icp || 0) >= minIcp);
   if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+
+  // Geo filter: check hq_country, hq_city, description, note, region — any field mentioning the value
+  if (country) {
+    list = list.filter(c => {
+      const haystack = [c.hq_country, c.hq_city, c.description, c.note, c.region, c.category]
+        .join(' ').toLowerCase();
+      return haystack.includes(country);
+    });
+  }
+  if (city) {
+    list = list.filter(c => {
+      const haystack = [c.hq_city, c.description, c.note, c.region]
+        .join(' ').toLowerCase();
+      return haystack.includes(city);
+    });
+  }
 
   // Optional AI filter when prompt is given
   if (prompt && list.length > 0) {
@@ -669,7 +695,7 @@ async function _scoutRun() {
     bodyEl.innerHTML = '<div class="scout-running">&#9889; AI is scanning your DB&#8230;</div>';
     try {
       const coList = list.map(c =>
-        `${c.name}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 80)}`
+        `${c.name}|${[c.hq_city, c.hq_country].filter(Boolean).join(',')||'?'}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 60)}`
       ).join('\n');
       const res = await anthropicFetch({
         model: MODEL_CREATIVE,
@@ -736,6 +762,8 @@ async function _scoutSave(existingId) {
   const type      = document.getElementById('scout-f-type')?.value           || '';
   const region    = document.getElementById('scout-f-region')?.value         || '';
   const minIcp    = parseInt(document.getElementById('scout-f-icp')?.value)   || 0;
+  const country   = document.getElementById('scout-f-country')?.value?.trim().toLowerCase() || '';
+  const city      = document.getElementById('scout-f-city')?.value?.trim().toLowerCase()    || '';
   const tags      = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
 
   const checkedIds = [...document.querySelectorAll('#scout-a-body .scout-cb:checked')].map(cb => cb.value);
@@ -743,7 +771,7 @@ async function _scoutSave(existingId) {
     : _scoutResults.length > 0 ? _scoutResults.map(c => c.id || _slug(c.name))
     : (S.companies || []).map(c => c.id || _slug(c.name));
 
-  const filters = { type: type || null, region: region || null, minIcp: minIcp || null, tags, icp_prompt: prompt || null };
+  const filters = { type: type || null, region: region || null, minIcp: minIcp || null, country: country || null, city: city || null, tags, icp_prompt: prompt || null };
 
   try {
     if (existingId) {
@@ -783,46 +811,109 @@ async function _scoutSave(existingId) {
 }
 
 async function _scoutFindSimilar() {
-  const prompt = document.getElementById('scout-prompt')?.value?.trim()
+  const prompt  = document.getElementById('scout-prompt')?.value?.trim()
     || document.getElementById('scout-name')?.value?.trim() || '';
-  const cBody  = document.getElementById('scout-c-body');
+  const country = document.getElementById('scout-f-country')?.value?.trim() || '';
+  const city    = document.getElementById('scout-f-city')?.value?.trim()    || '';
+  const type    = document.getElementById('scout-f-type')?.value            || '';
+  const cBody   = document.getElementById('scout-c-body');
   if (!cBody) return;
-  if (!prompt) {
-    cBody.innerHTML = '<div class="scout-empty">Add a Scout Prompt or Name first</div>';
+  if (!prompt && !country && !city) {
+    cBody.innerHTML = '<div class="scout-empty">Add a Scout Prompt or Country/City filter first</div>';
     return;
   }
 
-  cBody.innerHTML = '<div class="scout-running">&#9889; Searching for similar companies&#8230;</div>';
+  cBody.innerHTML = '<div class="scout-running">&#9889; Searching external databases&#8230;</div>';
   const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
-  const exclude = (S.companies || []).slice(0, 40).map(c => c.name).join(', ');
 
+  // Build a focused query from all available context
+  const geoCtx   = [city, country].filter(Boolean).join(', ');
+  const typeCtx  = type ? `${type} companies` : 'companies';
+  const fullQ    = [prompt, geoCtx ? `located in ${geoCtx}` : ''].filter(Boolean).join(', ');
+
+  let candidates = [];
+
+  // ── Attempt 1: b2b MCP (17.5M+ company database, best for geo+industry) ─
   try {
-    const res = await anthropicFetch({
-      model: MODEL_CREATIVE,
-      max_tokens: 600,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+    cBody.innerHTML = '<div class="scout-running">&#9889; Querying b2b database&#8230;</div>';
+    const b2bRes = await anthropicMcpFetch({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
       messages: [{ role: 'user', content:
-        `Find 8–10 real companies matching: "${prompt}" — for onAudience EU first-party data partnerships (DSPs, SSPs, agencies, data providers).\nExclude these already in CRM: ${exclude}\nReturn JSON array: [{"name":"...","category":"...","hq":"...","why":"..."}]. Real companies only.` }],
+        `Use the b2b search tool to find 10-15 ${typeCtx} matching: "${fullQ}" for potential data partnership with onAudience (EU first-party audience data).
+
+Find companies that: ${prompt || 'match the specified criteria'}
+${geoCtx ? `Location: ${geoCtx}` : ''}
+Exclude these already in CRM: ${(S.companies || []).slice(0,30).map(c=>c.name).join(', ')}
+
+After searching, return ONLY a JSON array:
+[{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
     });
-    const raw  = res.content?.find(b => b.type === 'text')?.text?.trim() || '[]';
-    const m    = raw.match(/\[[\s\S]*\]/);
-    const candidates = m ? JSON.parse(m[0]) : [];
-    if (!candidates.length) {
-      cBody.innerHTML = '<div class="scout-empty">No new candidates found — try a different prompt</div>';
+
+    // Extract JSON from response (may be in tool results or text)
+    const textBlocks = (b2bRes.content||[]).filter(b => b.type === 'text').map(b => b.text).join('');
+    const toolResults = (b2bRes.content||[]).filter(b => b.type === 'mcp_tool_result')
+      .map(b => b.content?.[0]?.text || '').join('\n');
+    const raw = textBlocks || toolResults;
+    const m = raw.match(/\[[\s\S]*\]/);
+    if (m) {
+      const parsed = JSON.parse(m[0]);
+      if (parsed.length) {
+        candidates = parsed;
+        cBody.innerHTML = '<div class="scout-running">&#9889; b2b matched ' + parsed.length + ' — verifying&#8230;</div>';
+      }
+    }
+  } catch (e) {
+    console.warn('[scout] b2b MCP failed:', e.message);
+  }
+
+  // ── Attempt 2: web_search fallback if b2b returned nothing ─────────────
+  if (!candidates.length) {
+    try {
+      cBody.innerHTML = '<div class="scout-running">&#9889; Web search fallback&#8230;</div>';
+      const res = await anthropicFetch({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 700,
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+        messages: [{ role: 'user', content:
+          `Find 8-10 real ${typeCtx} matching: "${fullQ}" — for onAudience EU first-party data partnerships.
+Exclude: ${(S.companies || []).slice(0, 30).map(c => c.name).join(', ')}
+Return ONLY JSON: [{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
+      });
+      const raw2 = res.content?.find(b => b.type === 'text')?.text?.trim() || '[]';
+      const m2 = raw2.match(/\[[\s\S]*\]/);
+      if (m2) candidates = JSON.parse(m2[0]);
+    } catch (e2) {
+      cBody.innerHTML = '<div class="scout-empty">Search failed — check API key</div>';
       return;
     }
-    cBody.innerHTML = candidates.map(c => {
-      const inDb = existingNames.has((c.name || '').toLowerCase());
-      return `<div class="scout-candidate-row${inDb ? ' scout-candidate-exists' : ''}"><span class="icp-name">${esc(c.name || '?')}${inDb ? ' <span style="color:var(--t4)">(in DB)</span>' : ''}</span><span class="icp-cat">${esc(c.category || '')}${c.hq ? ' \xb7 ' + esc(c.hq) : ''}</span><span class="icp-reason">${esc(c.why || '')}</span></div>`;
-    }).join('');
-  } catch (e) {
-    cBody.innerHTML = `<div class="scout-empty">Search failed: ${esc(e.message)}</div>`;
   }
+
+  if (!candidates.length) {
+    cBody.innerHTML = '<div class="scout-empty">No new candidates found — try a different prompt or location</div>';
+    return;
+  }
+
+  // Render candidates (filter out existing companies)
+  const fresh = candidates.filter(co => !existingNames.has((co.name||'').toLowerCase()));
+  cBody.innerHTML = fresh.map(co => {
+    const slug = _slug(co.name||'');
+    return `<div class="scout-row" style="padding:5px 8px;border-bottom:1px solid var(--rule2)">
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;color:var(--t1)">${esc(co.name)}</span>
+        ${co.hq ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--t2);margin:1px 0 3px">${esc(co.why||co.category||'')}</div>
+      ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button class="btn sm" onclick="audAddExternalCo('${esc(slug)}','${esc(co.name||'')}','${esc(co.category||'')}','${esc(co.hq||'')}','${esc(co.website||'')}')">+ Add to DB</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="scout-empty">All found companies are already in your DB</div>';
 }
 
-/* ── Gap filler ─────────────────────────────────────────────── */
 
-// Bug 2: shared wrapper — loading state + success/error feedback for gap buttons
 async function wrapGapAction(btnEl, label, actionFn) {
   btnEl.disabled = true;
   btnEl.textContent = 'Working…';
@@ -907,14 +998,14 @@ function _gapFindContacts() {
 function _gapEnrichDesc() {
   if (!_gapLists.noDesc.length) return;
   window.enrFilteredIds = new Set(_gapLists.noDesc.map(c => c.id || _slug(c.name)));
-  const _se = document.getElementById('scout-status'); if(_se) _se.textContent=`${_gapLists.noDesc.length} queued — open Enricher tab`;
+  const _se=document.getElementById('scout-status'); if(_se) _se.textContent=`Queued for enrichment — switch to Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noDesc.length} companies need description`);
 }
 
 function _gapGeocode() {
   if (!_gapLists.noHq.length) return;
   window.enrFilteredIds = new Set(_gapLists.noHq.map(c => c.id || _slug(c.name)));
-  const _se = document.getElementById('scout-status'); if(_se) _se.textContent=`${_gapLists.noDesc.length} queued — open Enricher tab`;
+  const _se=document.getElementById('scout-status'); if(_se) _se.textContent=`Queued for enrichment — switch to Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noHq.length} companies need HQ city`);
 }
 
@@ -992,7 +1083,7 @@ async function _gapFillAll() {
 
 export function audCloseModal() {
   const modal = document.getElementById('audience-modal');
-  if (modal) { modal.innerHTML = ''; modal.style.display = ''; }
+  if (modal) { modal.innerHTML = ''; modal.style.display = 'none'; }
 }
 
 /* ── Audience map view ────────────────────────────────────── */
@@ -1549,7 +1640,7 @@ export function icpFindByIcp() {
   const all = S.companies;
   const n = all.filter(c => c.type !== 'nogo').length;
   _icpSetContent(`
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
     <span class="aud-modal-title">✦ FIND BY ICP</span>
@@ -1630,7 +1721,7 @@ export async function icpMatch() {
     _icpRenderResults();
   } catch (e) {
     _icpSetContent(`
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head"><span class="aud-modal-title">✦ FIND BY ICP</span><button class="btn sm" onclick="audCloseModal()">✕</button></div>
   <div class="aud-modal-body">
@@ -1648,7 +1739,7 @@ function _icpRenderResults() {
   const results = _icpResults;
   if (!results.length) {
     _icpSetContent(`
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head"><span class="aud-modal-title">✦ FIND BY ICP</span><button class="btn sm" onclick="audCloseModal()">✕</button></div>
   <div class="aud-modal-body">
@@ -1683,7 +1774,7 @@ function _icpRenderResults() {
   ).join('');
 
   _icpSetContent(`
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
     <span class="aud-modal-title">✦ ${results.length} MATCHES</span>
@@ -1756,7 +1847,7 @@ export async function icpSaveStep() {
 
   const ids = selected.map(r => r.co.id || _slug(r.co.name));
   _icpSetContent(`
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
     <span class="aud-modal-title">💾 SAVE AUDIENCE</span>
@@ -1826,7 +1917,7 @@ export function icpEditModal(id) {
   if (!modal) return;
   const n = Array.isArray(aud.company_ids) ? aud.company_ids.length : 0;
   modal.innerHTML = `
-<div class="aud-modal-overlay" onclick="event.target===this&&audCloseModal()">
+<div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
   <div class="aud-modal-head">
     <span class="aud-modal-title">EDIT AUDIENCE</span>
@@ -2177,5 +2268,33 @@ export async function audGenAngleForCo(audId, coSlug) {
     co.outreach_angle = angle;
   } catch (e) {
     angleEl.textContent = 'Error generating angle';
+  }
+}
+
+export async function audAddExternalCo(slug, name, category, hq, website) {
+  if (!name) return;
+  try {
+    const body = {
+      id:         slug || _slug(name),
+      name,
+      category:   category || null,
+      hq_city:    hq || null,
+      website:    website || null,
+      type:       'prospect',
+      note:       'Added via Audience Scout (external)',
+      updated_at: new Date().toISOString(),
+    };
+    const res = await fetch(`${SB_URL}/rest/v1/companies`, {
+      method: 'POST',
+      headers: authHdr({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    if (!S.companies.find(c => c.id === body.id)) S.companies.push({ ...body });
+    const btn = document.querySelector(`[data-add-slug="${slug}"]`);
+    if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.color = 'var(--g)'; }
+    clog('db', `Added <b>${esc(name)}</b> to CRM as prospect`);
+  } catch (e) {
+    clog('db', `Failed to add ${esc(name)}: ${e.message}`);
   }
 }
