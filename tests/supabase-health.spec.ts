@@ -39,6 +39,12 @@ test("company relations section renders in detail panel", async ({ page }) => {
 });
 
 test("nav status shows Live not error", async ({ page }) => {
+  // Wait for data to load first so setStatus(true) fires
+  await page.waitForFunction(
+    () => (window as any)._oaState?.companies?.length > 0,
+    undefined,
+    { timeout: 45000, polling: 500 }
+  );
   await expect(page.locator(".nav-status")).toContainText("Live");
   await expect(page.locator(".nav-status")).not.toContainText("error");
   await expect(page.locator(".nav-status")).not.toContainText("failed");
