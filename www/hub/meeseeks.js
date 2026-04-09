@@ -1,10 +1,10 @@
 /* ═══ meeseeks.js — Meeseeks Composer ═══ */
 
-import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409zb';
-import { authHdr } from './utils.js?v=20260409zb';
-import S from './state.js?v=20260409zb';
-import { _slug, getCoTags, getAv, ini, esc } from './utils.js?v=20260409zb';
-import { anthropicFetch } from './api.js?v=20260409zb';
+import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260409zc';
+import { authHdr } from './utils.js?v=20260409zc';
+import S from './state.js?v=20260409zc';
+import { _slug, getCoTags, getAv, ini, esc } from './utils.js?v=20260409zc';
+import { anthropicFetch } from './api.js?v=20260409zc';
 
 export function mcHint(el,id){const h=document.getElementById(id);if(h)h.textContent=`${el.value.length} chars`;}
 export function mcAllContacts(){const seen=new Set(S.mcDbContacts.map(c=>(c.full_name||'').toLowerCase()));const extra=S.mcAiContacts.filter(c=>!seen.has((c.full_name||'').toLowerCase()));return[...S.mcDbContacts,...extra];}

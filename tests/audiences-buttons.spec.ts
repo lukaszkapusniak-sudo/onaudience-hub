@@ -112,3 +112,29 @@ test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => 
   });
   expect(badOnclicks, `JSON.stringify found in onclick: ${badOnclicks.join(', ')}`).toHaveLength(0);
 });
+
+// ── Window export coverage ─────────────────────────────────────────────────
+
+test('all onclick functions are defined on window', async ({ page }) => {
+  await expect(page.locator('.nav-status')).toContainText('Live', { timeout: 30000 });
+  await page.waitForTimeout(2000);
+
+  const missing = await page.evaluate(() => {
+    // Collect all onclick attribute values from DOM
+    const fns = new Set<string>();
+    document.querySelectorAll('[onclick]').forEach(el => {
+      const v = el.getAttribute('onclick') || '';
+      // Extract function names: word before (
+      const matches = v.matchAll(/\b([a-zA-Z_]\w*)\s*\(/g);
+      for (const m of matches) {
+        const name = m[1];
+        if (!['event','window','document','this','encodeURIComponent','parseInt','String'].includes(name))
+          fns.add(name);
+      }
+    });
+    // Check each is defined on window
+    return [...fns].filter(fn => typeof (window as any)[fn] !== 'function');
+  });
+
+  expect(missing, `onclick functions not on window: ${missing.join(', ')}`).toHaveLength(0);
+});

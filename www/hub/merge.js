@@ -1,9 +1,10 @@
 /* ═══ merge.js — company merge system ═══ */
 
-import { SB_URL } from './config.js?v=20260409zb';
-import S from './state.js?v=20260409zb';
-import { esc, _slug, authHdr } from './utils.js?v=20260409zb';
-import { clog } from './api.js?v=20260409zb';
+import { SB_URL } from './config.js?v=20260409zc';
+import { mergeSuggestions as dbMerge } from './db.js?v=20260409zc';
+import S from './state.js?v=20260409zc';
+import { esc, _slug, authHdr } from './utils.js?v=20260409zc';
+import { clog } from './api.js?v=20260409zc';
 
 /* ── 1. executeMerge ─────────────────────────────────────── */
 export async function executeMerge(winnerId, loserId) {
@@ -71,11 +72,7 @@ export async function loadMergeSuggestions() {
 
 /* ── 5. rejectSuggestion ─────────────────────────────────── */
 export async function rejectSuggestion(id) {
-  await fetch(`${SB_URL}/rest/v1/merge_suggestions?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: authHdr(),
-    body: JSON.stringify({ status: 'rejected', resolved_at: new Date().toISOString() }),
-  });
+  await dbMerge.patch(id, { status: 'ignored' });
 }
 
 /* ── 6. searchCompaniesForMerge ───────────────────────────── */
