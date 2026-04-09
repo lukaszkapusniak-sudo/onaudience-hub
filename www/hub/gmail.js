@@ -1,7 +1,7 @@
 /* gmail.js -- Gmail OAuth via Google Identity Services */
-import { GMAIL_CLIENT_ID } from './config.js?v=20260409zk';
-import { esc, authHdr } from './utils.js?v=20260409zk';
-import { SB_URL } from './config.js?v=20260409zk';
+import { GMAIL_CLIENT_ID } from './config.js?v=20260409zl';
+import { esc, authHdr } from './utils.js?v=20260409zl';
+import { SB_URL } from './config.js?v=20260409zl';
 
 const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -471,7 +471,16 @@ export function gmailShowSummarizePrompt(slug, companyName, threads) {
   var cost = _formatCost(est);
 
   var el = document.getElementById('ib-email-results');
-  if (!el) return;
+  if (!el) {
+    // Create a floating container if the email panel isn't open
+    el = document.getElementById('gmail-sum-confirm-host');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'gmail-sum-confirm-host';
+      el.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;width:320px';
+      document.body.appendChild(el);
+    }
+  }
 
   // Append confirm box below existing results
   var existing = el.innerHTML;
@@ -621,14 +630,15 @@ export async function gmailSaveRelationshipSummary(slug, parsed) {
 
 export function gmailSaveSelectedContacts() {
   var strip = document.getElementById('ib-email-contacts-strip');
-  if (!strip) return;
-  var checkboxes = strip.querySelectorAll('input[type=checkbox]');
   var allContacts = window._gmailFoundContacts || [];
   var selected = [];
-  checkboxes.forEach(function(cb) {
-    var i = parseInt(cb.getAttribute('data-i'));
-    if (cb.checked && allContacts[i]) selected.push(allContacts[i]);
-  });
+  if (strip) {
+    var checkboxes = strip.querySelectorAll('input[type=checkbox]');
+    checkboxes.forEach(function(cb) {
+      var i = parseInt(cb.getAttribute('data-i'));
+      if (cb.checked && allContacts[i]) selected.push(allContacts[i]);
+    });
+  }
   if (!selected.length) {
     alert('No contacts selected.');
     return;

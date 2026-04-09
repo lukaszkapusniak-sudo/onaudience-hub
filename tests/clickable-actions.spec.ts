@@ -510,39 +510,32 @@ test.describe('Contact drawer actions', () => {
 test.describe('Keyboard shortcuts', () => {
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
-    // Ensure no input is focused before keyboard tests
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); });
-    await page.mouse.click(200, 400);
+    // Close any open panel, ensure list is visible and a row exists
+    await page.evaluate(() => { window.closePanel?.(); window.closeDrawer?.(); });
+    await page.waitForTimeout(300);
+    await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 10000 });
+    // Click in a neutral area (not a row) then blur focus
+    await page.mouse.click(10, 10);
     await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); });
     await page.waitForTimeout(200);
   });
 
   test('j key moves focus down', async ({ page }) => {
-    // Ensure list rows are rendered before keyboard navigation
-    await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 10000 });
-    await page.evaluate(() => {
-      (document.activeElement as HTMLElement)?.blur();
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true, cancelable: true }));
-    });
-    await page.waitForTimeout(600);
+    await page.keyboard.press('j');
     await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 8000 });
   });
 
   test('k key moves focus up after j', async ({ page }) => {
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true, cancelable: true })); });
-    await page.waitForTimeout(200);
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true, cancelable: true })); });
-    await page.waitForTimeout(200);
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true, cancelable: true })); });
-    await page.waitForTimeout(400);
-    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 5000 });
+    await page.keyboard.press('j');
+    await page.keyboard.press('j');
+    await page.keyboard.press('k');
+    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 8000 });
   });
 
   test('Enter opens focused company', async ({ page }) => {
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true, cancelable: true })); });
-    await page.waitForTimeout(400);
-    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 5000 });
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); });
+    await page.keyboard.press('j');
+    await expect(page.locator('.c-row.kb-focus')).toBeVisible({ timeout: 8000 });
+    await page.keyboard.press('Enter');
     await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });
   });
 

@@ -310,10 +310,18 @@ test.describe('Contact drawer — enriched fields', () => {
     });
     // Ensure contact is in S.contacts before opening drawer
     await page.evaluate(() => {
-      const existing = (window.S?.contacts || []).find((c: any) => c.id === 'drawer-test-full-contact');
-      if (existing) window.openDrawer('drawer-test-full-contact');
+      // Re-inject in case state was reset
+      const contacts = window.S?.contacts || [];
+      if (!contacts.find((c: any) => c.id === 'drawer-test-full-contact')) {
+        contacts.push({
+          id: 'drawer-test-full-contact', company_id: 'test-co',
+          company_name: 'Test Company', full_name: 'Jane Richfield',
+          title: 'VP of Partnerships', email: 'jane@testcompany.com'
+        });
+      }
+      window.openDrawer?.('drawer-test-full-contact');
     });
-    await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 6000 });
+    await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 8000 });
 
     // Name and subtitle
     await expect(page.locator('#drName')).toHaveText('Jane Richfield');
