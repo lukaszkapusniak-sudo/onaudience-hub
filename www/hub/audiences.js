@@ -907,16 +907,14 @@ function _gapFindContacts() {
 function _gapEnrichDesc() {
   if (!_gapLists.noDesc.length) return;
   window.enrFilteredIds = new Set(_gapLists.noDesc.map(c => c.id || _slug(c.name)));
-  audCloseModal();
-  window.switchTab?.('enricher');
+  const _se = document.getElementById('scout-status'); if(_se) _se.textContent=`${_gapLists.noDesc.length} queued — open Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noDesc.length} companies need description`);
 }
 
 function _gapGeocode() {
   if (!_gapLists.noHq.length) return;
   window.enrFilteredIds = new Set(_gapLists.noHq.map(c => c.id || _slug(c.name)));
-  audCloseModal();
-  window.switchTab?.('enricher');
+  const _se = document.getElementById('scout-status'); if(_se) _se.textContent=`${_gapLists.noDesc.length} queued — open Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noHq.length} companies need HQ city`);
 }
 
