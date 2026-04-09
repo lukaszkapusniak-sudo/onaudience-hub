@@ -1,9 +1,10 @@
 /* ═══ auth.js — onAudience Hub v2.4 ═══
-   Google OAuth (onaudience.pl + cloudtechnologies.pl) + CI email/password fallback.
+   Google OAuth (any Google account) + CI email/password fallback.
+   Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { SB_URL, SB_KEY } from './config.js?v=20260409e';
-import { authHdr } from './utils.js?v=20260409e';
+import { SB_URL, SB_KEY } from './config.js?v=20260409f';
+import { authHdr } from './utils.js?v=20260409f';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
@@ -154,10 +155,6 @@ export function renderLoginScreen() {
 .oa-google:hover{ border-color:var(--g);background:var(--surf3); }
 .oa-google:disabled{ opacity:.5;cursor:default; }
 .oa-google svg{ flex-shrink:0; }
-.oa-domain{
-  font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t4);
-  margin-top:14px;letter-spacing:.03em;
-}
 .oa-err{
   font-family:'IBM Plex Mono',monospace;font-size:9px;
   color:#F87171;margin-top:12px;min-height:16px;
@@ -170,7 +167,7 @@ export function renderLoginScreen() {
 <div class="oa-lb">
   <div class="oa-logo">oA</div>
   <div class="oa-title">Sales Intelligence Hub</div>
-  <div class="oa-sub">onAudience</div>
+  <div class="oa-sub">Sign in with your Google account</div>
   <button class="oa-google" id="oa-google-btn" onclick="window.oaGoogleSignIn()">
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -180,7 +177,6 @@ export function renderLoginScreen() {
     </svg>
     Sign in with Google
   </button>
-  <div class="oa-domain">onaudience.pl · cloudtechnologies.pl</div>
   <div class="oa-err" id="oa-err"></div>
   <div class="oa-ver">Hub v2.4 · onAudience</div>
 </div>`;

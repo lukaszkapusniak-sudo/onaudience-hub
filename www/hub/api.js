@@ -1,8 +1,8 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409e';
-import S from './state.js?v=20260409e';
-import { classify, _slug, authHdr } from './utils.js?v=20260409e';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409f';
+import S from './state.js?v=20260409f';
+import { classify, _slug, authHdr } from './utils.js?v=20260409f';
 
 
 
