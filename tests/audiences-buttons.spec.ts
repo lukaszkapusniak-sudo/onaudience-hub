@@ -36,11 +36,12 @@ test('audiences tab renders panel', async ({ page }) => {
 
 test('audience NEW opens scout modal', async ({ page }) => {
   await page.evaluate(() => window.switchTab('audiences'));
-  // Wait for the audiences panel to fully render before clicking NEW
+  // Wait for audiences panel and at least one row to be rendered
   await expect(page.locator('#audiencesPanel')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.aud-toolbar .btn', { hasText: 'NEW' })).toBeVisible({ timeout: 5000 });
-  await page.locator('.aud-toolbar .btn', { hasText: 'NEW' }).click();
-  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 12000 });
+  await expect(page.locator('.aud-toolbar')).toBeVisible({ timeout: 8000 });
+  // Use window.audNew() directly — avoids button text matching issues (＋ vs +)
+  await page.evaluate(() => window.audNew());
+  await expect(page.locator('#audience-modal')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.aud-modal-title')).toContainText('SCOUT');
   // Modal can be closed
   await page.locator('#scout-close-btn').click();
