@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409zg';
-import S from './state.js?v=20260409zg';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409zg';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409zg';
-import { clog } from './hub.js?v=20260409zg';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409zh';
+import S from './state.js?v=20260409zh';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409zh';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409zh';
+import { clog } from './hub.js?v=20260409zh';
 
 export function initLemlistModal(){
   if(document.getElementById('llModal'))return;
