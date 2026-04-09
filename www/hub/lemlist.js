@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409zw';
-import S from './state.js?v=20260409zw';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409zw';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409zw';
-import { clog } from './hub.js?v=20260409zw';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409zx';
+import S from './state.js?v=20260409zx';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409zx';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409zx';
+import { clog } from './hub.js?v=20260409zx';
 
 export function initLemlistModal(){
   if(document.getElementById('llModal'))return;
@@ -31,6 +31,7 @@ export function initLemlistModal(){
 
 export async function openLemlistModal(contacts){
   _llContacts=(contacts||[]).filter(c=>c.email);
+  console.log('[Lemlist] contacts with email:', _llContacts.length, 'of', (contacts||[]).length);
   let modal=document.getElementById('llModal');
   if(!modal){initLemlistModal();modal=document.getElementById('llModal');}
   const status=document.getElementById('llStatus');
@@ -44,14 +45,18 @@ export async function openLemlistModal(contacts){
   btn.style.opacity='.5';
   btn.style.pointerEvents='none';
   preview.textContent=_llContacts.length+' contact(s) with email selected.';
+  // Guard — if modal DOM not ready, abort
+  if(!status||!sel||!preview||!btn){console.error('[Lemlist] modal DOM not ready');return;}
   try{
     const campaigns=await lemlistCampaigns();
+    console.log('[Lemlist] campaigns loaded:', campaigns?.length);
     if(!campaigns.length){status.textContent='No campaigns found in lemlist. Create one first.';return;}
     status.style.display='none';
     sel.innerHTML=campaigns.map(c=>'<option value="'+esc(c._id)+'">'+esc(c.name)+(c.status?' ['+esc(c.status)+']':'')+'</option>').join('');
     sel.style.display='block';
     if(_llContacts.length>0){btn.style.opacity='1';btn.style.pointerEvents='auto';}
   }catch(e){
+    console.error('[Lemlist] campaign load error:',e);
     status.textContent='Error: '+esc(String(e.message));
   }
 }
