@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409w';
-import { authHdr } from './utils.js?v=20260409w';
-import S from './state.js?v=20260409w';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409w';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409w';
-import { clog } from './hub.js?v=20260409w';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260409x';
+import { authHdr } from './utils.js?v=20260409x';
+import S from './state.js?v=20260409x';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, esc, relTime } from './utils.js?v=20260409x';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260409x';
+import { clog } from './hub.js?v=20260409x';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -31,7 +31,7 @@ async function sbLoadAudiences() {
   }
 }
 
-async function sbSaveAudience(aud) {
+export async function sbSaveAudience(aud) {
   const body = { ...aud, updated_at: new Date().toISOString() };
   const res = await fetch(`${SB_URL}/rest/v1/audiences`, {
     method: 'POST',
@@ -2004,7 +2004,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409w';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260409x';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409w';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260409x';
