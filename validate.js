@@ -110,6 +110,27 @@ for (const f of FILES) {
   }
 }
 
+// ── Check 5: undeclared utils function calls ─────────────────────────────
+const UTILS_EXPORTS = new Set(['classify','_slug','getCoTags','getAv','ini',
+  'tClass','tLabel','stars','esc','relTime','authHdr','safeUrl']);
+
+for (const cf of FILES) {
+  const cpath = HUB + cf;
+  if (!fs.existsSync(cpath) || cf === 'utils.js') continue;
+  const csrc = fs.readFileSync(cpath,'utf8');
+  const csnc = csrc.split('\n').filter(l=>!l.trim().startsWith('//')).join('\n');
+  const uiMatch = csnc.match(/import\s*\{([^}]+)\}\s*from\s*['"]\.\/utils\.js/);
+  const imported5 = new Set(uiMatch ? uiMatch[1].split(',').map(x=>x.trim()) : []);
+  for (const fn of UTILS_EXPORTS) {
+    if (imported5.has(fn)) continue;
+    if (new RegExp('(?<![.\\w])' + fn + '\\s*[(`]').test(csnc)) {
+      console.error('FAIL ' + cf + " — uses '" + fn + "' but not imported from utils.js");
+      issues++;
+    }
+  }
+}
+
+
 if (issues === 0) {
   console.log(`✓ All ${FILES.length} files pass (duplicate-import, syntax, onclick checks)`);
   process.exit(0);
