@@ -245,12 +245,8 @@ export async function cacheSet(companyId, source, data, ttlHours = 168){
       `${SB_URL}/rest/v1/enrich_cache?company_id=eq.${encodeURIComponent(companyId)}&source=eq.${encodeURIComponent(source)}`,
       { method: 'DELETE', headers: authHdr() }
     );
-    const res = await dbEnrich.upsert({ company_id: companyId, source, data, ttl_hours: ttlHours, fetched_at: new Date().toISOString() });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      console.warn('cacheSet failed', res.status, txt.slice(0, 200));
-      return false;
-    }
+    await dbEnrich.upsert({ company_id: companyId, source, data, ttl_hours: ttlHours, fetched_at: new Date().toISOString() });
+    // _req throws on error, so reaching here means success
     if (window.clog) window.clog('db', `Cache SET — ${companyId}:${source} TTL=${ttlHours}h`);
     return true;
   } catch(e) {
