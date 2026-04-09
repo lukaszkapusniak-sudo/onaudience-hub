@@ -1,9 +1,9 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zl';
-import S from './state.js?v=20260409zl';
-import { classify, _slug, authHdr } from './utils.js?v=20260409zl';
-import { mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zl';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409zm';
+import S from './state.js?v=20260409zm';
+import { classify, _slug, authHdr } from './utils.js?v=20260409zm';
+import { mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409zm';
 
 
 
@@ -243,11 +243,7 @@ export async function cacheSet(companyId, source, data, ttlHours = 168){
       `${SB_URL}/rest/v1/enrich_cache?company_id=eq.${encodeURIComponent(companyId)}&source=eq.${encodeURIComponent(source)}`,
       { method: 'DELETE', headers: authHdr() }
     );
-    const res = await fetch(`${SB_URL}/rest/v1/enrich_cache`, {
-      method: 'POST',
-      headers: authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body: JSON.stringify({ company_id: companyId, source, data, ttl_hours: ttlHours, fetched_at: new Date().toISOString() }),
-    });
+    const res = await dbEnrich.upsert({ company_id: companyId, source, data, ttl_hours: ttlHours, fetched_at: new Date().toISOString() });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
       console.warn('cacheSet failed', res.status, txt.slice(0, 200));
@@ -323,14 +319,13 @@ const _PAGE = 200;
 export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
   try{
     const hdr1 = authHdr({'Range':`0-${_PAGE-1}`,'Prefer':'count=exact'});
-    const hdrCt = authHdr({'Range':'0-4999','Prefer':'count=exact'});
     const[cr,ct,rl] = await Promise.all([
-      fetch(`${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,{headers:hdr1}),
-      fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,{headers:hdrCt}),
-      fetch(`${SB_URL}/rest/v1/company_relations?select=*`,{headers:authHdr()}),
+      dbCo.list('0-199'),
+      dbContacts.listAll(),
+      dbRelations.listAll(),
     ]);
-    if(!cr.ok) throw new Error(`HTTP ${cr.status}`);
-    const dbc=await cr.json(), dbt=ct.ok?await ct.json():[], dbr=rl.ok?await rl.json():[];
+    if(!Array.isArray(cr)) throw new Error('companies load failed');
+    const dbc=cr, dbt=Array.isArray(ct)?ct:[], dbr=Array.isArray(rl)?rl:[];
     const total=parseInt((cr.headers.get('content-range')||'').match(/\/(\d+)/)?.[1]||0);
     S.totalCompaniesInDb=total;
     if(Array.isArray(dbc)&&dbc.length){ const fresh=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''})); S.companies=fresh; _loadingPages=false; /* reset flag so bg load can proceed */ }
@@ -381,16 +376,16 @@ async function _loadRemainingPages(total,renderStats,renderList,renderTagPanel){
 /* ── Refresh relations cache only ─────────────────────────── */
 export async function refreshRelationsCache(){
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/company_relations?select=*`,{headers:authHdr()});
-    const data=await r.json();
+    const r=await dbRelations.listAll();
+    const data=r;
     if(Array.isArray(data)){S.allRelations=data;if(window.clog)window.clog('db',`Relations refreshed: <b>${data.length}</b> rows`);}
     return data;
   }catch(e){console.warn('relations refresh',e);return S.allRelations;}
 }
 
 /* ── Save ─────────────────────────────────────────────────── */
-export async function saveCompany(r){return fetch(`${SB_URL}/rest/v1/companies`,{method:'POST',headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(r)});}
-export async function saveContact(r){return fetch(`${SB_URL}/rest/v1/contacts`,{method:'POST',headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(r)});}
+export async function saveCompany(r){return dbCo.upsert(r);}
+export async function saveContact(r){return dbContacts.upsert(r);}
 
 /* ── Stats ────────────────────────────────────────────────── */
 export function renderStats(){
@@ -444,11 +439,7 @@ export async function geocodeCity(cityStr) {
 
 export async function saveGeocode(companyId, lat, lng) {
   try {
-    await fetch(`${SB_URL}/rest/v1/companies`, {
-      method: 'POST',
-      headers: { ...HDR, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ id: companyId, hq_lat: lat, hq_lng: lng }),
-    });
+    await dbCo.upsert({ id: companyId, hq_lat: lat, hq_lng: lng });
   } catch (e) {
     console.warn('saveGeocode error', e);
   }
@@ -458,14 +449,14 @@ export async function saveGeocode(companyId, lat, lng) {
 export async function saveIntelligence(slug,items){
   if(!items.length)return;
   try{
-    const ex=await fetch(`${SB_URL}/rest/v1/intelligence?company_id=eq.${slug}&type=eq.press_links`,{headers:authHdr()}).then(r=>r.json());
+    const ex=await dbIntel.get(slug,'press_links');
     const existing=Array.isArray(ex)&&ex[0]?.content||[];
     const seen=new Set(existing.map(l=>l.url));
     const merged=[...existing,...items.filter(i=>!seen.has(i.url))];
     if(ex&&ex[0]){
-      await fetch(`${SB_URL}/rest/v1/intelligence?company_id=eq.${slug}&type=eq.press_links`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({content:merged})});
+      await dbIntel.upsert({company_id:slug,type:'press_links',content:merged,updated_at:new Date().toISOString()});
     }else{
-      await fetch(`${SB_URL}/rest/v1/intelligence`,{method:'POST',headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({company_id:slug,type:'press_links',content:merged})});
+      await dbIntel.upsert({company_id:slug,type:'press_links',content:merged,updated_at:new Date().toISOString()});
     }
   }catch(e){console.warn('Intel save',e);}
 }

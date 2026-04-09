@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409zl';
-import S from './state.js?v=20260409zl';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zl';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409zl';
-import { resolveAlias } from './merge.js?v=20260409zl';
-import { intelligence as dbIntel } from './db.js?v=20260409zl';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409zm';
+import S from './state.js?v=20260409zm';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409zm';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409zm';
+import { resolveAlias } from './merge.js?v=20260409zm';
+import { intelligence as dbIntel } from './db.js?v=20260409zm';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -259,7 +259,7 @@ export function ctAction(action,ctSlug){
 }
 
 /* ═══ BG Generate Angle ══════════════════════════════════════ */
-export async function bgGenerateAngle(){const c=S.currentCompany;if(!c)return;const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">✦ Generating…</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:'You are a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3–5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">✓ generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='↺ Regen';btn.style.display='';}await fetch(`${SB_URL}/rest/v1/companies?name=eq.${encodeURIComponent(c.name)}`,{method:'PATCH',headers:authHdr({'Prefer':'return=minimal'}),body:JSON.stringify({outreach_angle:angle})}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error — ${e.message}</span></div>`;if(btn){btn.textContent='↺ Retry';btn.style.display='';}}}
+export async function bgGenerateAngle(){const c=S.currentCompany;if(!c)return;const card=document.getElementById('ib-angle-card'),btn=document.getElementById('ib-angle-btn');if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-running">✦ Generating…</span></div>`;}if(btn)btn.style.display='none';const tags=getCoTags(c).join(', ');const techArr2=(Array.isArray(c.tech_stack)?c.tech_stack:[]).slice(0,6).map(t=>typeof t==='string'?t:(t&&t.tool)?String(t.tool):'?').join(', ');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:350,system:'You are a senior B2B data partnership sales specialist at onAudience, a European first-party audience data company. Write a concise, specific outreach angle (3–5 sentences) for approaching this company. Focus on what onAudience data solves for their business model, timing signals, and clearest value hook. No bullet points. Flowing prose only.',messages:[{role:'user',content:`Company: ${c.name}\nType: ${c.type}\nCategory: ${c.category||'unknown'}\nNote: ${c.note||''}\nDescription: ${c.description||''}\nTech: ${techArr2}\nDSPs: ${JSON.stringify(c.dsps||[])}\nSignals: ${tags}`}]});const angle=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!angle)throw new Error('empty');S.currentCompany.outreach_angle=angle;S.companies.forEach(co=>{if(co.name===c.name)co.outreach_angle=angle;});if(card){card.className='ib-angle';card.innerHTML=`<div class="ib-angle-lbl">Recommended positioning <span class="bg-done">✓ generated</span></div><div class="ib-angle-text">${angle}</div>`;}if(btn){btn.textContent='↺ Regen';btn.style.display='';}dbCompanies.patchByName(c.name, {outreach_angle:angle}).catch(()=>{});}catch(e){if(card)card.innerHTML=`<div class="ib-angle-lbl"><span class="bg-err">Error — ${e.message}</span></div>`;if(btn){btn.textContent='↺ Retry';btn.style.display='';}}}
 
 /* ═══ BG Find DMs (Opus + web_search — zero hallucination) ═══ */
 const FIND_DMS_SYSTEM=`You are a B2B sales researcher finding REAL decision makers and outreach signals for data partnership outreach.
@@ -605,11 +605,7 @@ export async function oaEmailSaveContacts(){
 async function _saveEmailIntelligence(slug,summary){
   if(!slug||!summary)return;
   try{
-    await fetch(`${SB_URL}/rest/v1/intelligence`,{
-      method:'POST',
-      headers:authHdr({'Prefer':'resolution=merge-duplicates,return=minimal','Content-Type':'application/json'}),
-      body:JSON.stringify({company_id:slug,type:'gmail_history',content:summary,updated_at:new Date().toISOString()}),
-    });
+    await dbIntel.upsert({company_id:slug,type:'gmail_history',content:summary,updated_at:new Date().toISOString()});
   }catch(e){console.warn('save email intel failed',e);}
 }
 
@@ -1333,12 +1329,12 @@ export async function mapSegments(){
 export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
-  llPushFromAudience, llUnsubLead } from './lemlist.js?v=20260409zl';
+  llPushFromAudience, llUnsubLead } from './lemlist.js?v=20260409zm';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409zl';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409zm';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409zl';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409zm';
