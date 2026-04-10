@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260410d18';
-import S from './state.js?v=20260410d18';
-import { classify, _slug, authHdr } from './utils.js?v=20260410d18';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260410d19';
+import S from './state.js?v=20260410d19';
+import { classify, _slug, authHdr } from './utils.js?v=20260410d19';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260410d18';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260410d19';
 
 
 
@@ -497,15 +497,31 @@ export function lemlistKey(){
   return k?.trim()||null;
 }
 
-export async function lemlistFetch(path,method='GET',body=null){
+export async function lemlistFetch(path,method='GET',body=null,_retry=0){
   const apiKey=lemlistKey();
-  if(!apiKey)throw new Error('No lemlist key');
+  if(!apiKey)throw new Error('Lemlist not connected — click ⚙ Connect Lemlist to add your API key');
   const r=await fetch(LEMLIST_PROXY,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path,method,body,apiKey}),
   });
-  if(!r.ok)throw new Error('lemlist '+r.status+': '+await r.text());
+  if(r.status===429){
+    if(_retry<3){
+      const wait=(_retry+1)*2000; // 2s, 4s, 6s backoff
+      clog&&clog('info',`Lemlist rate limited — retrying in ${wait/1000}s…`);
+      await new Promise(res=>setTimeout(res,wait));
+      return lemlistFetch(path,method,body,_retry+1);
+    }
+    throw new Error('Lemlist rate limit reached — wait a minute and try again');
+  }
+  if(r.status===401)throw new Error('Lemlist API key is invalid — click Change to update it');
+  if(r.status===403)throw new Error('Lemlist access denied — check your API key permissions');
+  if(r.status===404)throw new Error('Lemlist resource not found: '+path);
+  if(!r.ok){
+    let detail='';
+    try{const t=await r.text();const j=JSON.parse(t);detail=j.error||j.message||t;}catch{}
+    throw new Error(`Lemlist error ${r.status}${detail?' — '+detail:''}`);
+  }
   return r.json();
 }
 

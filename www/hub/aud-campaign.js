@@ -1,12 +1,12 @@
 /* ═══ aud-campaign.js — Campaign generation, email templates, Lemlist launch ═══ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d18';
-import S from './state.js?v=20260410d18';
-import { esc, _slug, authHdr } from './utils.js?v=20260410d18';
-import { anthropicFetch, lemlistFetch } from './api.js?v=20260410d18';
-import { audiences as dbAud, companies as dbCo } from './db.js?v=20260410d18';
-import { clog } from './hub.js?v=20260410d18';
-import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260410d18';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d19';
+import S from './state.js?v=20260410d19';
+import { esc, _slug, authHdr } from './utils.js?v=20260410d19';
+import { anthropicFetch, lemlistFetch } from './api.js?v=20260410d19';
+import { audiences as dbAud, companies as dbCo } from './db.js?v=20260410d19';
+import { clog } from './hub.js?v=20260410d19';
+import { sbSaveAudience, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260410d19';
 
 export async function generateCampaignHook(audId, personaId) {
   const aud = S.audiences.find(a => a.id === audId);

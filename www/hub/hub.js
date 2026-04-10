@@ -1,17 +1,60 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d18';
-import S from './state.js?v=20260410d18';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d18';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d18';
-import { resolveAlias } from './merge.js?v=20260410d18';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d18';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d19';
+import S from './state.js?v=20260410d19';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d19';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d19';
+import { resolveAlias } from './merge.js?v=20260410d19';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d19';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
 let _taxLoading = false;
 
-export async function runAI(){const q=document.getElementById('aiInp').value.trim();if(!q)return;const btn=document.getElementById('aiBtn'),stat=document.getElementById('aiStat'),dot=document.getElementById('aiDot'),txt=document.getElementById('aiTxt');btn.disabled=true;stat.className='ai-stat vis';dot.className='ai-dot';dot.style.background='';txt.textContent='Thinking…';clog('ai',`Query: <b>${esc(q)}</b>`);const list=S.companies.map(c=>`${c.name} (${c.type}${c.category?' / '+c.category:''}${c.hq_city?' / '+c.hq_city:''}${c.note?' – '+c.note.slice(0,40):''})`).join('\n');try{const data=await anthropicFetch({model:MODEL_CREATIVE,max_tokens:800,system:'You are a B2B sales filter for onAudience. Given a company list and a query, return ONLY a raw JSON array of matching company names. No markdown, no explanation. Return [] if nothing matches.',messages:[{role:'user',content:`Query: "${q}"\n\nCompany list:\n${list}`}]});const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();const names=JSON.parse(raw);if(!Array.isArray(names))throw new Error('not array');S.aiSet=new Set(names);dot.className='ai-dot done';txt.textContent=`${names.length} matches — "${q.length>30?q.slice(0,30)+'…':q}"`;clog('ai',`✓ Found <b>${names.length}</b> matches for "${esc(q.slice(0,30))}"`);renderList();}catch(e){dot.className='ai-dot err';txt.textContent='Error — try again';clog('ai',`✗ Error: ${esc(e.message)}`);console.error(e);}btn.disabled=false;}
+export async function runAI(){
+  const q=document.getElementById('aiInp').value.trim();
+  if(!q)return;
+  const btn=document.getElementById('aiBtn'),stat=document.getElementById('aiStat'),dot=document.getElementById('aiDot'),txt=document.getElementById('aiTxt');
+  // Check for API key first — give clear message
+  const hasKey=!!localStorage.getItem('oaAnthropicKey');
+  if(!hasKey){
+    stat.className='ai-stat vis';dot.className='ai-dot err';
+    txt.textContent='Personal API key needed — click 🔑 in nav';
+    clog('ai','🔑 AI search requires a personal Anthropic key. Click <b>🔑</b> in nav to add yours.');
+    return;
+  }
+  btn.disabled=true;stat.className='ai-stat vis';dot.className='ai-dot';dot.style.background='';
+  txt.textContent=`Searching ${S.companies.length} companies…`;
+  clog('ai',`🔍 AI search: <b>${esc(q)}</b>`);
+  // Trim company list to avoid context limits — include most useful fields only
+  const list=S.companies.map(c=>[c.name,c.type,c.category,c.hq_city,c.hq_country,(c.note||'').slice(0,60)].filter(Boolean).join(' | ')).join('\n');
+  try{
+    const data=await anthropicFetch({
+      model:MODEL_CREATIVE,max_tokens:600,
+      system:'You are a B2B sales filter. Given a company list and a query, return ONLY a raw JSON array of matching company names. No markdown, no explanation. Return [] if nothing matches.',
+      messages:[{role:'user',content:`Query: "${q}"\n\nCompanies:\n${list}`}]
+    });
+    const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
+    const names=JSON.parse(raw);
+    if(!Array.isArray(names))throw new Error('Unexpected response format');
+    S.aiSet=new Set(names);
+    dot.className='ai-dot done';
+    txt.textContent=names.length?`${names.length} match${names.length!==1?'es':''} — "${q.length>28?q.slice(0,28)+'…':q}"`:'No matches found';
+    clog('ai',`✓ Found <b>${names.length}</b> match${names.length!==1?'es':''} for "<b>${esc(q.slice(0,30))}</b>"`);
+    renderList();
+  }catch(e){
+    dot.className='ai-dot err';
+    const msg=e.message||'Unknown error';
+    const friendly=msg.includes('401')||msg.includes('key')?'Invalid API key — check 🔑 in nav'
+      :msg.includes('429')?'Rate limit — wait a moment and retry'
+      :msg.includes('context')||msg.includes('too long')?'List too large — try filtering first'
+      :'Search failed — try again';
+    txt.textContent=friendly;
+    clog('ai',`✗ AI search failed: ${esc(msg)}`);
+    console.error(e);
+  }
+  btn.disabled=false;
+}
 export function clearAI(){S.aiSet=null;document.getElementById('aiStat').className='ai-stat';document.getElementById('aiInp').value='';renderList();}
 export function aiQuick(q){document.getElementById('aiInp').value=q;runAI();}
 
@@ -1948,12 +1991,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d18';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d19';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d18';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d19';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d18';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d19';
