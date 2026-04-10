@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c4';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c5';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -133,6 +133,13 @@ const SFX = {
   xpTick() {
     _beep(880, 0.04, 'square', 0.06);
   },
+
+  // Mario coin — NES-accurate Super Mario Bros coin (B5→E6)
+  marioCoin() {
+    _beep(987.77, 0.035, 'square', 0.22);           // B5 blip
+    _beep(1318.51, 0.13, 'square', 0.20, 0.04);    // E6 sustain
+    _beep(2637, 0.07, 'sine', 0.05, 0.04);          // sine shimmer
+  },
 };
 
 const TKEY_DONE  = 'oaTutorialDone';
@@ -235,6 +242,81 @@ const STEPS = [
 ];
 
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARIO COIN SHAKE DETECTOR  —  DeviceMotion API
+   Wrist shake on phone → Mario coin sound + coin emoji burst
+   ═══════════════════════════════════════════════════════════════════ */
+
+function _initShake() {
+  if (typeof DeviceMotionEvent === 'undefined') return;
+
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    // iOS 13+ — need explicit permission, ask on first touch
+    document.addEventListener('touchend', function _ask() {
+      DeviceMotionEvent.requestPermission()
+        .then(s => { if (s === 'granted') _attachShake(); })
+        .catch(() => {});
+      document.removeEventListener('touchend', _ask);
+    }, {once: true});
+  } else {
+    _attachShake();
+  }
+}
+
+function _attachShake() {
+  const THRESHOLD = 18; // m/s² — firm wrist shake, not pocket jitter
+  const COOLDOWN  = 1200;
+  let _last = {x:0, y:0, z:0};
+  let _lastTime = 0;
+
+  window.addEventListener('devicemotion', (e) => {
+    const a = e.accelerationIncludingGravity || e.acceleration;
+    if (!a) return;
+    const dx = Math.abs((a.x||0) - _last.x);
+    const dy = Math.abs((a.y||0) - _last.y);
+    const dz = Math.abs((a.z||0) - _last.z);
+    _last = {x: a.x||0, y: a.y||0, z: a.z||0};
+
+    const now = Date.now();
+    if (Math.sqrt(dx*dx + dy*dy + dz*dz) > THRESHOLD && now - _lastTime > COOLDOWN) {
+      _lastTime = now;
+      SFX.marioCoin();
+      _showCoinBurst();
+    }
+  });
+}
+
+function _showCoinBurst() {
+  // Coin keyframe — inject once
+  if (!document.getElementById('oa-coin-kf')) {
+    const s = document.createElement('style');
+    s.id = 'oa-coin-kf';
+    s.textContent = '@keyframes oa-coin-rise{0%{transform:translateY(0) scale(1);opacity:1}60%{transform:translateY(-55px) scale(1.3);opacity:1}100%{transform:translateY(-95px) scale(.7);opacity:0}}';
+    document.head.appendChild(s);
+  }
+  // Spawn 1-3 coins at random x
+  const count = 1 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < count; i++) {
+    const coin = document.createElement('div');
+    coin.textContent = '🪙';
+    const x = 20 + Math.random() * 60;
+    const delay = i * 0.12;
+    coin.style.cssText = [
+      'position:fixed',
+      `left:${x}vw`,
+      'bottom:18vh',
+      'font-size:clamp(26px,6vw,40px)',
+      'z-index:10020',
+      'pointer-events:none',
+      `animation:oa-coin-rise .85s ${delay}s ease-out forwards`,
+      'filter:drop-shadow(0 0 6px gold)',
+    ].join(';');
+    document.body.appendChild(coin);
+    setTimeout(() => coin.remove(), 1100 + delay * 1000);
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    KONAMI CODE EASTER EGG  ↑↑↓↓←→←→BA
    Active at all times — no tutorial required.
@@ -300,8 +382,9 @@ function _showKonamiOverlay() {
     background:rgba(0,8,0,.85);
     border:1px solid #00ff41;
     border-radius:4px;
-    padding:32px 40px;
-    max-width:540px;
+    padding:clamp(16px,5vw,32px) clamp(14px,6vw,40px);
+    max-width:min(540px,92vw);
+    max-height:85dvh;overflow-y:auto;
     text-align:center;
     box-shadow:0 0 60px rgba(0,255,65,.25), inset 0 0 40px rgba(0,255,65,.04);
     animation:kn-pulse 2s ease-in-out infinite;
@@ -312,7 +395,7 @@ function _showKonamiOverlay() {
     margin-bottom:10px;opacity:.7;
   }
   .kn-title{
-    font-size:30px;font-weight:600;color:#00ff41;letter-spacing:.06em;
+    font-size:clamp(18px,6vw,30px);font-weight:600;color:#00ff41;letter-spacing:.06em;
     margin-bottom:4px;
     text-shadow:0 0 20px rgba(0,255,65,.8);
   }
@@ -324,8 +407,8 @@ function _showKonamiOverlay() {
     margin:0 0 24px;
   }
   .kn-msg{
-    font-size:12px;line-height:20px;color:#aaffaa;text-align:left;
-    margin-bottom:24px;
+    font-size:clamp(10px,2.5vw,12px);line-height:clamp(16px,4vw,20px);color:#aaffaa;text-align:left;
+    margin-bottom:clamp(12px,4vw,24px);
   }
   .kn-msg b{color:#00ff41;}
   .kn-contact{
@@ -336,9 +419,9 @@ function _showKonamiOverlay() {
   .kn-contact-role{font-size:10px;color:#66cc77;letter-spacing:.06em;text-transform:uppercase;}
   .kn-contact-email{font-size:11px;color:#aaffaa;margin-top:8px;}
   .kn-btn{
-    height:40px;width:100%;border:1px solid #00ff41;border-radius:2px;
+    height:clamp(34px,6vw,40px);width:100%;border:1px solid #00ff41;border-radius:2px;
     background:rgba(0,255,65,.1);color:#00ff41;cursor:pointer;
-    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(9px,2vw,11px);font-weight:600;
     letter-spacing:.08em;text-transform:uppercase;
     transition:all .15s;margin-bottom:8px;
     display:flex;align-items:center;justify-content:center;gap:8px;
@@ -510,7 +593,9 @@ function _injectStyles() {
   border:1px solid var(--rule);
   border-radius:4px;
   box-shadow:0 8px 32px rgba(0,0,0,.22);
-  width:560px;
+  width:min(560px,92vw);
+  max-height:90dvh;
+  overflow-y:auto;
   transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1),
              opacity .2s;
   overflow:hidden;
@@ -524,42 +609,42 @@ function _injectStyles() {
 }
 @keyframes oa-tut-shimmer{0%{left:-60px}100%{left:400px}}
 .oa-tut-header{
-  padding:14px 18px 0;display:flex;align-items:center;gap:10px;
+  padding:clamp(8px,2.5vw,14px) clamp(10px,3vw,18px) 0;display:flex;align-items:center;gap:clamp(6px,1.5vw,10px);
 }
 .oa-tut-step-badge{
-  font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  font-size:clamp(8px,2vw,11px);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--g);background:var(--gb,rgba(23,128,102,.08));
   border:1px solid var(--gr,rgba(23,128,102,.28));border-radius:2px;
   padding:2px 6px;white-space:nowrap;flex-shrink:0;
 }
 .oa-tut-title{
-  font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--t1);
+  font-size:clamp(10px,2.5vw,13px);font-weight:600;letter-spacing:.06em;color:var(--t1);
   text-transform:uppercase;flex:1;
 }
 .oa-tut-close{
-  width:28px;height:28px;border:none;background:none;cursor:pointer;
-  color:var(--t3);font-size:20px;display:flex;align-items:center;justify-content:center;
+  width:clamp(22px,4vw,28px);height:clamp(22px,4vw,28px);border:none;background:none;cursor:pointer;
+  color:var(--t3);font-size:clamp(16px,3.5vw,20px);display:flex;align-items:center;justify-content:center;
   flex-shrink:0;padding:0;
 }
 .oa-tut-close:hover{color:var(--t1);}
 .oa-tut-sub{
-  font-size:10px;letter-spacing:.06em;color:var(--t3);text-transform:uppercase;
-  padding:4px 18px 0;
+  font-size:clamp(7px,1.8vw,10px);letter-spacing:.06em;color:var(--t3);text-transform:uppercase;
+  padding:2px clamp(10px,3vw,18px) 0;
 }
 .oa-tut-body{
-  padding:14px 18px;font-size:13px;line-height:22px;color:var(--t2);
+  padding:clamp(8px,2.5vw,14px) clamp(10px,3vw,18px);font-size:clamp(10px,2.5vw,13px);line-height:clamp(16px,4vw,22px);color:var(--t2);
   white-space:pre-wrap;
 }
 .oa-tut-body b{color:var(--t1);}
 .oa-tut-hint{
-  margin:0 18px 10px;padding:8px 12px;background:var(--surf2);
-  border-left:3px solid var(--g);font-size:11px;color:var(--t3);
+  margin:0 clamp(10px,3vw,18px) 8px;padding:6px 10px;background:var(--surf2);
+  border-left:2px solid var(--g);font-size:clamp(8px,2vw,11px);color:var(--t3);
   border-radius:0 2px 2px 0;
 }
 .oa-tut-footer{padding:0 18px 18px;display:flex;flex-direction:column;gap:8px;}
 .oa-tut-btn{
-  height:40px;padding:0 18px;border:none;border-radius:2px;cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+  height:clamp(32px,6vw,40px);padding:0 clamp(10px,3vw,18px);border:none;border-radius:2px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:clamp(9px,2vw,11px);font-weight:600;
   letter-spacing:.06em;text-transform:uppercase;
   background:var(--g);color:#fff;transition:background .15s;
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -571,10 +656,10 @@ function _injectStyles() {
 .oa-tut-btn.alt:hover{background:var(--surf3);color:var(--t1);}
 .oa-tut-xp-row{
   display:flex;align-items:center;gap:8px;
-  padding:10px 18px;border-top:1px solid var(--rule);background:var(--surf2);
+  padding:8px clamp(10px,3vw,18px);border-top:1px solid var(--rule);background:var(--surf2);
 }
 .oa-tut-level{
-  font-size:11px;font-weight:600;color:var(--g);letter-spacing:.04em;
+  font-size:clamp(8px,2vw,11px);font-weight:600;color:var(--g);letter-spacing:.04em;
   white-space:nowrap;flex-shrink:0;
 }
 .oa-tut-xp-bar{
@@ -585,7 +670,7 @@ function _injectStyles() {
   transition:width .6s cubic-bezier(.4,0,.2,1);
 }
 .oa-tut-xp-num{
-  font-size:10px;color:var(--t3);letter-spacing:.04em;white-space:nowrap;flex-shrink:0;
+  font-size:clamp(7px,1.8vw,10px);color:var(--t3);letter-spacing:.04em;white-space:nowrap;flex-shrink:0;
 }
 
 /* ── Achievement toast ─────────────────────── */
@@ -595,20 +680,20 @@ function _injectStyles() {
   background:var(--surf);
   border:1px solid var(--g);border-radius:4px;
   box-shadow:0 4px 20px rgba(0,0,0,.2);
-  width:380px;overflow:hidden;
+  width:min(380px,88vw);overflow:hidden;
   transform:translateX(400px);
   transition:transform .4s cubic-bezier(.4,0,.2,1);
 }
 #oa-tut-achv.vis{transform:translateX(0);}
 .oa-achv-bar{height:3px;background:var(--g);}
-.oa-achv-inner{padding:14px 16px;display:flex;gap:14px;align-items:flex-start;}
-.oa-achv-icon{font-size:32px;flex-shrink:0;line-height:1;}
+.oa-achv-inner{padding:clamp(8px,2.5vw,14px) clamp(10px,3vw,16px);display:flex;gap:clamp(8px,2vw,14px);align-items:flex-start;}
+.oa-achv-icon{font-size:clamp(22px,5vw,32px);flex-shrink:0;line-height:1;}
 .oa-achv-text{}
-.oa-achv-label{font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;}
-.oa-achv-name{font-size:14px;font-weight:600;color:var(--t1);margin:3px 0;}
-.oa-achv-desc{font-size:11px;color:var(--t2);}
+.oa-achv-label{font-size:clamp(7px,2vw,10px);color:var(--t3);letter-spacing:.08em;text-transform:uppercase;}
+.oa-achv-name{font-size:clamp(10px,2.5vw,14px);font-weight:600;color:var(--t1);margin:2px 0;}
+.oa-achv-desc{font-size:clamp(8px,2vw,11px);color:var(--t2);}
 .oa-achv-xp{
-  margin-left:auto;font-size:12px;font-weight:600;color:var(--g);
+  margin-left:auto;font-size:clamp(9px,2.5vw,12px);font-weight:600;color:var(--g);
   white-space:nowrap;flex-shrink:0;
 }
 
@@ -623,19 +708,19 @@ function _injectStyles() {
 #oa-tut-levelup.vis{opacity:1;}
 .oa-lu-badge{
   font-family:'IBM Plex Mono',monospace;
-  font-size:18px;letter-spacing:.12em;color:var(--g);text-transform:uppercase;
-  margin-bottom:10px;
+  font-size:clamp(12px,3.5vw,18px);letter-spacing:.12em;color:var(--g);text-transform:uppercase;
+  margin-bottom:6px;
 }
 .oa-lu-name{
   font-family:'IBM Plex Mono',monospace;
-  font-size:52px;font-weight:600;letter-spacing:.04em;color:var(--g);
+  font-size:clamp(28px,8vw,52px);font-weight:600;letter-spacing:.04em;color:var(--g);
   text-shadow:0 0 60px rgba(23,128,102,.5);
 }
-.oa-lu-icon{font-size:72px;margin-bottom:12px;}
+.oa-lu-icon{font-size:clamp(40px,10vw,72px);margin-bottom:8px;}
 
 /* ── Progress dots ─────────────────────────── */
 .oa-tut-dots{
-  display:flex;gap:6px;align-items:center;padding:10px 18px 0;
+  display:flex;gap:5px;align-items:center;padding:8px clamp(10px,3vw,18px) 0;
 }
 .oa-tut-dot{
   width:9px;height:9px;border-radius:50%;background:var(--rule);
@@ -646,22 +731,22 @@ function _injectStyles() {
 
 /* ── Finale ──────────────────────────────────  */
 .oa-tut-finale{
-  padding:24px 18px 12px;text-align:center;
+  padding:clamp(12px,4vw,24px) clamp(10px,3vw,18px) clamp(8px,2vw,12px);text-align:center;
 }
-.oa-tut-finale-icon{font-size:60px;margin-bottom:12px;}
+.oa-tut-finale-icon{font-size:clamp(32px,8vw,60px);margin-bottom:8px;}
 .oa-tut-finale-level{
-  font-size:11px;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;
-  margin-bottom:6px;
+  font-size:clamp(8px,2vw,11px);letter-spacing:.1em;color:var(--t3);text-transform:uppercase;
+  margin-bottom:4px;
 }
 .oa-tut-finale-name{
-  font-size:28px;font-weight:600;color:var(--g);letter-spacing:.04em;
-  margin-bottom:16px;
+  font-size:clamp(16px,5vw,28px);font-weight:600;color:var(--g);letter-spacing:.04em;
+  margin-bottom:10px;
 }
 .oa-tut-achv-grid{
   display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;
 }
 .oa-tut-achv-chip{
-  font-size:11px;padding:5px 10px;background:var(--surf2);
+  font-size:clamp(8px,2vw,11px);padding:4px 8px;background:var(--surf2);
   border:1px solid var(--rule);border-radius:2px;color:var(--t2);
   display:flex;align-items:center;gap:4px;
 }
@@ -671,17 +756,33 @@ function _injectStyles() {
 }
 
 .oa-tut-langs{
-  display:flex;gap:4px;align-items:center;padding:8px 18px;
+  display:flex;gap:4px;align-items:center;padding:6px clamp(10px,3vw,18px);
   border-top:1px solid var(--rule);background:var(--surf2);flex-wrap:wrap;
 }
 .oa-tut-lang-btn{
-  height:24px;padding:0 8px;border-radius:2px;border:1px solid var(--rule);
+  height:clamp(20px,4vw,24px);padding:0 6px;border-radius:2px;border:1px solid var(--rule);
   background:var(--surf3);color:var(--t2);cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+  font-family:'IBM Plex Mono',monospace;font-size:clamp(8px,1.8vw,10px);font-weight:500;
   transition:all .15s;white-space:nowrap;
 }
 .oa-tut-lang-btn:hover{background:var(--surf);color:var(--t1);border-color:var(--g);}
 .oa-tut-lang-btn.active{background:var(--g);color:#fff;border-color:var(--g);}
+
+/* ── Mobile: card snaps to bottom, spotlight hidden ── */
+@media (max-width:600px){
+  #oa-tut-card{
+    position:fixed !important;
+    left:4vw !important;
+    right:4vw !important;
+    width:auto !important;
+    top:auto !important;
+    bottom:20px !important;
+    max-height:75dvh;
+    border-radius:4px;
+  }
+  #oa-tut-spotlight{ display:none !important; }
+  .oa-tut-dots{ flex-wrap:wrap; }
+}
   `;
   document.head.appendChild(s);
 }
@@ -735,6 +836,9 @@ function _spotlight(selector) {
 function _positionCard(card, position, target) {
   const vw = window.innerWidth, vh = window.innerHeight;
   const cw = 560, ch = card.offsetHeight || 400;
+
+  // Mobile: CSS @media handles layout — skip JS positioning
+  if (vw <= 600) return;
 
   if (position === 'center' || !target) {
     card.style.top  = Math.round((vh - ch) / 2) + 'px';
@@ -979,7 +1083,7 @@ function _tutFinish() {
 }
 
 /* ── Public API ───────────────────────────────────────────────────────── */
-export function initKonami() { _initKonami(); }
+export function initKonami() { _initKonami(); _initShake(); }
 
 export function startTutorial(force = false) {
   if (!force && localStorage.getItem(TKEY_DONE)) return;
