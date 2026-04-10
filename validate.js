@@ -15,6 +15,9 @@ const FILES = [
   'hub.js',
   'audiences.js',
   'api.js',
+  'gnews.js',
+  'gnews-worker.js',
+  'gnews-parse.js',
   'auth.js',
   'meeseeks.js',
   'utils.js',
@@ -230,17 +233,8 @@ for (const cf of FILES) {
   }
 }
 
-// ── Check 7: CSS audit via audit_css.py ─────────────────────────────────
-const { execSync } = require('child_process');
-try {
-  execSync('python3 scripts/audit_css.py', { stdio: 'inherit' });
-} catch {
-  issues++;
-}
-
-// ── Check 6: version string consistency across hub files ─────────────────
-const versRe = /v=20260409(\w+)/g;
-const allVers = new Map();
+// ── Check 6: cache-bust token consistency (see scripts/stamp-hub-asset-version.mjs) ──
+const EXPECTED_ASSET_V = '__OA_ASSET_VERSION__';
 const hubFiles = [
   'app.js',
   'hub.js',
@@ -253,22 +247,32 @@ const hubFiles = [
   'style.css',
   'index.html',
 ].map((f) => HUB + f);
+const badAssetTokens = new Set();
 for (const fp of hubFiles) {
   if (!fs.existsSync(fp)) continue;
   const src = fs.readFileSync(fp, 'utf8');
-  const vs = [...src.matchAll(versRe)].map((m) => m[1]);
-  if (vs.length) allVers.set(fp.split('/').pop(), new Set(vs));
+  for (const m of src.matchAll(/\?v=([^'"&\s]+)/g)) {
+    const tok = m[1];
+    if (tok !== EXPECTED_ASSET_V) badAssetTokens.add(`${fp.split('/').pop()}: ?v=${tok}`);
+  }
 }
-const allVerSets = [...allVers.values()];
-const allVerUnion = new Set(allVerSets.flatMap((s) => [...s]));
-if (allVerUnion.size > 1) {
-  console.error('FAIL version mismatch across hub files: ' + [...allVerUnion].join(', '));
+if (badAssetTokens.size) {
+  for (const line of badAssetTokens)
+    console.error(`FAIL cache-bust token in source — expected ?v=${EXPECTED_ASSET_V} only: ${line}`);
+  issues += badAssetTokens.size;
+}
+
+// ── Check 7: CSS audit via audit_css.py (Python via uv) ─────────────────
+const { execSync } = require('child_process');
+try {
+  execSync('uv run python scripts/audit_css.py', { stdio: 'inherit', cwd: __dirname });
+} catch {
   issues++;
 }
 
 if (issues === 0) {
   console.log(
-    `✓ All ${FILES.length} files pass (6 checks: imports, syntax, onclick, cross-module, utils, db, version)`,
+    `✓ All ${FILES.length} files pass (JS checks + asset token + CSS audit via uv)`,
   );
   process.exit(0);
 } else {

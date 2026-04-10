@@ -553,42 +553,14 @@ export function renderStats() {
   document.getElementById('stFresh').textContent = fresh;
 }
 
-/* ── Google News ──────────────────────────────────────────── */
+/* ── Google News (lazy gnews.js + worker; see gnews.md) ───── */
+let _fetchGoogleNews;
 export async function fetchGoogleNews(name) {
-  const q = encodeURIComponent(`"${name}" programmatic OR "data partnership" OR adtech`);
-  const proxy = `https://corsproxy.io/?url=${encodeURIComponent('https://news.google.com/rss/search?q=' + q + '&hl=en-US&gl=US&ceid=US:en')}`;
-  try {
-    const res = await fetch(proxy, { signal: AbortSignal.timeout(7000) });
-    if (!res.ok) throw new Error('proxy ' + res.status);
-    const xml = await res.text();
-    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-    if (doc.querySelector('parseerror')) throw new Error('parse error');
-    return [...doc.querySelectorAll('item')]
-      .slice(0, 10)
-      .map((item) => {
-        const linkNode = item.querySelector('link');
-        const url =
-          linkNode?.nextSibling?.nodeValue?.trim() ||
-          item.querySelector('link')?.textContent?.trim() ||
-          '';
-        const rawTitle = item.querySelector('title')?.textContent || '';
-        const title = rawTitle.replace(/ - [^-]+$/, '').trim();
-        const src = item.querySelector('source')?.textContent || 'Google News';
-        const dateRaw = item.querySelector('pubDate')?.textContent;
-        const date = dateRaw
-          ? new Date(dateRaw).toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'short',
-              year: '2-digit',
-            })
-          : '';
-        return { title, url, source: src, date, link_type: 'press', summary: '' };
-      })
-      .filter((i) => i.title && i.url);
-  } catch (e) {
-    console.warn('Google News error', e.message);
-    return [];
+  if (!_fetchGoogleNews) {
+    const m = await import('./gnews.js?v=__OA_ASSET_VERSION__');
+    _fetchGoogleNews = m.fetchGoogleNews;
   }
+  return _fetchGoogleNews(name);
 }
 
 /* ── Geocoding ────────────────────────────────────────────── */

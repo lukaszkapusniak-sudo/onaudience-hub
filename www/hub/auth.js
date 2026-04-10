@@ -49,12 +49,29 @@ export async function getCurrentUser() {
   return data?.user || null;
 }
 
+/* ── OAuth redirect: Vue SPA root (/) shares `oaHubSession` with legacy hub iframe ── */
+export function oauthAppBaseUrl() {
+  if (typeof window === 'undefined') {
+    return 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/';
+  }
+  const { origin, pathname } = window.location;
+  const i = pathname.indexOf('/hub');
+  if (i >= 0) {
+    const basePath = pathname.slice(0, i);
+    const normalized =
+      basePath === '' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
+    return `${origin}${normalized}`;
+  }
+  const withSlash = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  return `${origin}${withSlash}`;
+}
+
 /* ── Sign in with Google (production) ──────────────── */
 export async function signInWithGoogle() {
   const { error } = await sb().auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+      redirectTo: oauthAppBaseUrl(),
       queryParams: {
         // Hints to Google to show accounts from these domains first
         // (not a hard restriction — enforcement is in bootHub)
