@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d1';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d2';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -925,16 +925,13 @@ function _bottomClearance() {
 }
 
 function _positionCard(card, position, target) {
+  if (card._userDragged) return; // user moved it — respect their choice
   const vw = window.innerWidth, rawVh = window.innerHeight;
-  const bc = _bottomClearance();            // height of demo bar (if any)
-  const vh = rawVh - bc;                    // usable vertical space
+  const bc = _bottomClearance();
+  const vh = rawVh - bc;
   const cw = 560, ch = card.offsetHeight || 400;
 
-  // On mobile, update CSS bottom offset to clear demo bar
-  if (vw <= 600) {
-    card.style.bottom = (20 + bc) + 'px';
-    return;
-  }
+  if (vw <= 600) { card.style.bottom = (20 + bc) + 'px'; return; }
 
   if (position === 'center' || !target) {
     card.style.top  = Math.round((vh - ch) / 2) + 'px';
@@ -951,8 +948,17 @@ function _positionCard(card, position, target) {
   const gap = 16;
 
   if (position === 'right') {
-    card.style.left = Math.min(r.right + gap, vw - cw - 8) + 'px';
-    card.style.top  = Math.max(8, Math.min(r.top, vh - ch - 8)) + 'px';
+    // If coPanel is open there won't be room — float top-right instead
+    const coPanel = document.getElementById('coPanel');
+    const coPanelOpen = coPanel && coPanel.style.display !== 'none';
+    const spaceAvail = vw - r.right - cw - 24;
+    if (coPanelOpen && spaceAvail < 60) {
+      card.style.left = Math.max(r.right + 8, vw - cw - 12) + 'px';
+      card.style.top  = '48px';
+    } else {
+      card.style.left = Math.min(r.right + gap, vw - cw - 8) + 'px';
+      card.style.top  = Math.max(8, Math.min(r.top, vh - ch - 8)) + 'px';
+    }
   } else if (position === 'below') {
     card.style.top  = Math.min(r.bottom + gap, vh - ch - 8) + 'px';
     card.style.left = Math.max(8, Math.min(r.left, vw - cw - 8)) + 'px';
@@ -967,6 +973,54 @@ function _positionCard(card, position, target) {
       arEl.style.left = ((spEl && spEl._targetLeft) || (r.left + r.width/2)) - 12 + 'px';
       arEl.classList.add('vis');
     }
+  }
+}
+
+/* ── Drag to move tutorial card ──────────────────────────────────── */
+function _initTutDrag(card) {
+  const handle = card.querySelector('.oa-tut-stripe');
+  if (!handle || handle._dragBound) return;
+  handle._dragBound = true;
+  let sx, sy, sl, st, active = false;
+  const xy = e => e.touches ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
+  const down = e => {
+    if (card.classList.contains('oa-tut-mini')) return;
+    [sx, sy] = xy(e);
+    sl = parseInt(card.style.left) || card.getBoundingClientRect().left;
+    st = parseInt(card.style.top)  || card.getBoundingClientRect().top;
+    active = true; card.classList.add('oa-tut-dragging'); e.preventDefault();
+  };
+  const move = e => {
+    if (!active) return;
+    const [cx, cy] = xy(e);
+    const vw = window.innerWidth, vh = window.innerHeight;
+    card.style.left = Math.max(4, Math.min(vw - card.offsetWidth  - 4, sl + cx - sx)) + 'px';
+    card.style.top  = Math.max(4, Math.min(vh - 60,                    st + cy - sy)) + 'px';
+    e.preventDefault();
+  };
+  const up = () => {
+    if (!active) return;
+    active = false; card.classList.remove('oa-tut-dragging'); card._userDragged = true;
+  };
+  handle.addEventListener('mousedown',  down);
+  handle.addEventListener('touchstart', down, {passive:false});
+  document.addEventListener('mousemove',  move);
+  document.addEventListener('touchmove',  move, {passive:false});
+  document.addEventListener('mouseup',   up);
+  document.addEventListener('touchend',  up);
+}
+
+/* ── Mini / expand toggle ────────────────────────────────────────── */
+function _tutToggleMiniCard() {
+  const card = document.getElementById('oa-tut-card');
+  if (!card) return;
+  const isMini = card.classList.toggle('oa-tut-mini');
+  if (isMini) {
+    const bc = _bottomClearance();
+    card.style.cssText = `position:fixed;z-index:9999;bottom:${bc + 8}px;right:12px;left:auto;top:auto;`;
+  } else {
+    card._userDragged = false;
+    _renderCard();
   }
 }
 
@@ -1055,9 +1109,25 @@ function _renderCard() {
       ${langBar}${xpBar}`;
   }
 
-  card.innerHTML = inner;
+  // Mini pill — visible only when .oa-tut-mini
+  card.innerHTML = `<div class="oa-tut-mini-pill" onclick="window._tutToggleMini()">
+    <div class="oa-tut-mini-dot"></div>STEP ${_step + 1}/${STEPS.length} ▲</div>` + inner;
 
-  // Position after render (so offsetHeight is known)
+  // Add — minimise button next to ✕ close
+  const _xBtn = card.querySelector('.oa-tut-close');
+  if (_xBtn && !card.querySelector('.oa-tut-min-btn')) {
+    const _mBtn = document.createElement('button');
+    _mBtn.className = 'oa-tut-close oa-tut-min-btn';
+    _mBtn.title = 'Minimise — move out of the way';
+    _mBtn.textContent = '—';
+    _mBtn.onclick = e => { e.stopPropagation(); window._tutToggleMini(); };
+    _xBtn.parentNode.insertBefore(_mBtn, _xBtn);
+  }
+
+  // Attach drag to green stripe (idempotent)
+  _initTutDrag(card);
+
+  // Position after render
   requestAnimationFrame(() => {
     const _spLabel = {
       company_list:'Company List',stats_bar:'Pipeline Filters',
@@ -1065,7 +1135,7 @@ function _renderCard() {
       ai_bar:'AI Query Bar',compose:'Compose Button'
     }[s.id] || null;
     _spotlight(s.target, _spLabel);
-    _positionCard(card, s.card, s.target);
+    if (!card.classList.contains('oa-tut-mini')) _positionCard(card, s.card, s.target);
   });
 }
 
@@ -1228,5 +1298,6 @@ export function isTutorialDone() {
 window._tutNext  = _tutNext;
 window._tutClose = _tutClose;
 window._tutToggleMini = _tutToggleMiniCard;
+window._tutToggleMiniCard = _tutToggleMiniCard;
 window._tutGmail = _tutGmail;
 window._tutLang  = _setLang;
