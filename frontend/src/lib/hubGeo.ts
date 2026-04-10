@@ -7,9 +7,7 @@ import { upsertCompany } from './hubRest';
 
 const DEFAULT_NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
-export async function geocodeCity(
-  cityStr: string,
-): Promise<{ lat: number; lng: number } | null> {
+export async function geocodeCity(cityStr: string): Promise<{ lat: number; lng: number } | null> {
   try {
     const url = `${DEFAULT_NOMINATIM}?q=${encodeURIComponent(cityStr)}&format=json&limit=1`;
     const r = await fetch(url, { headers: { 'User-Agent': 'onAudience-Hub/2' } });

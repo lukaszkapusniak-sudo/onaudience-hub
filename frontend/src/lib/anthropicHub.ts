@@ -25,10 +25,7 @@ export function hasAnthropicApiKey(): boolean {
   return !!getAnthropicApiKey();
 }
 
-async function anthropicCall(
-  body: Record<string, unknown>,
-  beta: string | null,
-): Promise<unknown> {
+async function anthropicCall(body: Record<string, unknown>, beta: string | null): Promise<unknown> {
   const key = getAnthropicApiKey();
   const maxRetries = 3;
 
@@ -104,8 +101,6 @@ export async function researchFetch(
   })) as {
     content?: Array<{ type: string; text?: string }>;
   };
-  const textParts = (data.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text || '');
+  const textParts = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text || '');
   return { raw: data, text: textParts.join('\n').trim(), content: data.content };
 }

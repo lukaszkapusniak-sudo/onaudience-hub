@@ -35,9 +35,7 @@ function extractLinkUrl(block) {
   const rest1 = block;
   const m = rest1.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
   if (!m) return '';
-  const inner = decodeXmlEntities(
-    m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1'),
-  ).trim();
+  const inner = decodeXmlEntities(m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')).trim();
   if (inner) return inner;
   const idx = rest1.indexOf(m[0]);
   if (idx === -1) return '';

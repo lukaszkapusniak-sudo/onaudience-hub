@@ -17,7 +17,13 @@ import {
   safeUrl,
 } from './utils.js?v=__OA_ASSET_VERSION__';
 import { anthropicFetch } from './api.js?v=__OA_ASSET_VERSION__';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=__OA_ASSET_VERSION__';
+import {
+  openCompany,
+  sortCompanies,
+  boldKw,
+  completeness,
+  clog,
+} from './hub.js?v=__OA_ASSET_VERSION__';
 
 export function tagCountsFor(pool) {
   const m = {};

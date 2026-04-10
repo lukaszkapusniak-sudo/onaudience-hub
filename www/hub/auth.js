@@ -58,8 +58,7 @@ export function oauthAppBaseUrl() {
   const i = pathname.indexOf('/hub');
   if (i >= 0) {
     const basePath = pathname.slice(0, i);
-    const normalized =
-      basePath === '' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
+    const normalized = basePath === '' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
     return `${origin}${normalized}`;
   }
   const withSlash = pathname.endsWith('/') ? pathname : `${pathname}/`;

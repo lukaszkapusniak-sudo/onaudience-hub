@@ -46,7 +46,8 @@ export const useLemlistStore = defineStore('lemlist', () => {
     const q = leadSearch.value.trim().toLowerCase();
     if (!q) return leads.value;
     return leads.value.filter((l) => {
-      const blob = `${l.email ?? ''}${l.firstName ?? ''}${l.lastName ?? ''}${l.companyName ?? ''}`.toLowerCase();
+      const blob =
+        `${l.email ?? ''}${l.firstName ?? ''}${l.lastName ?? ''}${l.companyName ?? ''}`.toLowerCase();
       return blob.includes(q);
     });
   });
@@ -163,10 +164,7 @@ export const useLemlistStore = defineStore('lemlist', () => {
   async function unsubLead(campaignId: string, email: string): Promise<void> {
     if (!globalThis.confirm(`Unsubscribe ${email} from this campaign?`)) return;
     try {
-      await lemlistFetch(
-        `/campaigns/${campaignId}/leads/${encodeURIComponent(email)}`,
-        'DELETE',
-      );
+      await lemlistFetch(`/campaigns/${campaignId}/leads/${encodeURIComponent(email)}`, 'DELETE');
       showToast(`Unsubscribed ${email}`);
       await selectCampaign(campaignId);
     } catch (e) {
@@ -301,7 +299,10 @@ export const useLemlistStore = defineStore('lemlist', () => {
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-|-$/g, '')
             : null,
-          title: (detail.jobTitle as string) || ((detail.fields as { jobTitle?: string })?.jobTitle ?? '') || '',
+          title:
+            (detail.jobTitle as string) ||
+            ((detail.fields as { jobTitle?: string })?.jobTitle ?? '') ||
+            '',
           linkedin_url: (detail.linkedinUrl as string) || '',
           source: 'lemlist',
           lemlist_campaign_id: l.campaignId,
@@ -368,7 +369,12 @@ export const useLemlistStore = defineStore('lemlist', () => {
     }
   }
 
-  function campaignStats(campaignId: string): { tot: number; sent: number; opened: number; replied: number } {
+  function campaignStats(campaignId: string): {
+    tot: number;
+    sent: number;
+    opened: number;
+    replied: number;
+  } {
     const hub = useHubStore();
     const cc = hub.contacts.filter((x) => x.lemlist_campaign_id === campaignId);
     const tot = cc.length;

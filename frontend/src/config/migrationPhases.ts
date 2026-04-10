@@ -33,7 +33,8 @@ export const MIGRATION_PHASES: MigrationPhase[] = [
   {
     id: 'p2',
     title: 'App shell',
-    summary: 'HubShellLayout: nav, stats rail, theme, Supabase sign-out; iframe remains default route.',
+    summary:
+      'HubShellLayout: nav, stats rail, theme, Supabase sign-out; iframe remains default route.',
     status: 'done',
     legacyFiles: ['app.js', 'index.html'],
     vueRoutes: ['/', '/data', '/lemlist', '/about', '/migrate', '/demo/contact-drawer'],
@@ -41,7 +42,8 @@ export const MIGRATION_PHASES: MigrationPhase[] = [
   {
     id: 'p3',
     title: 'Companies list',
-    summary: 'list.js parity on /data: search, type chips, TAG_RULES + OR/AND, sort; /companies alias.',
+    summary:
+      'list.js parity on /data: search, type chips, TAG_RULES + OR/AND, sort; /companies alias.',
     status: 'partial',
     legacyFiles: ['list.js'],
     vueRoutes: ['/data', '/companies'],
@@ -75,7 +77,15 @@ export const MIGRATION_PHASES: MigrationPhase[] = [
     title: 'Integrations',
     summary: 'Gmail, meeseeks, merge, vibe, TCF, tutorial, demo.',
     status: 'planned',
-    legacyFiles: ['gmail.js', 'meeseeks.js', 'merge.js', 'vibe.js', 'tcf.js', 'tutorial.js', 'demo.js'],
+    legacyFiles: [
+      'gmail.js',
+      'meeseeks.js',
+      'merge.js',
+      'vibe.js',
+      'tcf.js',
+      'tutorial.js',
+      'demo.js',
+    ],
     vueRoutes: ['/lemlist'],
   },
   {

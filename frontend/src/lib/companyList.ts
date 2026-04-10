@@ -27,22 +27,11 @@ export function slugifyCompanyName(s: string): string {
     .replace(/^-|-$/g, '');
 }
 
-export function getTagsForCompany(
-  c: HubCompanyRow,
-  rules: TagRule[] = TAG_RULES,
-): string[] {
-  const hay = [
-    c.name || '',
-    c.note || '',
-    c.category || '',
-    c.region || '',
-    c.description || '',
-  ]
+export function getTagsForCompany(c: HubCompanyRow, rules: TagRule[] = TAG_RULES): string[] {
+  const hay = [c.name || '', c.note || '', c.category || '', c.region || '', c.description || '']
     .join(' ')
     .toLowerCase();
-  return rules
-    .filter((r) => r.kw.some((k) => hay.includes(k)))
-    .map((r) => r.tag);
+  return rules.filter((r) => r.kw.some((k) => hay.includes(k))).map((r) => r.tag);
 }
 
 function passesTypeFilter(
@@ -86,9 +75,7 @@ export function filterPoolForTagCounts(
   searchQ: string,
 ): HubCompanyRow[] {
   const q = searchQ.trim().toLowerCase();
-  const contactNameSlugs = new Set(
-    contacts.map((c) => slugifyCompanyName(c.company_name || '')),
-  );
+  const contactNameSlugs = new Set(contacts.map((c) => slugifyCompanyName(c.company_name || '')));
   return companies.filter(
     (c) => passesTypeFilter(c, filter, contactNameSlugs) && passesSearchPool(c, q),
   );
@@ -120,10 +107,7 @@ function matchTags(
   return [...activeTags].some((x) => t.includes(x));
 }
 
-export function sortCompaniesLikeHub(
-  arr: HubCompanyRow[],
-  sortBy: CompanySort,
-): HubCompanyRow[] {
+export function sortCompaniesLikeHub(arr: HubCompanyRow[], sortBy: CompanySort): HubCompanyRow[] {
   if (sortBy === 'recent') {
     return [...arr].sort((a, b) => {
       const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
@@ -151,9 +135,7 @@ export function filterAndSortCompanies(
 ): HubCompanyRow[] {
   const q = opts.searchQ.trim().toLowerCase();
   const rules = opts.rules ?? TAG_RULES;
-  const contactNameSlugs = new Set(
-    contacts.map((c) => slugifyCompanyName(c.company_name || '')),
-  );
+  const contactNameSlugs = new Set(contacts.map((c) => slugifyCompanyName(c.company_name || '')));
 
   let filt = companies.filter((c) => {
     if (!passesTypeFilter(c, opts.filter, contactNameSlugs)) return false;

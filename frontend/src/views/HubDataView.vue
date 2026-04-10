@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { TAG_RULES } from '../config/tagRules';
 import {
@@ -12,6 +13,7 @@ import {
 import { useHubStore } from '../stores/hub';
 
 const hub = useHubStore();
+const router = useRouter();
 
 const searchQ = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -219,7 +221,14 @@ async function refreshData() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in displayed" :key="c.id">
+          <tr
+            v-for="c in displayed"
+            :key="c.id"
+            class="c-row"
+            style="cursor: pointer"
+            :data-slug="c.id"
+            @click="router.push(`/companies/${encodeURIComponent(c.id)}`)"
+          >
             <td class="name">{{ c.name || '—' }}</td>
             <td>
               <span class="tag">{{ c.type || '—' }}</span>

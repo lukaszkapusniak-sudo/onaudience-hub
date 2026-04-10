@@ -252,13 +252,7 @@ test.describe('C. lemlist-sync edge function contract', () => {
       timeout: 90_000,
     });
     const { stats } = await r.json();
-    const REQUIRED = [
-      'campaigns',
-      'leads',
-      'contacts_new',
-      'contacts_updated',
-      'companies_new',
-    ];
+    const REQUIRED = ['campaigns', 'leads', 'contacts_new', 'contacts_updated', 'companies_new'];
     for (const f of REQUIRED) {
       expect(stats).toHaveProperty(f);
       expect(typeof stats[f]).toBe('number');
@@ -866,7 +860,10 @@ test.describe('L. Personal domain filter', () => {
       return;
     } // no network — skip gracefully
     if (r.status() !== 200) {
-      test.skip(true, `Supabase REST ${r.status()} — companies table not readable with current SB_ANON_KEY`);
+      test.skip(
+        true,
+        `Supabase REST ${r.status()} — companies table not readable with current SB_ANON_KEY`,
+      );
       return;
     }
     const rows = await r.json();

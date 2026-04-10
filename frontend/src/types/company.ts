@@ -8,6 +8,15 @@ export interface HubCompanyRow {
   note?: string | null;
   region?: string | null;
   hq_city?: string | null;
+  hq_country?: string | null;
   description?: string | null;
+  website?: string | null;
+  linkedin_url?: string | null;
+  size?: string | null;
+  founded?: string | null;
+  outreach_angle?: string | null;
+  tech_stack?: string | null;
+  gvl_id?: number | null;
+  data_richness?: number | null;
   updated_at?: string | null;
 }

@@ -7,8 +7,7 @@ export const CONTACTS_FIRST_RANGE_END = 4999;
 /** Follow-up pages match `www/hub/api.js` `_loadAllContacts` (1000–1999, …). */
 export const CONTACTS_PAGE_SIZE = 1000;
 
-const ORDER =
-  'icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast' as const;
+const ORDER = 'icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast' as const;
 
 const CONTACTS_ORDER = 'full_name.asc' as const;
 
@@ -138,18 +137,15 @@ export async function patchCompanyByName(
 ): Promise<void> {
   const base = import.meta.env.VITE_OA_SB_URL;
   if (!base) throw new Error('VITE_OA_SB_URL missing');
-  const res = await fetch(
-    `${base}/rest/v1/companies?name=eq.${encodeURIComponent(name)}`,
-    {
-      method: 'PATCH',
-      headers: {
-        ...(await hubAuthHeaders()),
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify(body),
+  const res = await fetch(`${base}/rest/v1/companies?name=eq.${encodeURIComponent(name)}`, {
+    method: 'PATCH',
+    headers: {
+      ...(await hubAuthHeaders()),
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
     },
-  );
+    body: JSON.stringify(body),
+  });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw new Error(`companies patchByName ${res.status}: ${t.slice(0, 120)}`);
@@ -201,8 +197,7 @@ export async function fetchContactsFirstPage(): Promise<ContactsFirstPageResult>
   const rowArr = Array.isArray(rows) ? rows : [];
   const cr = res.headers.get('content-range');
   const totalPart = cr?.split('/')[1];
-  let total =
-    totalPart && totalPart !== '*' ? parseInt(totalPart, 10) || 0 : rowArr.length;
+  let total = totalPart && totalPart !== '*' ? parseInt(totalPart, 10) || 0 : rowArr.length;
   if (!total && rowArr.length) total = rowArr.length;
   const rangeM = cr?.match(/(\d+)-(\d+)\//);
   const nextOffset = rangeM ? parseInt(rangeM[2], 10) + 1 : rowArr.length;
@@ -416,10 +411,9 @@ export async function fetchCompanyRelationsForSlug(slug: string): Promise<unknow
       `${base}/rest/v1/company_relations?from_company=eq.${encodeURIComponent(slug)}&select=*`,
       { headers: h },
     ),
-    fetch(
-      `${base}/rest/v1/company_relations?to_company=eq.${encodeURIComponent(slug)}&select=*`,
-      { headers: h },
-    ),
+    fetch(`${base}/rest/v1/company_relations?to_company=eq.${encodeURIComponent(slug)}&select=*`, {
+      headers: h,
+    }),
   ]);
   const parse = async (res: Response): Promise<unknown[]> => {
     if (!res.ok) return [];
@@ -530,18 +524,15 @@ export async function patchMergeSuggestion(
 ): Promise<void> {
   const base = import.meta.env.VITE_OA_SB_URL;
   if (!base) throw new Error('VITE_OA_SB_URL missing');
-  const res = await fetch(
-    `${base}/rest/v1/merge_suggestions?id=eq.${encodeURIComponent(id)}`,
-    {
-      method: 'PATCH',
-      headers: {
-        ...(await hubAuthHeaders()),
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify(body),
+  const res = await fetch(`${base}/rest/v1/merge_suggestions?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      ...(await hubAuthHeaders()),
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
     },
-  );
+    body: JSON.stringify(body),
+  });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw new Error(`merge_suggestions patch ${res.status}: ${t.slice(0, 120)}`);
@@ -584,10 +575,7 @@ export const ENRICH_CACHE_TTL_HOURS = {
  * Returns parsed `data` if a row exists and is still within TTL, else `null`.
  * Mirrors `cacheGet(companyId, source)`.
  */
-export async function enrichCacheGet(
-  companyId: string,
-  source: string,
-): Promise<unknown | null> {
+export async function enrichCacheGet(companyId: string, source: string): Promise<unknown | null> {
   const base = import.meta.env.VITE_OA_SB_URL;
   if (!base) return null;
   try {
@@ -708,4 +696,93 @@ export async function postCompanyMerge(row: Record<string, unknown>): Promise<bo
     body: JSON.stringify(row),
   });
   return res.ok;
+}
+
+/** Fetch a single company row by slug/id — mirrors `db.js` `companies.get`. */
+export async function fetchCompanyBySlug(slug: string): Promise<unknown | null> {
+  const base = import.meta.env.VITE_OA_SB_URL;
+  if (!base) throw new Error('VITE_OA_SB_URL missing');
+  const url = `${base}/rest/v1/companies?id=eq.${encodeURIComponent(slug)}&select=*&limit=1`;
+  const res = await fetch(url, { headers: await hubAuthHeaders() });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`companies slug ${res.status}: ${t.slice(0, 200)}`);
+  }
+  const rows = await res.json();
+  if (!Array.isArray(rows) || !rows.length) return null;
+  return rows[0] ?? null;
+}
+
+/** Resolve company alias → canonical id via `company_aliases` table. Returns null if no alias. */
+export async function resolveCompanyAlias(aliasSlug: string): Promise<string | null> {
+  const base = import.meta.env.VITE_OA_SB_URL;
+  if (!base) return null;
+  try {
+    const url = `${base}/rest/v1/company_aliases?alias_id=eq.${encodeURIComponent(aliasSlug)}&select=canonical_id&limit=1`;
+    const res = await fetch(url, { headers: await hubAuthHeaders() });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows?.[0]?.canonical_id ? String(rows[0].canonical_id) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Call `merge_companies` RPC — mirrors `hub.js` `executeMerge`. */
+export async function callMergeCompaniesRpc(winnerId: string, loserId: string): Promise<boolean> {
+  const base = import.meta.env.VITE_OA_SB_URL;
+  if (!base) return false;
+  try {
+    const res = await fetch(`${base}/rest/v1/rpc/merge_companies`, {
+      method: 'POST',
+      headers: {
+        ...(await hubAuthHeaders()),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ winner_id: winnerId, loser_id: loserId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Fetch Google News via corsproxy — mirrors `www/hub/gnews.js`. Returns raw XML text. */
+export async function fetchGoogleNewsXml(query: string): Promise<string> {
+  const encoded = encodeURIComponent(query);
+  const rss = `https://news.google.com/rss/search?q=${encoded}&hl=en-US&gl=US&ceid=US:en`;
+  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(rss)}`;
+  const res = await fetch(proxy, { signal: AbortSignal.timeout(12000) });
+  if (!res.ok) throw new Error(`gnews ${res.status}`);
+  return res.text();
+}
+
+/** Parse Google News RSS XML into NewsItem array — mirrors `www/hub/gnews-parse.js`. */
+export function parseGoogleNewsXml(xml: string): Array<{
+  title: string;
+  url: string | null;
+  source: string;
+  date: string;
+}> {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    const items = Array.from(doc.querySelectorAll('item'));
+    return items.slice(0, 8).map((item) => {
+      const title = item.querySelector('title')?.textContent?.trim() ?? '';
+      const link = item.querySelector('link')?.textContent?.trim() ?? null;
+      const pubDate = item.querySelector('pubDate')?.textContent?.trim() ?? '';
+      const source = item.querySelector('source')?.textContent?.trim() ?? 'Google News';
+      const date = pubDate
+        ? new Date(pubDate).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: '2-digit',
+          })
+        : '';
+      return { title, url: link, source, date };
+    });
+  } catch {
+    return [];
+  }
 }

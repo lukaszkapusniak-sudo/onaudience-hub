@@ -3,10 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 
 import { getSupabaseApp } from '../lib/supabaseApp';
+import ComposerDrawer from '../modules/composer/components/ComposerDrawer.vue';
+import { useComposerStore } from '../modules/composer/store';
 import { useHubStore } from '../stores/hub';
 
 const route = useRoute();
 const hub = useHubStore();
+const composer = useComposerStore();
 
 const userEmail = ref<string | null>(null);
 let removeAuthListener: (() => void) | null = null;
@@ -14,11 +17,13 @@ let removeAuthListener: (() => void) | null = null;
 const theme = ref<'dark' | 'light'>('dark');
 
 const nav = [
-  { to: '/', label: 'Legacy hub', name: 'hub' },
-  { to: '/companies', label: 'Companies', name: 'hub-data' },
+  { to: '/data', label: 'Companies', name: 'hub-data' },
+  { to: '/contacts', label: 'Contacts', name: 'contacts' },
+  { to: '/audiences', label: 'Audiences', name: 'audiences' },
   { to: '/lemlist', label: 'Lemlist', name: 'lemlist' },
+  { to: '/tcf', label: 'TCF', name: 'tcf' },
+  { to: '/merge', label: 'Merge', name: 'merge' },
   { to: '/about', label: 'About', name: 'about' },
-  { to: '/migrate', label: 'Migrate', name: 'migrate' },
 ] as const;
 
 const statsLine = computed(() => {
@@ -104,6 +109,14 @@ onUnmounted(() => {
         </RouterLink>
       </nav>
       <div class="shell__actions">
+        <button
+          type="button"
+          class="shell__compose"
+          title="Open email composer"
+          @click="composer.open({})"
+        >
+          ✉ Compose
+        </button>
         <button type="button" class="shell__theme" :title="`Theme: ${theme}`" @click="toggleTheme">
           {{ theme === 'dark' ? '◐ Light' : '◑ Dark' }}
         </button>
@@ -137,6 +150,9 @@ onUnmounted(() => {
         <RouterView />
       </main>
     </div>
+
+    <!-- Global composer drawer — rendered via Teleport to body inside component -->
+    <ComposerDrawer />
   </div>
 </template>
 
@@ -218,6 +234,22 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   margin-left: auto;
+}
+
+.shell__compose {
+  height: 28px;
+  padding: 0 0.6rem;
+  border-radius: 4px;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: rgba(192, 132, 252, 0.08);
+  color: #c084fc;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.shell__compose:hover {
+  background: rgba(192, 132, 252, 0.15);
 }
 
 .shell__theme {

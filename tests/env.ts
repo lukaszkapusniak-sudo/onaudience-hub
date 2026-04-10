@@ -36,6 +36,9 @@ export const HUB_URL = withTrailingSlash(
   optional('PLAYWRIGHT_BASE_URL', '') || optional('HUB_BASE_URL', HUB_URL_DEFAULT),
 );
 
+/** Vue app root URL — strips the /hub/ suffix from HUB_URL so Vue routes resolve correctly. */
+export const VUE_URL = withTrailingSlash(HUB_URL.replace(/hub\/$/, ''));
+
 // ── Supabase ──────────────────────────────────────────────────────────────────
 const SB_URL = optional('SB_URL', 'https://nyzkkqqjnkctcmxoirdj.supabase.co');
 

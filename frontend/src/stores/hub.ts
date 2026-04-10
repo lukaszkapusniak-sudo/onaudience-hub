@@ -207,11 +207,7 @@ export const useHubStore = defineStore('hub', () => {
    * companies (page 0 + background), contacts (+ background), `company_relations` list-all.
    */
   async function bootstrapLegacyHubData(): Promise<void> {
-    await Promise.all([
-      loadCompaniesFirstPage(),
-      loadContacts(),
-      loadCompanyRelations(),
-    ]);
+    await Promise.all([loadCompaniesFirstPage(), loadContacts(), loadCompanyRelations()]);
   }
 
   async function loadCompaniesFirstPage(): Promise<void> {

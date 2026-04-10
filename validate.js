@@ -258,7 +258,9 @@ for (const fp of hubFiles) {
 }
 if (badAssetTokens.size) {
   for (const line of badAssetTokens)
-    console.error(`FAIL cache-bust token in source — expected ?v=${EXPECTED_ASSET_V} only: ${line}`);
+    console.error(
+      `FAIL cache-bust token in source — expected ?v=${EXPECTED_ASSET_V} only: ${line}`,
+    );
   issues += badAssetTokens.size;
 }
 
@@ -271,9 +273,7 @@ try {
 }
 
 if (issues === 0) {
-  console.log(
-    `✓ All ${FILES.length} files pass (JS checks + asset token + CSS audit via uv)`,
-  );
+  console.log(`✓ All ${FILES.length} files pass (JS checks + asset token + CSS audit via uv)`);
   process.exit(0);
 } else {
   console.error(`\n✗ ${issues} issue(s) — fix before pushing`);
