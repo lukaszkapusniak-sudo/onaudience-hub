@@ -13,15 +13,19 @@ const hubFrameSrc = computed(() => `${import.meta.env.BASE_URL}hub/index.html`);
 
 <style scoped>
 .hub-host {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
   margin: 0;
   overflow: hidden;
   background: #0c0c0a;
+  display: flex;
+  flex-direction: column;
 }
 .hub-frame {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   border: 0;
   display: block;
 }

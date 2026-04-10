@@ -10,7 +10,7 @@ Single-file component that wraps the entire Vue SPA. It contains **no business l
 
 ## Template
 
-A single `<RouterView />` — default route **`/`** is [`HubAppView.vue`](HubAppView.md) (iframe host); **`/about`** is [`HomeView.md`](HomeView.md).
+A single `<RouterView />`. **`/`** uses [`HubShellLayout.md`](HubShellLayout.md) with nested routes; the default child is [`HubAppView.md`](HubAppView.md) (iframe). **`/about`** is [`HomeView.md`](HomeView.md) inside the same shell.
 
 ## Build / deploy
 

@@ -7,5 +7,7 @@ export interface HubCompanyRow {
   icp?: number | null;
   note?: string | null;
   region?: string | null;
+  hq_city?: string | null;
+  description?: string | null;
   updated_at?: string | null;
 }

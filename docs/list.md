@@ -18,3 +18,7 @@ Renders the scrollable **company list** and drives **filtering** from shared [`s
 ## Dependencies
 
 Uses [`utils.js`](utils.md) (`esc`, `_slug`, `getCoTags`, `getAv`, …), [`config.js`](config.md) (`TAG_RULES`), [`api.js`](api.md) (`anthropicFetch` for some enrichment paths), and [`hub.js`](hub.md) (`openCompany`, `sortCompanies`, `boldKw`, `completeness`, `clog`).
+
+## Vue port
+
+[`HubDataView.vue`](../frontend/src/views/HubDataView.vue) + [`companyList.ts`](../frontend/src/lib/companyList.ts) + [`tagRules.ts`](../frontend/src/config/tagRules.ts) — search, type chips, tag OR/AND, sort; rich rows / AI / `openCompany` still legacy or Phase 4+.

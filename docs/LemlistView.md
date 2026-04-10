@@ -6,12 +6,12 @@
 
 ## Stack
 
-| Piece                                                    | Role                                                                        |
-| -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [`stores/lemlist.ts`](../frontend/src/stores/lemlist.ts) | Campaigns, lead load/enrich, sync contacts/companies, audience push, unsub. |
-| [`lib/lemlistApi.ts`](../frontend/src/lib/lemlistApi.ts) | Proxy fetch, campaigns pagination, add lead, write-back (patches contacts). |
-| [`lib/hubRest.ts`](../frontend/src/lib/hubRest.ts)       | Supabase REST: contacts upsert/patch, audiences list, company merge.        |
-| [`stores/hub.ts`](../frontend/src/stores/hub.ts)         | Shared `contacts` (for campaign row stats + enrich).                        |
+| Piece                                                    | Role                                                                          |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`stores/lemlist.ts`](../frontend/src/stores/lemlist.ts) | Campaigns, lead load/enrich, sync contacts/companies, audience push, unsub.   |
+| [`lib/lemlistApi.ts`](../frontend/src/lib/lemlistApi.ts) | Proxy fetch, campaigns pagination, add lead, write-back (patches contacts).   |
+| [`lib/hubRest.ts`](../frontend/src/lib/hubRest.ts)       | Supabase REST: contacts upsert/patch, audiences list, company merge.          |
+| [`stores/hub.ts`](../frontend/src/stores/hub.ts)         | Shared `contacts` (full Supabase load with background pages; stats + enrich). |
 
 ## Not ported from legacy (yet)
 

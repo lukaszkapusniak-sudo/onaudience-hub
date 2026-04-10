@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
-
 import { relTime } from '../lib/relTime';
 import { useHubStore } from '../stores/hub';
 import { useLemlistStore } from '../stores/lemlist';
@@ -13,7 +11,7 @@ const ll = useLemlistStore();
 const { toast } = storeToRefs(ll);
 
 onMounted(async () => {
-  await Promise.all([hub.loadContacts(), hub.loadCompaniesFirstPage()]);
+  await hub.bootstrapLegacyHubData();
   await ll.loadAudiences();
   await ll.refreshCampaigns();
 });
@@ -53,12 +51,11 @@ function detailStats(leads: LemlistLead[]) {
       <div>
         <h1>Lemlist</h1>
         <p class="ll-sub">Vue + Pinia port of <code>www/hub/lemlist.js</code></p>
+        <p v-if="hub.contactsLoadStatus === 'ok' && hub.totalContactsInDb" class="ll-crm-meta">
+          CRM: <strong>{{ hub.contactCount }}</strong> / {{ hub.totalContactsInDb }} contacts
+          <span v-if="hub.contactsLoadingMore" class="ll-loading-db"> — loading more…</span>
+        </p>
       </div>
-      <nav class="ll-nav">
-        <RouterLink to="/">Hub shell</RouterLink>
-        <RouterLink to="/data">Companies</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
     </header>
 
     <div class="ll-header">
@@ -311,6 +308,17 @@ h1 {
 }
 .ll-sub code {
   font-size: 0.75em;
+  color: #7dd3fc;
+}
+.ll-crm-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #a8a89e;
+}
+.ll-crm-meta strong {
+  color: #e8e8e0;
+}
+.ll-loading-db {
   color: #7dd3fc;
 }
 .ll-nav {

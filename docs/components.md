@@ -8,18 +8,21 @@ This repo does **not** use a large shared `components/` tree. **Vue single-file 
 
 ## Vue 3 (`frontend/src/`)
 
-| File                                                                                 | Role                                                                          | Elaboration                            |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | -------------------------------------- |
-| [`App.vue`](../frontend/src/App.vue)                                                 | Root shell; only `<RouterView />`.                                            | [`App.md`](App.md)                     |
-| [`views/HubAppView.vue`](../frontend/src/views/HubAppView.vue)                       | **Production `/`** — same-origin iframe → `hub/index.html`.                   | [`HubAppView.md`](HubAppView.md)       |
-| [`views/HubDataView.vue`](../frontend/src/views/HubDataView.vue)                     | **`/data`** — Pinia + REST first page of companies (native Vue).              | [`HubDataView.md`](HubDataView.md)     |
-| [`views/LemlistView.vue`](../frontend/src/views/LemlistView.vue)                     | **`/lemlist`** — Lemlist campaigns/leads/sync (Vue port of `lemlist.js`).     | [`LemlistView.md`](LemlistView.md)     |
-| [`views/MigrationHomeView.vue`](../frontend/src/views/MigrationHomeView.vue)         | **`/migrate`** — roadmap UI (mirrors [`VUE_MIGRATION.md`](VUE_MIGRATION.md)). | [`VUE_MIGRATION.md`](VUE_MIGRATION.md) |
-| [`views/HomeView.vue`](../frontend/src/views/HomeView.vue)                           | **`/about`** migration / marketing copy.                                      | [`HomeView.md`](HomeView.md)           |
-| [`views/ContactDrawerDemoView.vue`](../frontend/src/views/ContactDrawerDemoView.vue) | Dev route for the ported contact drawer (`/demo/contact-drawer`).             | [`ContactDrawer.md`](ContactDrawer.md) |
-| [`components/ContactDrawer.vue`](../frontend/src/components/ContactDrawer.vue)       | Hub **contact drawer** UI (TypeScript); first legacy port from `drawer.js`.   | [`ContactDrawer.md`](ContactDrawer.md) |
+| File                                                                                 | Role                                                                          | Elaboration                              |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ---------------------------------------- |
+| [`App.vue`](../frontend/src/App.vue)                                                 | Root shell; only `<RouterView />`.                                            | [`App.md`](App.md)                       |
+| [`layouts/HubShellLayout.vue`](../frontend/src/layouts/HubShellLayout.vue)           | **Phase 2** — nav, stats, theme, auth, rail; wraps iframe + Vue routes.       | [`HubShellLayout.md`](HubShellLayout.md) |
+| [`views/HubAppView.vue`](../frontend/src/views/HubAppView.vue)                       | **Production `/`** — same-origin iframe → `hub/index.html` (child of shell).  | [`HubAppView.md`](HubAppView.md)         |
+| [`views/HubDataView.vue`](../frontend/src/views/HubDataView.vue)                     | **`/data`** — Pinia + REST first page of companies (native Vue).              | [`HubDataView.md`](HubDataView.md)       |
+| [`views/LemlistView.vue`](../frontend/src/views/LemlistView.vue)                     | **`/lemlist`** — Lemlist campaigns/leads/sync (Vue port of `lemlist.js`).     | [`LemlistView.md`](LemlistView.md)       |
+| [`views/MigrationHomeView.vue`](../frontend/src/views/MigrationHomeView.vue)         | **`/migrate`** — roadmap UI (mirrors [`VUE_MIGRATION.md`](VUE_MIGRATION.md)). | [`VUE_MIGRATION.md`](VUE_MIGRATION.md)   |
+| [`views/HomeView.vue`](../frontend/src/views/HomeView.vue)                           | **`/about`** migration / marketing copy.                                      | [`HomeView.md`](HomeView.md)             |
+| [`views/ContactDrawerDemoView.vue`](../frontend/src/views/ContactDrawerDemoView.vue) | Dev route for the ported contact drawer (`/demo/contact-drawer`).             | [`ContactDrawer.md`](ContactDrawer.md)   |
+| [`components/ContactDrawer.vue`](../frontend/src/components/ContactDrawer.vue)       | Hub **contact drawer** UI (TypeScript); first legacy port from `drawer.js`.   | [`ContactDrawer.md`](ContactDrawer.md)   |
 
-Other frontend: [`main.ts`](../frontend/src/main.ts), [`router/index.ts`](../frontend/src/router/index.ts), [`types/contact.ts`](../frontend/src/types/contact.ts), [`types/company.ts`](../frontend/src/types/company.ts), [`types/lemlist.ts`](../frontend/src/types/lemlist.ts), [`stores/hub.ts`](../frontend/src/stores/hub.ts), [`stores/lemlist.ts`](../frontend/src/stores/lemlist.ts), [`lib/hubDisplay.ts`](../frontend/src/lib/hubDisplay.ts), [`lib/hubRest.ts`](../frontend/src/lib/hubRest.ts), [`lib/lemlistApi.ts`](../frontend/src/lib/lemlistApi.ts), [`lib/classifyNote.ts`](../frontend/src/lib/classifyNote.ts), [`lib/relTime.ts`](../frontend/src/lib/relTime.ts), [`style.css`](../frontend/src/style.css).
+[`config/tagRules.ts`](../frontend/src/config/tagRules.ts), [`lib/companyList.ts`](../frontend/src/lib/companyList.ts),
+
+Other frontend: [`main.ts`](../frontend/src/main.ts), [`router/index.ts`](../frontend/src/router/index.ts), [`types/contact.ts`](../frontend/src/types/contact.ts), [`types/company.ts`](../frontend/src/types/company.ts), [`types/relation.ts`](../frontend/src/types/relation.ts), [`types/lemlist.ts`](../frontend/src/types/lemlist.ts), [`stores/hub.ts`](../frontend/src/stores/hub.ts), [`stores/lemlist.ts`](../frontend/src/stores/lemlist.ts), [`lib/hubDisplay.ts`](../frontend/src/lib/hubDisplay.ts), [`lib/hubRest.ts`](../frontend/src/lib/hubRest.ts) (full `db.js` parity incl. Phase 1.6), [`lib/anthropicHub.ts`](../frontend/src/lib/anthropicHub.ts), [`lib/hubGeo.ts`](../frontend/src/lib/hubGeo.ts), [`lib/intelligenceMerge.ts`](../frontend/src/lib/intelligenceMerge.ts), [`lib/lemlistApi.ts`](../frontend/src/lib/lemlistApi.ts), [`lib/classifyNote.ts`](../frontend/src/lib/classifyNote.ts), [`lib/relTime.ts`](../frontend/src/lib/relTime.ts), [`style.css`](../frontend/src/style.css).
 
 ---
 
@@ -68,7 +71,7 @@ Boot entry: [`index.html`](../www/hub/index.html) → [`app.js`](../www/hub/app.
 
 ## Summary counts
 
-- **Vue `.vue` files:** **8** (`App.vue`, `HubAppView.vue`, `HubDataView.vue`, `LemlistView.vue`, `MigrationHomeView.vue`, `HomeView.vue`, `ContactDrawer.vue`, `ContactDrawerDemoView.vue`).
+- **Vue `.vue` files:** **9** (`App.vue`, `layouts/HubShellLayout.vue`, `HubAppView.vue`, `HubDataView.vue`, `LemlistView.vue`, `MigrationHomeView.vue`, `HomeView.vue`, `ContactDrawer.vue`, `ContactDrawerDemoView.vue`).
 - **Hub ES modules (`www/hub/*.js`):** **26** hand-maintained + **`config.generated.js`**.
 - **No** React/JSX/Svelte components in the repo.
 

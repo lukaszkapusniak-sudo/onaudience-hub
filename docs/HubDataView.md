@@ -2,13 +2,16 @@
 
 **Path:** [`frontend/src/views/HubDataView.vue`](../frontend/src/views/HubDataView.vue)
 
-**Route:** `/data`
+**Route:** `/data` (nested under [`HubShellLayout.md`](HubShellLayout.md))
 
 ## Role
 
 - Loads the **first 200 companies** + **total count** via [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (same Supabase REST query/order as [`www/hub/db.js`](../www/hub/db.js) + [`api.js`](../www/hub/api.js) initial load).
+- Loads **contacts** when needed for Fresh filter + tag pool counts (see [`companyList.ts`](../frontend/src/lib/companyList.ts)).
+- In parallel, loads **`company_relations`** like legacy `loadFromSupabase`.
+- **Phase 3:** search, type filter chips, [`TAG_RULES`](../frontend/src/config/tagRules.ts) tag panel (OR/AND), sort (recent / name / ICP), **`/`** keyboard shortcut to focus search — parity with [`list.js`](../www/hub/list.js) (rich row UI / AI still TODO).
 - Stores rows in Pinia [`stores/hub.ts`](../frontend/src/stores/hub.ts).
-- **Does not** replace the iframe hub; it proves the Vue data path until full UI parity.
+- Alias: **`/companies`** redirects to **`/data`** ([`router/index.ts`](../frontend/src/router/index.ts)).
 
 ## Auth
 

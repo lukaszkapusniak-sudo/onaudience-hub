@@ -24,12 +24,15 @@ Use **`/migrate`** in the app for a live checklist (same phases as below). Legac
 
 **Goal:** Pinia + REST match [`db.js`](../www/hub/db.js) + [`api.js`](../www/hub/api.js) load paths (pagination, relations, enrich cache where needed).
 
-| Step | Task                                                                                                                                                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1.1  | Companies: background pages after first 200 (mirror `_loadRemainingPages`) — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (`fetchCompaniesRange`) + [`stores/hub.ts`](../frontend/src/stores/hub.ts) (`loadRemainingCompanyPages`) |
-| 1.2  | Contacts: paginate beyond 5k if needed                                                                                                                                                                                                           |
-| 1.3  | `company_relations` + merge into store                                                                                                                                                                                                           |
-| 1.4  | Optional: `enrich_cache` reads for ported panels                                                                                                                                                                                                 |
+| Step | Task                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | Companies: background pages after first 200 (mirror `_loadRemainingPages`) — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (`fetchCompaniesRange`) + [`stores/hub.ts`](../frontend/src/stores/hub.ts) (`loadRemainingCompanyPages`)                                                                                                                                                                                       |
+| 1.2  | Contacts: paginate beyond first chunk — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (`fetchContactsFirstPage`, `fetchContactsRange`) + [`stores/hub.ts`](../frontend/src/stores/hub.ts) (`loadRemainingContactPages`)                                                                                                                                                                                                   |
+| 1.3  | `company_relations` + merge into store — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (`fetchCompanyRelations`) + [`stores/hub.ts`](../frontend/src/stores/hub.ts) (`companyRelations`, `loadCompanyRelations`, `bootstrapLegacyHubData`)                                                                                                                                                                                |
+| 1.4  | Optional: `enrich_cache` — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts) (`enrichCacheGet`, `enrichCacheSet`, `enrichCacheInvalidate`, `withEnrichCache`; TTL constants match [`api.js`](../www/hub/api.js))                                                                                                                                                                                                              |
+| 1.5  | Remaining [`db.js`](../www/hub/db.js) namespaces for panels — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts): `fetchIntelligenceForCompany` / `upsertIntelligence`, `fetchMergeSuggestionsPending` / `fetchMergeSuggestionsPendingCount` / `patchMergeSuggestion`, `fetchCompanyRelationsForSlug`, `fetchUserProfile`                                                                                                      |
+| 1.6  | Rest of [`db.js`](../www/hub/db.js) **CRUD** not covered in 1.1–1.5 — **done** in [`hubRest.ts`](../frontend/src/lib/hubRest.ts): companies (`fetchCompanyById`, `searchCompanies`, `patchCompany`, `patchCompanyByName`, `upsertCompany`), contacts (`fetchContactsByCompany`, `fetchContactsByCompanyName`, `fetchContactsCompanyIdsOnly`), audiences (`upsertAudience`, `patchAudience`, `deleteAudience`), `upsertCompanyRelation` |
+| 1.7  | [`api.js`](../www/hub/api.js) **non-REST** orchestration (AI, geocode, intel merge) — **done**: [`anthropicHub.ts`](../frontend/src/lib/anthropicHub.ts) (`getAnthropicApiKey` / `anthropicFetch` / `anthropicMcpFetch` / `researchFetch`), [`hubGeo.ts`](../frontend/src/lib/hubGeo.ts) (`geocodeCity` / `saveCompanyGeocode`), [`intelligenceMerge.ts`](../frontend/src/lib/intelligenceMerge.ts) (`mergePressLinksIntelligence`)    |
 
 ---
 
@@ -37,12 +40,12 @@ Use **`/migrate`** in the app for a live checklist (same phases as below). Legac
 
 **Goal:** One Vue layout with nav / stats / tabs like [`index.html`](../www/hub/index.html) + [`app.js`](../www/hub/app.js) chrome.
 
-| Step | Task                                                                        |
-| ---- | --------------------------------------------------------------------------- |
-| 2.1  | `HubShellLayout.vue` — nav, stats bar, left tabs (Companies / Contacts / …) |
-| 2.2  | Child `<RouterView />` for tab content                                      |
-| 2.3  | Theme toggle (`data-theme`) — match hub CSS variables                       |
-| 2.4  | Wire auth badge / sign-out using existing Supabase client                   |
+| Step | Task                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2.1  | `HubShellLayout.vue` — nav, stats bar, left rail — **done** [`HubShellLayout.vue`](../frontend/src/layouts/HubShellLayout.vue) |
+| 2.2  | Child `<RouterView />` — **done** (nested routes in [`router/index.ts`](../frontend/src/router/index.ts))                      |
+| 2.3  | Theme toggle (`data-theme`, `oaTheme`) — **done** in layout                                                                    |
+| 2.4  | Auth email + sign-out — **done** (`getSupabaseApp`, `onAuthStateChange`)                                                       |
 
 ---
 
@@ -50,11 +53,11 @@ Use **`/migrate`** in the app for a live checklist (same phases as below). Legac
 
 **Goal:** Replace [`list.js`](../www/hub/list.js) behaviour in Vue.
 
-| Step | Task                                                  |
-| ---- | ----------------------------------------------------- |
-| 3.1  | Search, filter chips, tag panel + OR/AND, sort        |
-| 3.2  | Keyboard nav (j/k, Enter) if desired                  |
-| 3.3  | Merge `/data` into main companies route or keep alias |
+| Step | Task                                                                                                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 3.1  | Search, filter chips, tag panel + OR/AND, sort — **done** in [`HubDataView.vue`](../frontend/src/views/HubDataView.vue), [`companyList.ts`](../frontend/src/lib/companyList.ts), [`tagRules.ts`](../frontend/src/config/tagRules.ts) |
+| 3.2  | **`/`** focuses search (like legacy); j/k/Enter deferred                                                                                                                                                                             |
+| 3.3  | Alias **`/companies` → `/data`** — **done** in [`router/index.ts`](../frontend/src/router/index.ts)                                                                                                                                  |
 
 ---
 

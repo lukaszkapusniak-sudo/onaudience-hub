@@ -23,12 +23,6 @@ function statusClass(s: string): string {
         bundled in the SPA — open it in your editor or Git host). The list below mirrors that doc;
         keep them in sync when you complete a phase.
       </p>
-      <nav class="nav">
-        <RouterLink to="/">Hub shell (iframe)</RouterLink>
-        <RouterLink to="/data">Companies</RouterLink>
-        <RouterLink to="/lemlist">Lemlist</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
     </header>
 
     <ol class="phases">
