@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>onAudience — Sales Intelligence Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=20260410d2"/>
+<link rel="stylesheet" href="style.css?v=20260410d3"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
@@ -157,21 +157,26 @@
 
 <div id="mcOverlay"></div>
 <div id="mcDrawer">
+
+  <!-- ── Nav bar ─────────────────────────────────────────────────────── -->
   <div class="mc-nav">
     <div class="mc-logo">oA</div>
     <span class="mc-title">Meeseeks <span class="mc-sub">/ Composer</span></span>
     <span class="mc-persona-badge" id="mcNavBadge">STEVE</span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+      <button class="mc-obtn" onclick="openComposer(null)" title="Start fresh">&#8592; New</button>
       <button class="mc-close" onclick="closeComposer()">&#10005;</button>
     </div>
   </div>
 
+  <!-- ── 3-column shell ──────────────────────────────────────────────── -->
   <div class="mc-shell">
 
-    <!-- LEFT: company + contacts only (narrow) -->
-    <div class="mc-left">
-      <div class="mc-scroll">
-        <div class="mc-lbl">Company</div>
+    <!-- COL A: Company + Contact (220px) -->
+    <div class="mc-col-a">
+      <div class="mc-col-scroll">
+
+        <div class="mc-sec-label">Company</div>
         <div class="mc-co" id="mcCoBlock">
           <div class="mc-co-top">
             <div class="mc-co-av" id="mcCoAv">?</div>
@@ -179,69 +184,69 @@
               <div class="mc-co-empty" id="mcCoEmpty">No company selected</div>
               <div class="mc-co-name" id="mcCoName" style="display:none"></div>
               <div class="mc-co-note" id="mcCoNote" style="display:none"></div>
-              <div class="mc-co-cat" id="mcCoCat" style="display:none"></div>
+              <div class="mc-co-cat"  id="mcCoCat"  style="display:none"></div>
             </div>
           </div>
           <div class="mc-co-tags" id="mcCoTags" style="display:none"></div>
         </div>
-        <div class="mc-lbl" style="margin-top:14px">Contact</div>
+
+        <div class="mc-sec-label" style="margin-top:16px">Contact</div>
         <div class="mc-ctlist" id="mcCtList">
           <div class="mc-ctempty">Open a company to load contacts</div>
         </div>
+
       </div>
     </div>
 
-    <!-- RIGHT: full workflow — persona → inputs → generate → output -->
-    <div class="mc-right">
-      <div class="mc-rscroll" id="mcRScroll">
+    <!-- COL B: Voice + Context + Generate (260px) -->
+    <div class="mc-col-b">
+      <div class="mc-col-scroll">
 
-        <!-- 1. Persona picker -->
-        <div class="mc-ws-block">
-          <div class="mc-lbl">Pick Meeseeks</div>
-          <div class="mc-pgrid" id="mcPersonaGrid"></div>
-        </div>
+        <div class="mc-sec-label">Voice</div>
+        <div class="mc-pgrid" id="mcPersonaGrid"></div>
 
-        <!-- 2. User inputs -->
-        <div class="mc-ws-block">
-          <div class="mc-lbl">Context &#8212; signals, news, what they do</div>
-          <textarea class="mc-tf" id="mcCtx" rows="3"
-            placeholder="e.g. EU DSP expanding into CTV, exploring cookieless, raised Series B&#8230;"
-            oninput="mcHint(this,'mcCtxHint')"></textarea>
-          <div class="mc-tf-hint" id="mcCtxHint">0 chars</div>
-          <div class="mc-lbl" style="margin-top:10px">Outreach angle</div>
-          <textarea class="mc-tf" id="mcAngle" rows="2"
-            placeholder="e.g. EU audience data + cookieless complement for their DSP inventory&#8230;"
-            oninput="mcHint(this,'mcAngleHint')"></textarea>
-          <div class="mc-tf-hint" id="mcAngleHint">0 chars</div>
-        </div>
+        <div class="mc-sec-label" style="margin-top:14px">Context</div>
+        <textarea class="mc-tf" id="mcCtx" rows="3"
+          placeholder="DSP expanding into CTV, raised Series B, exploring cookieless&#8230;"
+          oninput="mcHint(this,'mcCtxHint')"></textarea>
+        <div class="mc-tf-hint" id="mcCtxHint">0 chars</div>
 
-        <!-- 3. Generate button -->
-        <div class="mc-ws-block mc-ws-gen">
-          <button class="mc-gen" id="mcGenBtn" onclick="mcGenerate()">
-            <span id="mcGenIcon">&#9993;</span>
-            <span id="mcGenLabel">Generate Email</span>
-          </button>
-        </div>
-
-        <!-- 4. Output area -->
-        <div class="mc-ws-output" id="mcOutputWrap">
-          <div class="mc-empty" id="mcEmpty">
-            <div class="mc-ehint">&#8593; Pick persona &nbsp;&#183;&nbsp; select contact &nbsp;&#183;&nbsp; generate</div>
-          </div>
-          <div id="mcOutContent" style="display:none"></div>
-        </div>
+        <div class="mc-sec-label" style="margin-top:10px">Angle</div>
+        <textarea class="mc-tf" id="mcAngle" rows="2"
+          placeholder="EU audience data + cookieless complement for DSP inventory&#8230;"
+          oninput="mcHint(this,'mcAngleHint')"></textarea>
+        <div class="mc-tf-hint" id="mcAngleHint">0 chars</div>
 
       </div>
 
-      <!-- Action bar — shown after generation -->
+      <!-- Generate pinned at bottom of col B -->
+      <div class="mc-gen-wrap">
+        <button class="mc-gen" id="mcGenBtn" onclick="mcGenerate()">
+          <span>&#9993;</span><span>Generate Email</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- COL C: Output (flex 1) -->
+    <div class="mc-col-c">
+
+      <!-- Output scroll area -->
+      <div class="mc-col-scroll mc-out-scroll" id="mcRScroll">
+        <div class="mc-empty" id="mcEmpty">
+          <div class="mc-ehint">&#8593; Pick voice &nbsp;&#183;&nbsp; select contact &nbsp;&#183;&nbsp; generate</div>
+        </div>
+        <div id="mcOutContent" style="display:none"></div>
+      </div>
+
+      <!-- Action bar pinned at bottom of col C -->
       <div class="mc-rbar" id="mcRBar" style="display:none">
         <span class="mc-rlbl" id="mcOutLabel">Output</span>
         <div class="mc-racts" id="mcOutActs">
           <button class="mc-obtn" onclick="mcCopy()">Copy</button>
           <button class="mc-obtn" onclick="mcGenerate()">&#8634; Regen</button>
-          <button class="mc-obtn p" onclick="openComposer(null)">&#8592; New</button>
         </div>
       </div>
+
     </div>
 
   </div>
@@ -259,7 +264,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script type="module" src="app.js?v=20260410d2"></script>
+<script type="module" src="app.js?v=20260410d3"></script>
 <div id="signOutPill" style="display:none;position:fixed;bottom:18px;right:18px;z-index:9000">
   <button onclick="oaSignOut()" style="
     font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
