@@ -1,18 +1,92 @@
 /* ═══ meeseeks.js — Meeseeks Composer ═══ */
 
-import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260410d5';
-import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260410d5';
-import S from './state.js?v=20260410d5';
-import { anthropicFetch } from './api.js?v=20260410d5';
-import { contacts as dbContacts } from './db.js?v=20260410d5';
+import { SB_URL, MC_PERSONAS, MODEL_CREATIVE } from './config.js?v=20260410d6';
+import { authHdr, esc, getAv, getCoTags, ini, _slug } from './utils.js?v=20260410d6';
+import S from './state.js?v=20260410d6';
+import { anthropicFetch } from './api.js?v=20260410d6';
+import { contacts as dbContacts } from './db.js?v=20260410d6';
 
 export function mcHint(el,id){const h=document.getElementById(id);if(h)h.textContent=`${el.value.length} chars`;}
 export function mcAllContacts(){const seen=new Set(S.mcDbContacts.map(c=>(c.full_name||'').toLowerCase()));const extra=S.mcAiContacts.filter(c=>!seen.has((c.full_name||'').toLowerCase()));return[...S.mcDbContacts,...extra];}
 
+/* ── Company search / picker ─────────────────────────────────── */
+export function mcToggleCoSearch(){
+  const panel=document.getElementById('mcCoSearch');
+  const inp=document.getElementById('mcCoSearchInp');
+  if(!panel)return;
+  const open=panel.style.display==='none';
+  panel.style.display=open?'':'none';
+  if(open){inp.value='';mcFilterCos('');inp.focus();}
+}
+
+export function mcFilterCos(q){
+  const el=document.getElementById('mcCoSearchResults');
+  if(!el)return;
+  const companies=S.companies||[];
+  const lq=q.toLowerCase().trim();
+  const results=lq
+    ? companies.filter(c=>(c.name||'').toLowerCase().includes(lq)).slice(0,12)
+    : companies.slice(0,12);
+  el._mcResults=results; // store for mcPickCoIdx
+  if(!results.length){el.innerHTML='<div class="mc-co-sr-empty">No matches</div>';return;}
+  el.innerHTML=results.map((c,i)=>{
+    const av=getAv(c.name||'');
+    const n=ini(c.name||'');
+    const tag=c.type?`<span class="mc-co-sr-tag">${esc(c.type)}</span>`:'';
+    return `<div class="mc-co-sr-row" data-idx="${i}" onclick="mcPickCoIdx(${i})">
+      <div class="mc-co-sr-av" style="background:${av.bg};color:${av.fg}">${n}</div>
+      <div class="mc-co-sr-body">
+        <div class="mc-co-sr-name">${esc(c.name||'')}</div>
+        <div class="mc-co-sr-sub">${tag}${c.category?esc(c.category):''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+export function mcCoSearchKey(e){
+  if(e.key==='Escape'){document.getElementById('mcCoSearch').style.display='none';return;}
+  if(e.key==='Enter'){
+    const first=document.querySelector('#mcCoSearchResults .mc-co-sr-row');
+    if(first)first.click();
+  }
+}
+
+export function mcPickCoIdx(i){
+  const el=document.getElementById('mcCoSearchResults');
+  const c=(el?._mcResults||[])[i];
+  if(c)mcPickCo(c);
+}
+
+export function mcPickCo(c){
+  const panel=document.getElementById('mcCoSearch');
+  if(panel)panel.style.display='none';
+  openComposer({
+    company:      c.name||'',
+    note:         c.note||'',
+    status:       c.type||'',
+    icp:          c.icp||null,
+    description:  c.description||'',
+    angle:        c.outreach_angle||'',
+    category:     c.category||'',
+    region:       c.region||'',
+  });
+}
+
 export function mcRenderPersonas(){const grid=document.getElementById('mcPersonaGrid');grid.innerHTML=MC_PERSONAS.map(p=>`<div class="mc-ptile${S.mcActivePId===p.id?' active':''}" style="${S.mcActivePId===p.id?`background:${p.color};border-color:${p.color}`:''}" data-id="${p.id}" onclick="mcPickPersona('${p.id}')"><div class="mc-pemoji">${p.emoji}</div><div class="mc-pname">${p.name}</div><div class="mc-pvibe">${p.vibe}</div></div>`).join('');const p=MC_PERSONAS.find(x=>x.id===S.mcActivePId);if(p){const nb=document.getElementById('mcNavBadge');nb.textContent=p.name.toUpperCase();nb.style.background=p.color;}}
 export function mcPickPersona(id){S.mcActivePId=id;mcRenderPersonas();}
 
-export function openComposer(payload){if(window.demoGuard&&window.demoGuard('COMPOSE EMAIL'))return;const mcDrawer=document.getElementById('mcDrawer');if(!mcDrawer)return;S.mcPayload=payload||{};S.mcDbContacts=[];S.mcSelectedIdx=-1;S.mcLastEmail='';const p=S.mcPayload;if(p.company){document.getElementById('mcCoEmpty').style.display='none';const ne=document.getElementById('mcCoName');ne.style.display='';ne.textContent=p.company;const no=document.getElementById('mcCoNote');if(p.note){no&&(no.style.display='');no&&(no.textContent=p.note);}else{no&&(no.style.display='none');}document.getElementById('mcCoAv').textContent=ini(p.company);document.getElementById('mcCoBlock').className='mc-co filled';const tags=getCoTags(p);const te=document.getElementById('mcCoTags');if(tags.length){te&&(te.style.display='flex');te&&(te.innerHTML=tags.map(t=>`<span class="mc-co-tag">${t}</span>`).join(''));}else{te&&(te.style.display='none');}mcLoadContacts(p.company,p.contactName);}else{document.getElementById('mcCoEmpty').style.display='';document.getElementById('mcCoName').style.display='none';const _no=document.getElementById('mcCoNote');_no&&(_no.style.display='none');document.getElementById('mcCoBlock').className='mc-co';const _te=document.getElementById('mcCoTags');_te&&(_te.style.display='none');document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">No company selected</div>';}if(p.company&&S.currentCompany?.name===p.company&&S.mcAiContacts.length===0){S.mcAiContacts=[];}document.getElementById('mcCtx').value=p.description||'';document.getElementById('mcAngle').value=p.angle||'';mcHint(document.getElementById('mcCtx'),'mcCtxHint');mcHint(document.getElementById('mcAngle'),'mcAngleHint');document.getElementById('mcOutContent').style.display='none';document.getElementById('mcEmpty').style.display='flex';const _rb=document.getElementById('mcRBar');if(_rb)_rb.style.display='none';document.getElementById('mcDrawer').classList.add('open');mcRenderPersonas();}
+export function openComposer(payload){if(window.demoGuard&&window.demoGuard('COMPOSE EMAIL'))return;const mcDrawer=document.getElementById('mcDrawer');if(!mcDrawer)return;S.mcPayload=payload||{};S.mcDbContacts=[];S.mcSelectedIdx=-1;S.mcLastEmail='';const p=S.mcPayload;
+  // Search panel: show if no company, hide if company provided
+  const searchPanel=document.getElementById('mcCoSearch');
+  const changeBtn=document.getElementById('mcCoChangeBtn');
+  if(p.company){
+    if(searchPanel)searchPanel.style.display='none';
+    if(changeBtn)changeBtn.style.display='';
+    document.getElementById('mcCoEmpty').style.display='none';const ne=document.getElementById('mcCoName');ne.style.display='';ne.textContent=p.company;const no=document.getElementById('mcCoNote');if(p.note){no&&(no.style.display='');no&&(no.textContent=p.note);}else{no&&(no.style.display='none');}document.getElementById('mcCoAv').textContent=ini(p.company);document.getElementById('mcCoBlock').className='mc-co filled';const tags=getCoTags(p);const te=document.getElementById('mcCoTags');if(tags.length){te&&(te.style.display='flex');te&&(te.innerHTML=tags.map(t=>`<span class="mc-co-tag">${t}</span>`).join(''));}else{te&&(te.style.display='none');}mcLoadContacts(p.company,p.contactName);}else{
+    // No company — auto-open the search
+    if(searchPanel){searchPanel.style.display='';const inp=document.getElementById('mcCoSearchInp');if(inp){inp.value='';mcFilterCos('');setTimeout(()=>inp.focus(),120);}}
+    if(changeBtn)changeBtn.style.display='none';
+    document.getElementById('mcCoEmpty').style.display='';document.getElementById('mcCoName').style.display='none';const _no=document.getElementById('mcCoNote');_no&&(_no.style.display='none');document.getElementById('mcCoBlock').className='mc-co';const _te=document.getElementById('mcCoTags');_te&&(_te.style.display='none');document.getElementById('mcCtList').innerHTML='<div class="mc-ctempty">No company selected</div>';}if(p.company&&S.currentCompany?.name===p.company&&S.mcAiContacts.length===0){S.mcAiContacts=[];}document.getElementById('mcCtx').value=p.description||'';document.getElementById('mcAngle').value=p.angle||'';mcHint(document.getElementById('mcCtx'),'mcCtxHint');mcHint(document.getElementById('mcAngle'),'mcAngleHint');document.getElementById('mcOutContent').style.display='none';document.getElementById('mcEmpty').style.display='flex';const _rb=document.getElementById('mcRBar');if(_rb)_rb.style.display='none';document.getElementById('mcDrawer').classList.add('open');mcRenderPersonas();}
 export function closeComposer(){document.getElementById('mcDrawer').classList.remove('open');}
 
 export function openPanel(id,payload){openComposer(payload||{});}
