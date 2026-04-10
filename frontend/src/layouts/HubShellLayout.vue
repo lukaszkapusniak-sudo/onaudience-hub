@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 
-import { getSupabaseApp } from '../lib/supabaseApp';
+import { getSupabaseApp, signInWithGoogle } from '../lib/supabaseApp';
 import ComposerDrawer from '../modules/composer/components/ComposerDrawer.vue';
 import { useComposerStore } from '../modules/composer/store';
 import { useHubStore } from '../stores/hub';
@@ -12,6 +12,8 @@ const hub = useHubStore();
 const composer = useComposerStore();
 
 const userEmail = ref<string | null>(null);
+const authBusy = ref(false);
+const authError = ref<string | null>(null);
 let removeAuthListener: (() => void) | null = null;
 
 const theme = ref<'dark' | 'light'>('dark');
@@ -60,6 +62,17 @@ async function signOut() {
   const sb = getSupabaseApp();
   await sb?.auth.signOut();
   userEmail.value = null;
+}
+
+async function signInGoogle() {
+  authError.value = null;
+  authBusy.value = true;
+  try {
+    const { error } = await signInWithGoogle();
+    if (error) authError.value = error.message;
+  } finally {
+    authBusy.value = false;
+  }
 }
 
 onMounted(() => {
@@ -122,6 +135,16 @@ onUnmounted(() => {
         </button>
         <span v-if="userEmail" class="shell__user" :title="userEmail">{{ userEmail }}</span>
         <span v-else class="shell__user shell__user--muted">Not signed in</span>
+        <button
+          v-if="!userEmail"
+          type="button"
+          class="shell__signin"
+          :disabled="authBusy"
+          @click="signInGoogle()"
+        >
+          {{ authBusy ? 'Signing in…' : 'Sign in with Google' }}
+        </button>
+        <span v-if="authError" class="shell__auth-err" :title="authError">{{ authError }}</span>
         <button v-if="userEmail" type="button" class="shell__out" @click="signOut">Sign out</button>
       </div>
     </header>
@@ -279,6 +302,37 @@ onUnmounted(() => {
 
 .shell__user--muted {
   color: #6b6b63;
+}
+
+.shell__signin {
+  height: 28px;
+  padding: 0 0.55rem;
+  border-radius: 4px;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  background: rgba(125, 211, 252, 0.1);
+  color: #7dd3fc;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.shell__signin:hover:not(:disabled) {
+  background: rgba(125, 211, 252, 0.18);
+}
+
+.shell__signin:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shell__auth-err {
+  font-size: 0.7rem;
+  color: #fca5a5;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shell__out {

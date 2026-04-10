@@ -9,8 +9,9 @@
  * To rotate a key: update GitHub Secret + local .env
  * NEVER hardcode secrets elsewhere in test files — import from here.
  *
- * Hub E2E base URL: set PLAYWRIGHT_BASE_URL or HUB_BASE_URL (e.g. local:
- *   http://localhost:5173/onaudience-hub/hub/ ) — see playwright.config.ts.
+ * Browser E2E base: set PLAYWRIGHT_BASE_URL or HUB_BASE_URL to the **Vue** app root
+ * (trailing slash), e.g. https://…github.io/onaudience-hub/ or http://localhost:5173/
+ * If the value ends with /hub/, it is stripped for VUE_URL (legacy).
  *
  * Usage:
  *   import { ENV } from './env';
@@ -29,7 +30,7 @@ function withTrailingSlash(url: string): string {
   return url.endsWith('/') ? url : `${url}/`;
 }
 
-const HUB_URL_DEFAULT = 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/';
+const HUB_URL_DEFAULT = 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/';
 
 /** Base URL for Playwright browser tests (trailing slash). PLAYWRIGHT_BASE_URL wins over HUB_BASE_URL. */
 export const HUB_URL = withTrailingSlash(
