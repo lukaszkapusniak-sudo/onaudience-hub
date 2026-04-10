@@ -7,15 +7,17 @@
  */
 import { test as setup, expect, request } from '@playwright/test';
 import { ENV } from '../env';
-const HUB    = ENV.HUB_URL;
+const HUB = ENV.HUB_URL;
 const SB_URL = ENV.SB_URL;
 const SB_KEY = ENV.SB_ANON_KEY;
 
 setup('authenticate', async ({ page }) => {
   const email = process.env.OA_EMAIL || ENV.OA_EMAIL;
-  const pwd   = process.env.OA_PASSWORD || ENV.OA_PASSWORD;
+  const pwd = process.env.OA_PASSWORD || ENV.OA_PASSWORD;
   if (!email || !pwd) {
-    console.warn('[auth.setup] OA_EMAIL/OA_PASSWORD not set — skipping auth, browser tests will be skipped');
+    console.warn(
+      '[auth.setup] OA_EMAIL/OA_PASSWORD not set — skipping auth, browser tests will be skipped',
+    );
     // Write an empty storage state so chromium project doesn't crash on missing file
     await page.context().storageState({ path: 'tests/fixtures/.auth.json' });
     return;
@@ -25,11 +27,11 @@ setup('authenticate', async ({ page }) => {
   const api = await request.newContext();
   const res = await api.post(`${SB_URL}/auth/v1/token?grant_type=password`, {
     headers: {
-      'apikey': SB_KEY,
+      apikey: SB_KEY,
       'Content-Type': 'application/json',
     },
     data: { email, password: pwd },
-    timeout: 60_000,  // Supabase auth can spike to 7s — give it 60s in CI
+    timeout: 60_000, // Supabase auth can spike to 7s — give it 60s in CI
   });
 
   if (!res.ok()) {
@@ -45,7 +47,9 @@ setup('authenticate', async ({ page }) => {
   // ── Step 2: Inject session into localStorage BEFORE page loads ────────
   // This runs before any page scripts — Supabase finds it immediately
   await page.addInitScript((sessionData: string) => {
-    try { localStorage.setItem('oaHubSession', sessionData); } catch {}
+    try {
+      localStorage.setItem('oaHubSession', sessionData);
+    } catch {}
   }, JSON.stringify(session));
 
   // ── Step 3: Navigate — hub boots with pre-injected session ────────────
@@ -56,10 +60,10 @@ setup('authenticate', async ({ page }) => {
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   // Wait for hub to load data — poll S.companies until non-empty
   // Avoids brittle nav-status text/class checks that race with pagination
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    { timeout: 45000, polling: 500 }
-  );
+  await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, {
+    timeout: 45000,
+    polling: 500,
+  });
 
   await page.evaluate(() => {
     window.clearAI?.();

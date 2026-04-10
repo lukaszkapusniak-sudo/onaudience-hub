@@ -60,14 +60,31 @@ async function injectAndRender(page: Page, threads: any[]) {
 }
 
 const MOCK_THREADS = [
-  { from: 'john@criteo.com',  subject: 'Partnership proposal', date: '1 Jan 25',  id: 'msg1', threadId: 'thread-aaa111' },
-  { from: 'jane@criteo.com',  subject: 'Follow-up on meeting', date: '10 Jan 25', id: 'msg2', threadId: 'thread-bbb222' },
-  { from: 'jane@criteo.com',  subject: 'Re: NDA docs',          date: '15 Jan 25', id: 'msg3', threadId: 'thread-ccc333' },
+  {
+    from: 'john@criteo.com',
+    subject: 'Partnership proposal',
+    date: '1 Jan 25',
+    id: 'msg1',
+    threadId: 'thread-aaa111',
+  },
+  {
+    from: 'jane@criteo.com',
+    subject: 'Follow-up on meeting',
+    date: '10 Jan 25',
+    id: 'msg2',
+    threadId: 'thread-bbb222',
+  },
+  {
+    from: 'jane@criteo.com',
+    subject: 'Re: NDA docs',
+    date: '15 Jan 25',
+    id: 'msg3',
+    threadId: 'thread-ccc333',
+  },
 ];
 
 // ── SUITE: Email subject links ────────────────────────────────────
 test.describe('Gmail email subject links', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await fakeConnect(page);
@@ -76,7 +93,9 @@ test.describe('Gmail email subject links', () => {
     await injectAndRender(page, MOCK_THREADS);
   });
 
-  test.afterEach(async ({ page }) => { await fakeDisconnect(page); });
+  test.afterEach(async ({ page }) => {
+    await fakeDisconnect(page);
+  });
 
   test('email subjects render as <a> links to Gmail', async ({ page }) => {
     const links = page.locator('#ib-email-results a[href*="mail.google.com"]');
@@ -125,8 +144,9 @@ test.describe('Gmail email subject links', () => {
 
 // ── SUITE: Contacts strip domain filtering (unit-style) ──────────
 test.describe('Gmail contact domain filtering logic', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('only contacts from company domain are collected', async ({ page }) => {
     const result = await page.evaluate(() => {
@@ -138,7 +158,7 @@ test.describe('Gmail contact domain filtering logic', () => {
         'Jane Doe <jane@criteo.com>',
         'noreply@mailchimp.com',
       ];
-      fromHeaders.forEach(from => {
+      fromHeaders.forEach((from) => {
         const m = from.match(/^(.+?)\s*<(.+?)>/) || from.match(/^(.+)$/);
         if (m) {
           const email = (m[2] || m[1] || '').trim().toLowerCase();
@@ -159,7 +179,7 @@ test.describe('Gmail contact domain filtering logic', () => {
     const result = await page.evaluate(() => {
       const dc = '';
       const cmap: Record<string, any> = {};
-      ['john@criteo.com'].forEach(email => {
+      ['john@criteo.com'].forEach((email) => {
         if (email.includes('@') && dc && email.includes('@' + dc) && !cmap[email]) {
           cmap[email] = true;
         }
@@ -170,8 +190,8 @@ test.describe('Gmail contact domain filtering logic', () => {
   });
 
   test('Gmail thread URL format is correct', async ({ page }) => {
-    const url = await page.evaluate(() =>
-      'https://mail.google.com/mail/u/0/#all/' + 'abc123def456'
+    const url = await page.evaluate(
+      () => 'https://mail.google.com/mail/u/0/#all/' + 'abc123def456',
     );
     expect(url).toMatch(/^https:\/\/mail\.google\.com\/mail\/u\/0\/#all\//);
     expect(url).toContain('abc123def456');
@@ -180,13 +200,14 @@ test.describe('Gmail contact domain filtering logic', () => {
 
 // ── SUITE: Gmail connection state ────────────────────────────────
 test.describe('Gmail connection state transitions', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await fakeDisconnect(page);
   });
 
-  test.afterEach(async ({ page }) => { await fakeDisconnect(page); });
+  test.afterEach(async ({ page }) => {
+    await fakeDisconnect(page);
+  });
 
   test('email history section exists in company panel', async ({ page }) => {
     await openFirstCompany(page);
@@ -209,15 +230,18 @@ test.describe('Gmail connection state transitions', () => {
     await fakeConnect(page);
     await openFirstCompany(page);
     await expandEmailHistory(page);
-    await expect(page.locator('#ib-email-body button', { hasText: /scan gmail/i })).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('#ib-email-body button', { hasText: /update contacts/i })).toBeVisible();
+    await expect(page.locator('#ib-email-body button', { hasText: /scan gmail/i })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(
+      page.locator('#ib-email-body button', { hasText: /update contacts/i }),
+    ).toBeVisible();
     await expect(page.locator('#ib-email-body button', { hasText: /summarize/i })).toBeVisible();
   });
 });
 
 // ── SUITE: Gmail scan results persist on section toggle ──────────
 test.describe('Gmail scan results — persistence on toggle', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await fakeConnect(page);
@@ -225,12 +249,20 @@ test.describe('Gmail scan results — persistence on toggle', () => {
     await expandEmailHistory(page);
     // Inject mock scan results
     await injectAndRender(page, [
-      { from: 'piotr@company.com', subject: 'Partnership', date: '8 Apr 25', id: 'a', threadId: 'ta' },
-      { from: 'anna@company.com',  subject: 'Follow up',   date: '7 Apr 25', id: 'b', threadId: 'tb' },
+      {
+        from: 'piotr@company.com',
+        subject: 'Partnership',
+        date: '8 Apr 25',
+        id: 'a',
+        threadId: 'ta',
+      },
+      { from: 'anna@company.com', subject: 'Follow up', date: '7 Apr 25', id: 'b', threadId: 'tb' },
     ]);
   });
 
-  test.afterEach(async ({ page }) => { await fakeDisconnect(page); });
+  test.afterEach(async ({ page }) => {
+    await fakeDisconnect(page);
+  });
 
   test('email results visible after scan', async ({ page }) => {
     await expect(page.locator('#ib-email-results .gmail-row')).toHaveCount(2, { timeout: 3000 });
@@ -260,9 +292,12 @@ test.describe('Gmail scan results — persistence on toggle', () => {
       const strip = document.getElementById('ib-email-contacts-strip');
       if (strip) {
         strip.style.display = 'block';
-        strip.innerHTML = '<label><input type="checkbox" checked data-i="0"/> test@company.com</label>';
+        strip.innerHTML =
+          '<label><input type="checkbox" checked data-i="0"/> test@company.com</label>';
       }
-      window._gmailFoundContacts = [{ full_name: 'Test', email: 'test@company.com', company_id: 'test' }];
+      window._gmailFoundContacts = [
+        { full_name: 'Test', email: 'test@company.com', company_id: 'test' },
+      ];
     });
 
     // Collapse + expand

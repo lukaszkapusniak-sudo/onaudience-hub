@@ -6,9 +6,25 @@
    ════════════════════════════════════════════════════════ */
 
 import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d22';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260410d22';
+import {
+  authHdr,
+  classify,
+  esc,
+  getAv,
+  getCoTags,
+  ini,
+  relTime,
+  _slug,
+  tClass,
+  tLabel,
+} from './utils.js?v=20260410d22';
 import S from './state.js?v=20260410d22';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260410d22';
+import {
+  anthropicFetch,
+  anthropicMcpFetch,
+  geocodeCity,
+  saveGeocode,
+} from './api.js?v=20260410d22';
 import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d22';
 import { clog } from './hub.js?v=20260410d22';
 
@@ -42,19 +58,24 @@ async function sbPatchCompanyType(companyId, type) {
 /* ─── Left panel render ────────────────────────────────────── */
 
 let _audSearchQ = '';
-export function audFilter(q){ _audSearchQ = q; renderAudiencesPanel(); }
+export function audFilter(q) {
+  _audSearchQ = q;
+  renderAudiencesPanel();
+}
 
 export async function renderAudiencesPanel() {
   const panel = document.getElementById('audiencesPanel');
   if (!panel) return;
   S.audiences = await sbLoadAudiences();
-  const sysAuds  = S.audiences.filter(a => a.is_system);
-  const userAuds = S.audiences.filter(a => !a.is_system);
-  const sysSection = sysAuds.length ? `
+  const sysAuds = S.audiences.filter((a) => a.is_system);
+  const userAuds = S.audiences.filter((a) => !a.is_system);
+  const sysSection = sysAuds.length
+    ? `
 <div class="aud-sys-section">
   <div class="aud-section-lbl">SYSTEM LISTS</div>
   ${sysAuds.map(audRowHtml).join('')}
-</div>` : '';
+</div>`
+    : '';
   panel.innerHTML = `
 <div class="aud-toolbar">
   <span class="aud-count">${userAuds.length} AUDIENCE${userAuds.length !== 1 ? 'S' : ''}</span>
@@ -63,21 +84,32 @@ export async function renderAudiencesPanel() {
 </div>
 <div class="aud-search-row">
   <input class="aud-search-inp" id="audSearchInp" placeholder="Search audiences…"
-    oninput="audFilter(this.value)" value="${_audSearchQ||''}" />
+    oninput="audFilter(this.value)" value="${_audSearchQ || ''}" />
 </div>
 ${sysSection}
 <div class="aud-list">
-  ${userAuds.length === 0
-    ? '<div class="aud-empty">No audiences yet.<br>Use AI to build your first list.</div>'
-    : userAuds.filter(a=>!_audSearchQ||(a.name||'').toLowerCase().includes(_audSearchQ.toLowerCase())).map(audRowHtml).join('')}
+  ${
+    userAuds.length === 0
+      ? '<div class="aud-empty">No audiences yet.<br>Use AI to build your first list.</div>'
+      : userAuds
+          .filter(
+            (a) => !_audSearchQ || (a.name || '').toLowerCase().includes(_audSearchQ.toLowerCase()),
+          )
+          .map(audRowHtml)
+          .join('')
+  }
 </div>`;
 }
 
 function audRowHtml(a) {
   const active = S.activeAudience?.id === a.id ? ' aud-row-active' : '';
   const n = a.is_system
-    ? (a.system_filter?.type ? S.companies.filter(c => c.type === a.system_filter.type).length : (a.company_ids?.length ?? 0))
-    : (Array.isArray(a.company_ids) ? a.company_ids.length : 0);
+    ? a.system_filter?.type
+      ? S.companies.filter((c) => c.type === a.system_filter.type).length
+      : (a.company_ids?.length ?? 0)
+    : Array.isArray(a.company_ids)
+      ? a.company_ids.length
+      : 0;
 
   /* Line 1: name + count + lock */
   const line1 = `<div class="aud-row-head">
@@ -93,10 +125,16 @@ function audRowHtml(a) {
   if (a.is_system) {
     line2 = `<div class="aud-row-line2"><span class="tag tpr" style="font-size:7px">SYSTEM</span></div>`;
   } else {
-    const desc = a.description ? a.description.slice(0, 60) + (a.description.length > 60 ? '…' : '') : '';
+    const desc = a.description
+      ? a.description.slice(0, 60) + (a.description.length > 60 ? '…' : '')
+      : '';
     const f = a.filters || {};
-    const typePill  = f.type ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>` : '';
-    const tagChips  = (f.tags || []).map(t => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`).join('');
+    const typePill = f.type
+      ? `<span class="tag tp" style="font-size:7px">${esc(f.type)}</span>`
+      : '';
+    const tagChips = (f.tags || [])
+      .map((t) => `<span class="tag tpr" style="font-size:7px">${esc(t)}</span>`)
+      .join('');
     line2 = `<div class="aud-row-line2">
       ${desc ? `<span class="aud-row-desc2">${esc(desc)}</span>` : ''}
       ${typePill}${tagChips}
@@ -104,9 +142,7 @@ function audRowHtml(a) {
   }
 
   /* Line 3: relTime */
-  const line3 = a.updated_at
-    ? `<div class="aud-row-time">${relTime(a.updated_at)}</div>`
-    : '';
+  const line3 = a.updated_at ? `<div class="aud-row-time">${relTime(a.updated_at)}</div>` : '';
 
   const actions = a.is_system
     ? `<div class="aud-row-actions">
@@ -130,7 +166,7 @@ function audRowHtml(a) {
 /* ─── Audience detail (center panel) ──────────────────────── */
 
 export function renderAudienceDetail(id) {
-  const aud = S.audiences.find(a => a.id === id);
+  const aud = S.audiences.find((a) => a.id === id);
   if (!aud) return;
   S.activeAudience = aud;
 
@@ -160,32 +196,46 @@ export function renderAudienceDetail(id) {
   }
 
   const ids = aud.company_ids || [];
-  const members = S.companies.filter(c => ids.includes(c.id));
-  const audContacts = S.contacts.filter(ct =>
-    ids.includes(ct.company_id) || members.some(m => _slug(m.name) === _slug(ct.company_name || '')));
+  const members = S.companies.filter((c) => ids.includes(c.id));
+  const audContacts = S.contacts.filter(
+    (ct) =>
+      ids.includes(ct.company_id) ||
+      members.some((m) => _slug(m.name) === _slug(ct.company_name || '')),
+  );
   detailEl.innerHTML = renderCampaignDetailHTML(aud, members, audContacts);
 }
 
 /* ─── Campaign planning view (user audiences) ─────────────── */
 
 function _audCoverage(members, audContacts) {
-  const withContacts = members.filter(c =>
-    audContacts.some(ct => ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name)));
-  const withEmail = audContacts.filter(ct => ct.email);
-  const pct = members.length ? Math.round(withEmail.length / members.length * 100) : 0;
-  return { members: members.length, withContacts: withContacts.length,
-    contacts: audContacts.length, withEmail: withEmail.length, pct };
+  const withContacts = members.filter((c) =>
+    audContacts.some(
+      (ct) => ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name),
+    ),
+  );
+  const withEmail = audContacts.filter((ct) => ct.email);
+  const pct = members.length ? Math.round((withEmail.length / members.length) * 100) : 0;
+  return {
+    members: members.length,
+    withContacts: withContacts.length,
+    contacts: audContacts.length,
+    withEmail: withEmail.length,
+    pct,
+  };
 }
 
 function renderCampaignCoRowHtml(c, aud, audContacts) {
   const slug = c.id || _slug(c.name);
-  const tc = tClass(c.type), tl = tLabel(c.type);
+  const tc = tClass(c.type),
+    tl = tLabel(c.type);
   const st = c.icp ? '★'.repeat(Math.min(5, Math.round(c.icp / 2))) : '';
   const av = getAv(c.name);
-  const coContacts = audContacts.filter(ct =>
-    ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name));
-  const hasEmail = coContacts.some(ct => ct.email);
-  const audIdJ = aud.id, slugJ = slug; // safe slug
+  const coContacts = audContacts.filter(
+    (ct) => ct.company_id === c.id || _slug(ct.company_name || '') === _slug(c.name),
+  );
+  const hasEmail = coContacts.some((ct) => ct.email);
+  const audIdJ = aud.id,
+    slugJ = slug; // safe slug
   const desc = (c.description || c.note || '').slice(0, 90);
   const descTrunc = desc + ((c.description || c.note || '').length > 90 ? '…' : '');
   return `
@@ -219,12 +269,16 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
   const icpFull = f.icp_prompt || aud.icp_prompt || '';
   const icpTrunc = icpFull.slice(0, 120) + (icpFull.length > 120 ? '…' : '');
   const audIdJ = aud.id; // safe alphanumeric-dash, no JSON.stringify needed
-  const coRows = members.length === 0
-    ? '<div class="aud-empty" style="padding:24px">No companies in this audience.</div>'
-    : members.map(c => renderCampaignCoRowHtml(c, aud, audContacts)).join('');
-  const sortBtns = ['updated_at', 'icp', 'name', 'size'].map(v =>
-    `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},'${v}')">${sortLabel(v).split(' ')[0]}</button>`
-  ).join('');
+  const coRows =
+    members.length === 0
+      ? '<div class="aud-empty" style="padding:24px">No companies in this audience.</div>'
+      : members.map((c) => renderCampaignCoRowHtml(c, aud, audContacts)).join('');
+  const sortBtns = ['updated_at', 'icp', 'name', 'size']
+    .map(
+      (v) =>
+        `<button class="btn sm${(aud.sort_field || 'updated_at') === v ? ' active' : ''}" onclick="audSetSort(${audIdJ},'${v}')">${sortLabel(v).split(' ')[0]}</button>`,
+    )
+    .join('');
   return `
 <div class="aud-detail-full">
   <div class="aud-detail-hd">
@@ -248,9 +302,11 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
     <button class="btn sm" onclick="showPersonaPicker('aud-tpl-body',pid=>generateEmailTemplate(${audIdJ},pid))">✉ Draft Campaign</button>
     <button class="btn sm" onclick="audExportCsv(${audIdJ})">↗ Export CSV</button>
     <div style="margin-left:auto;display:flex;gap:4px">
-      ${localStorage.getItem('oaLemlistKey')
-        ?`<button class="btn sm p" onclick="audPushLemlist(${audIdJ})">📤 Lemlist</button>`
-        :`<button class="btn sm" onclick="llSetKey()" title="Connect Lemlist to push contacts">⚙ Lemlist</button>`}
+      ${
+        localStorage.getItem('oaLemlistKey')
+          ? `<button class="btn sm p" onclick="audPushLemlist(${audIdJ})">📤 Lemlist</button>`
+          : `<button class="btn sm" onclick="llSetKey()" title="Connect Lemlist to push contacts">⚙ Lemlist</button>`
+      }
     </div>
   </div>
   <div class="aud-map-toggle">
@@ -334,12 +390,14 @@ function renderCampaignDetailHTML(aud, members, audContacts) {
 
 function getSystemAudienceCompanies(aud) {
   if (aud.system_filter?.type) {
-    return [...S.companies.filter(c => c.type === aud.system_filter.type)]
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return [...S.companies.filter((c) => c.type === aud.system_filter.type)].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || ''),
+    );
   }
   const idSet = new Set(aud.company_ids || []);
-  return [...S.companies.filter(c => idSet.has(c.id))]
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  return [...S.companies.filter((c) => idSet.has(c.id))].sort((a, b) =>
+    (a.name || '').localeCompare(b.name || ''),
+  );
 }
 
 function renderSystemAudienceDetailHTML(aud, companies) {
@@ -360,9 +418,11 @@ function renderSystemAudienceDetailHTML(aud, companies) {
     </div>
   </div>
   <div class="aud-co-list" id="aud-co-list-inner">
-    ${companies.length === 0
-      ? '<div class="aud-empty" style="padding:24px">No companies in this list yet.</div>'
-      : companies.map(c => sysAudMemberRowHtml(c, aud)).join('')}
+    ${
+      companies.length === 0
+        ? '<div class="aud-empty" style="padding:24px">No companies in this list yet.</div>'
+        : companies.map((c) => sysAudMemberRowHtml(c, aud)).join('')
+    }
   </div>
   <div class="aud-add-wrap">
     <div style="position:relative">
@@ -397,18 +457,18 @@ function getAudienceCompanies(aud) {
   // company_ids takes priority (AI-built or manually curated)
   if (aud.company_ids && aud.company_ids.length > 0) {
     const idSet = new Set(aud.company_ids);
-    list = list.filter(c => idSet.has(c.id) || idSet.has(_slug(c.name)));
+    list = list.filter((c) => idSet.has(c.id) || idSet.has(_slug(c.name)));
   }
 
   // Always apply hard filters on top (in case DB drifted)
   const f = aud.filters || {};
-  if (f.type) list = list.filter(c => c.type === f.type);
-  if (f.region) list = list.filter(c => c.region === f.region);
-  if (f.minIcp) list = list.filter(c => (c.icp || 0) >= f.minIcp);
+  if (f.type) list = list.filter((c) => c.type === f.type);
+  if (f.region) list = list.filter((c) => c.region === f.region);
+  if (f.minIcp) list = list.filter((c) => (c.icp || 0) >= f.minIcp);
   if (f.tags && f.tags.length > 0) {
-    list = list.filter(c => {
+    list = list.filter((c) => {
       const ct = getCoTags(c);
-      return f.tags.every(t => ct.includes(t));
+      return f.tags.every((t) => ct.includes(t));
     });
   }
 
@@ -431,14 +491,20 @@ function sizeNum(s) {
 }
 
 function sortLabel(v) {
-  return { updated_at: 'RECENTLY UPDATED', name: 'NAME A→Z', icp: 'ICP ↓', size: 'SIZE ↓' }[v] || v.toUpperCase();
+  return (
+    { updated_at: 'RECENTLY UPDATED', name: 'NAME A→Z', icp: 'ICP ↓', size: 'SIZE ↓' }[v] ||
+    v.toUpperCase()
+  );
 }
 
 function audCoRowHtml(c, aud) {
-  const tc = tClass(c.type), tl = tLabel(c.type);
+  const tc = tClass(c.type),
+    tl = tLabel(c.type);
   const tags = getCoTags(c);
-  const tagHtml = tags.slice(0, 3).map(t =>
-    `<span class="c-tag-micro">${esc(t)}</span>`).join('');
+  const tagHtml = tags
+    .slice(0, 3)
+    .map((t) => `<span class="c-tag-micro">${esc(t)}</span>`)
+    .join('');
   const st = c.icp ? '★'.repeat(Math.min(5, Math.round(c.icp / 2))) : '';
   const slug = c.id || _slug(c.name);
 
@@ -467,35 +533,47 @@ function audCoRowHtml(c, aud) {
 /* ─── Modal ────────────────────────────────────────────────── */
 
 /* ── Scout modal state ────────────────────────────────────── */
-let _scoutResults    = [];
+let _scoutResults = [];
 let _scoutExistingId = null;
-let _gapLists        = { noContact: [], noDesc: [], noHq: [], noAngle: [] };
-let _scoutPending    = false;   // Bug 1: gate — only true when SCOUT button fires
-window._setScoutPending = () => { _scoutPending = true; };
+let _gapLists = { noContact: [], noDesc: [], noHq: [], noAngle: [] };
+let _scoutPending = false; // Bug 1: gate — only true when SCOUT button fires
+window._setScoutPending = () => {
+  _scoutPending = true;
+};
 
 export function openAudienceModal(existingId) {
   _scoutExistingId = existingId || null;
   S._audienceBuiltIds = null;
 
-  const existing = existingId ? S.audiences.find(a => a.id === existingId) : null;
+  const existing = existingId ? S.audiences.find((a) => a.id === existingId) : null;
   if (existing?.is_system) {
     clog('info', 'System audiences cannot be edited in Scout.');
     return;
   }
 
-  const f     = existing?.filters || {};
+  const f = existing?.filters || {};
   const isNew = !existingId;
 
-  const allTags = [...new Set((S.companies || []).flatMap(c => getCoTags(c)))].sort();
-  const tagCheckboxes = allTags.map(t => {
-    const checked = (f.tags || []).includes(t) ? 'checked' : '';
-    return `<label class="aud-tag-check"><input type="checkbox" value="${esc(t)}" ${checked}/> ${esc(t)}</label>`;
-  }).join('');
+  const allTags = [...new Set((S.companies || []).flatMap((c) => getCoTags(c)))].sort();
+  const tagCheckboxes = allTags
+    .map((t) => {
+      const checked = (f.tags || []).includes(t) ? 'checked' : '';
+      return `<label class="aud-tag-check"><input type="checkbox" value="${esc(t)}" ${checked}/> ${esc(t)}</label>`;
+    })
+    .join('');
 
   const typeOpts = ['', 'prospect', 'client', 'partner', 'poc', 'nogo']
-    .map(v => `<option value="${v}" ${(f.type || '') === v ? 'selected' : ''}>${v || 'Any type'}</option>`).join('');
+    .map(
+      (v) =>
+        `<option value="${v}" ${(f.type || '') === v ? 'selected' : ''}>${v || 'Any type'}</option>`,
+    )
+    .join('');
   const regionOpts = ['', 'EU', 'US', 'APAC', 'LATAM', 'GLOBAL']
-    .map(v => `<option value="${v}" ${(f.region || '') === v ? 'selected' : ''}>${v || 'Any region'}</option>`).join('');
+    .map(
+      (v) =>
+        `<option value="${v}" ${(f.region || '') === v ? 'selected' : ''}>${v || 'Any region'}</option>`,
+    )
+    .join('');
 
   const modal = document.getElementById('audience-modal');
   if (!modal) return;
@@ -553,7 +631,7 @@ export function openAudienceModal(existingId) {
       <div class="aud-form-row">
         <label class="aud-label">SORT</label>
         <select id="scout-sort" class="aud-select">
-          <option value="updated_at" ${(!existing?.sort_field || existing.sort_field === 'updated_at') ? 'selected' : ''}>RECENTLY UPDATED</option>
+          <option value="updated_at" ${!existing?.sort_field || existing.sort_field === 'updated_at' ? 'selected' : ''}>RECENTLY UPDATED</option>
           <option value="name" ${existing?.sort_field === 'name' ? 'selected' : ''}>NAME A&#8594;Z</option>
           <option value="icp" ${existing?.sort_field === 'icp' ? 'selected' : ''}>ICP &#8595;</option>
           <option value="size" ${existing?.sort_field === 'size' ? 'selected' : ''}>SIZE &#8595;</option>
@@ -599,26 +677,36 @@ export function openAudienceModal(existingId) {
   // Wire events
   document.getElementById('scout-close-btn')?.addEventListener('click', audCloseModal);
   document.getElementById('scout-cancel-btn')?.addEventListener('click', audCloseModal);
-  document.getElementById('scout-run-btn')?.addEventListener('click', () => { _scoutPending = true; _scoutRun(); });
-  document.getElementById('scout-save-btn')?.addEventListener('click', () => _scoutSave(existingId));
+  document.getElementById('scout-run-btn')?.addEventListener('click', () => {
+    _scoutPending = true;
+    _scoutRun();
+  });
+  document
+    .getElementById('scout-save-btn')
+    ?.addEventListener('click', () => _scoutSave(existingId));
   document.getElementById('scout-similar-btn')?.addEventListener('click', _scoutFindSimilar);
-  document.getElementById('scout-check-all')?.addEventListener('change', e => _scoutToggleAll(e.target.checked));
-  if (existingId) document.getElementById('scout-delete-btn')?.addEventListener('click', () => audDelete(existingId));
+  document
+    .getElementById('scout-check-all')
+    ?.addEventListener('change', (e) => _scoutToggleAll(e.target.checked));
+  if (existingId)
+    document
+      .getElementById('scout-delete-btn')
+      ?.addEventListener('click', () => audDelete(existingId));
   document.getElementById('scout-fill-all-btn')?.addEventListener('click', _gapFillAll);
 
   // Bug 2 — prefill fields after modal is visible, then auto-run scout
   if (existing && !existing.is_system) {
-    document.querySelector('#scout-name').value        = existing.name || '';
-    document.querySelector('#scout-desc').value        = existing.description || '';
-    document.querySelector('#scout-prompt').value      = existing.icp_prompt || '';
-    document.querySelector('#scout-f-type').value      = existing.filters?.type || '';
-    document.querySelector('#scout-f-region').value    = existing.filters?.region || '';
-    document.querySelector('#scout-f-icp').value       = existing.filters?.minIcp || '';
-    document.querySelector('#scout-hook').value        = existing.outreach_hook || '';
-    document.querySelector('#scout-sort').value        = existing.sort_field || 'updated_at';
+    document.querySelector('#scout-name').value = existing.name || '';
+    document.querySelector('#scout-desc').value = existing.description || '';
+    document.querySelector('#scout-prompt').value = existing.icp_prompt || '';
+    document.querySelector('#scout-f-type').value = existing.filters?.type || '';
+    document.querySelector('#scout-f-region').value = existing.filters?.region || '';
+    document.querySelector('#scout-f-icp').value = existing.filters?.minIcp || '';
+    document.querySelector('#scout-hook').value = existing.outreach_hook || '';
+    document.querySelector('#scout-sort').value = existing.sort_field || 'updated_at';
     // pre-check tag checkboxes
     const savedTags = existing.filters?.tags || [];
-    document.querySelectorAll('.aud-modal-box input[type=checkbox][value]').forEach(cb => {
+    document.querySelectorAll('.aud-modal-box input[type=checkbox][value]').forEach((cb) => {
       cb.checked = savedTags.includes(cb.value);
     });
     // Bug 1: do NOT auto-run scout on open — user must click SCOUT explicitly
@@ -638,40 +726,44 @@ async function _scoutRun() {
     return;
   }
 
-  const type   = document.getElementById('scout-f-type')?.value   || '';
+  const type = document.getElementById('scout-f-type')?.value || '';
   const region = document.getElementById('scout-f-region')?.value || '';
   const minIcp = parseInt(document.getElementById('scout-f-icp')?.value) || 0;
-  const tags   = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map((el) => el.value);
   const prompt = document.getElementById('scout-prompt')?.value?.trim() || '';
 
   const statusEl = document.getElementById('scout-status');
-  const bodyEl   = document.getElementById('scout-a-body');
-  const countEl  = document.getElementById('scout-a-count');
+  const bodyEl = document.getElementById('scout-a-body');
+  const countEl = document.getElementById('scout-a-count');
   if (!bodyEl) return;
 
   const country = document.getElementById('scout-f-country')?.value?.trim().toLowerCase() || '';
-  const city    = document.getElementById('scout-f-city')?.value?.trim().toLowerCase()    || '';
+  const city = document.getElementById('scout-f-city')?.value?.trim().toLowerCase() || '';
 
   // Hard filter — deduplicate first
   const seen = new Set();
-  let list = (S.companies || []).filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
-  if (type)        list = list.filter(c => c.type === type);
-  if (region)      list = list.filter(c => c.region === region);
-  if (minIcp)      list = list.filter(c => (c.icp || 0) >= minIcp);
-  if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+  let list = (S.companies || []).filter((c) => {
+    if (seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  });
+  if (type) list = list.filter((c) => c.type === type);
+  if (region) list = list.filter((c) => c.region === region);
+  if (minIcp) list = list.filter((c) => (c.icp || 0) >= minIcp);
+  if (tags.length) list = list.filter((c) => tags.every((t) => getCoTags(c).includes(t)));
 
   // Geo filter: check hq_country, hq_city, description, note, region — any field mentioning the value
   if (country) {
-    list = list.filter(c => {
+    list = list.filter((c) => {
       const haystack = [c.hq_country, c.hq_city, c.description, c.note, c.region, c.category]
-        .join(' ').toLowerCase();
+        .join(' ')
+        .toLowerCase();
       return haystack.includes(country);
     });
   }
   if (city) {
-    list = list.filter(c => {
-      const haystack = [c.hq_city, c.description, c.note, c.region]
-        .join(' ').toLowerCase();
+    list = list.filter((c) => {
+      const haystack = [c.hq_city, c.description, c.note, c.region].join(' ').toLowerCase();
       return haystack.includes(city);
     });
   }
@@ -681,51 +773,66 @@ async function _scoutRun() {
     if (statusEl) statusEl.textContent = '⟳ AI filtering…';
     bodyEl.innerHTML = '<div class="scout-running">&#9889; AI is scanning your DB&#8230;</div>';
     try {
-      const coList = list.map(c =>
-        `${c.name}|${[c.hq_city, c.hq_country].filter(Boolean).join(',')||'?'}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 60)}`
-      ).join('\n');
+      const coList = list
+        .map(
+          (c) =>
+            `${c.name}|${[c.hq_city, c.hq_country].filter(Boolean).join(',') || '?'}|${getCoTags(c).join(',')}|ICP:${c.icp || '?'}|${c.type || ''}|${(c.description || '').slice(0, 60)}`,
+        )
+        .join('\n');
       const res = await anthropicFetch({
         model: MODEL_CREATIVE,
         max_tokens: 800,
-        messages: [{ role: 'user', content:
-          `You are filtering a B2B CRM for onAudience (EU first-party data provider).\nTarget: "${prompt}"\nReturn a JSON array of company names that best match — be selective.\nCompanies (name|tags|icp|type|description):\n${coList}\n\nReturn ONLY a raw JSON array of matching company names.` }],
+        messages: [
+          {
+            role: 'user',
+            content: `You are filtering a B2B CRM for onAudience (EU first-party data provider).\nTarget: "${prompt}"\nReturn a JSON array of company names that best match — be selective.\nCompanies (name|tags|icp|type|description):\n${coList}\n\nReturn ONLY a raw JSON array of matching company names.`,
+          },
+        ],
       });
-      const raw  = res.content?.[0]?.text?.trim() || '[]';
-      const m    = raw.match(/\[[\s\S]*\]/);
+      const raw = res.content?.[0]?.text?.trim() || '[]';
+      const m = raw.match(/\[[\s\S]*\]/);
       const names = m ? JSON.parse(m[0]) : [];
-      const nameSet = new Set(names.map(n => String(n).toLowerCase()));
-      list = list.filter(c => nameSet.has(c.name.toLowerCase()));
+      const nameSet = new Set(names.map((n) => String(n).toLowerCase()));
+      list = list.filter((c) => nameSet.has(c.name.toLowerCase()));
       if (statusEl) statusEl.textContent = `✓ AI matched ${list.length}`;
     } catch (e) {
       if (statusEl) statusEl.textContent = '⚠ AI filter failed — showing filter results';
     }
   } else {
-    if (statusEl) statusEl.textContent = list.length
-      ? `${list.length} match${list.length !== 1 ? 'es' : ''}`
-      : 'No matches — relax filters';
+    if (statusEl)
+      statusEl.textContent = list.length
+        ? `${list.length} match${list.length !== 1 ? 'es' : ''}`
+        : 'No matches — relax filters';
   }
 
   _scoutResults = list;
 
   // Bug 3: preserve currently-checked boxes across re-runs + seed from saved company_ids on first open
-  const existingIds = new Set(_scoutExistingId
-    ? (S.audiences.find(a => a.id === _scoutExistingId)?.company_ids || [])
-    : []);
-  document.querySelectorAll('#scout-a-body .scout-cb:checked').forEach(cb => existingIds.add(cb.value));
+  const existingIds = new Set(
+    _scoutExistingId ? S.audiences.find((a) => a.id === _scoutExistingId)?.company_ids || [] : [],
+  );
+  document
+    .querySelectorAll('#scout-a-body .scout-cb:checked')
+    .forEach((cb) => existingIds.add(cb.value));
 
   if (countEl) countEl.textContent = `(${list.length})`;
   if (list.length === 0) {
     bodyEl.innerHTML = '<div class="scout-empty">No companies match — try relaxing filters</div>';
   } else {
-    bodyEl.innerHTML = list.map(c => {
-      const cid   = c.id || _slug(c.name);
-      const chk   = existingIds.has(cid) ? 'checked' : '';
-      const chips = getCoTags(c).slice(0, 3).map(t => `<span class="scout-tag">${esc(t)}</span>`).join('');
-      const score = c.icp
-        ? `<span class="icp-score ${c.icp >= 7 ? 'hi' : c.icp >= 4 ? 'mid' : 'lo'}">${c.icp}</span>`
-        : '';
-      return `<label class="scout-company-row"><input type="checkbox" class="scout-cb" value="${esc(cid)}" ${chk}/>${score}<span class="icp-name">${esc(c.name)}</span><span class="icp-cat">${esc(tLabel(c.type))}</span>${chips}</label>`;
-    }).join('');
+    bodyEl.innerHTML = list
+      .map((c) => {
+        const cid = c.id || _slug(c.name);
+        const chk = existingIds.has(cid) ? 'checked' : '';
+        const chips = getCoTags(c)
+          .slice(0, 3)
+          .map((t) => `<span class="scout-tag">${esc(t)}</span>`)
+          .join('');
+        const score = c.icp
+          ? `<span class="icp-score ${c.icp >= 7 ? 'hi' : c.icp >= 4 ? 'mid' : 'lo'}">${c.icp}</span>`
+          : '';
+        return `<label class="scout-company-row"><input type="checkbox" class="scout-cb" value="${esc(cid)}" ${chk}/>${score}<span class="icp-name">${esc(c.name)}</span><span class="icp-cat">${esc(tLabel(c.type))}</span>${chips}</label>`;
+      })
+      .join('');
   }
 
   // Section B — gaps (fire-and-forget; _renderGaps updates #scout-b-body when ready)
@@ -733,50 +840,92 @@ async function _scoutRun() {
 }
 
 function _scoutToggleAll(checked) {
-  document.querySelectorAll('#scout-a-body .scout-cb').forEach(cb => { cb.checked = checked; });
+  document.querySelectorAll('#scout-a-body .scout-cb').forEach((cb) => {
+    cb.checked = checked;
+  });
 }
 
 async function _scoutSave(existingId) {
-  const name  = document.getElementById('scout-name')?.value?.trim();
+  const name = document.getElementById('scout-name')?.value?.trim();
   const errEl = document.getElementById('scout-err');
-  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (!name) {
+    if (errEl) errEl.textContent = 'Name required';
+    return;
+  }
   if (errEl) errEl.textContent = '';
 
-  const desc      = document.getElementById('scout-desc')?.value?.trim()    || '';
-  const prompt    = document.getElementById('scout-prompt')?.value?.trim()   || '';
-  const hook      = document.getElementById('scout-hook')?.value?.trim()     || '';
-  const sortField = document.getElementById('scout-sort')?.value             || 'updated_at';
-  const type      = document.getElementById('scout-f-type')?.value           || '';
-  const region    = document.getElementById('scout-f-region')?.value         || '';
-  const minIcp    = parseInt(document.getElementById('scout-f-icp')?.value)   || 0;
-  const country   = document.getElementById('scout-f-country')?.value?.trim().toLowerCase() || '';
-  const city      = document.getElementById('scout-f-city')?.value?.trim().toLowerCase()    || '';
-  const tags      = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const desc = document.getElementById('scout-desc')?.value?.trim() || '';
+  const prompt = document.getElementById('scout-prompt')?.value?.trim() || '';
+  const hook = document.getElementById('scout-hook')?.value?.trim() || '';
+  const sortField = document.getElementById('scout-sort')?.value || 'updated_at';
+  const type = document.getElementById('scout-f-type')?.value || '';
+  const region = document.getElementById('scout-f-region')?.value || '';
+  const minIcp = parseInt(document.getElementById('scout-f-icp')?.value) || 0;
+  const country = document.getElementById('scout-f-country')?.value?.trim().toLowerCase() || '';
+  const city = document.getElementById('scout-f-city')?.value?.trim().toLowerCase() || '';
+  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map((el) => el.value);
 
-  const checkedIds = [...document.querySelectorAll('#scout-a-body .scout-cb:checked')].map(cb => cb.value);
-  const companyIds = checkedIds.length > 0 ? checkedIds
-    : _scoutResults.length > 0 ? _scoutResults.map(c => c.id || _slug(c.name))
-    : (S.companies || []).map(c => c.id || _slug(c.name));
+  const checkedIds = [...document.querySelectorAll('#scout-a-body .scout-cb:checked')].map(
+    (cb) => cb.value,
+  );
+  const companyIds =
+    checkedIds.length > 0
+      ? checkedIds
+      : _scoutResults.length > 0
+        ? _scoutResults.map((c) => c.id || _slug(c.name))
+        : (S.companies || []).map((c) => c.id || _slug(c.name));
 
-  const filters = { type: type || null, region: region || null, minIcp: minIcp || null, country: country || null, city: city || null, tags, icp_prompt: prompt || null };
+  const filters = {
+    type: type || null,
+    region: region || null,
+    minIcp: minIcp || null,
+    country: country || null,
+    city: city || null,
+    tags,
+    icp_prompt: prompt || null,
+  };
 
   try {
     if (existingId) {
       await dbAud.patch(existingId, {
-          name, description: desc || null, outreach_hook: hook || null,
-          filters, icp_prompt: prompt || null, sort_field: sortField,
-          company_ids: companyIds
+        name,
+        description: desc || null,
+        outreach_hook: hook || null,
+        filters,
+        icp_prompt: prompt || null,
+        sort_field: sortField,
+        company_ids: companyIds,
       });
       if (!res.ok) throw new Error(await res.text());
-      const aud = S.audiences.find(a => a.id === existingId);
-      if (aud) Object.assign(aud, { name, description: desc, outreach_hook: hook || null, filters, icp_prompt: prompt || null, sort_field: sortField, company_ids: companyIds });
+      const aud = S.audiences.find((a) => a.id === existingId);
+      if (aud)
+        Object.assign(aud, {
+          name,
+          description: desc,
+          outreach_hook: hook || null,
+          filters,
+          icp_prompt: prompt || null,
+          sort_field: sortField,
+          company_ids: companyIds,
+        });
       audCloseModal();
       await renderAudiencesPanel();
       if (S.activeAudience?.id === existingId) renderAudienceDetail(existingId);
       clog('db', `Audience updated: <b>${esc(name)}</b>`);
     } else {
       const id = `aud-${Date.now()}`;
-      await sbSaveAudience({ id, name, description: desc || null, company_ids: companyIds, filters, icp_prompt: prompt || null, outreach_hook: hook || null, sort_field: sortField, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      await sbSaveAudience({
+        id,
+        name,
+        description: desc || null,
+        company_ids: companyIds,
+        filters,
+        icp_prompt: prompt || null,
+        outreach_hook: hook || null,
+        sort_field: sortField,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
       audCloseModal();
       await renderAudiencesPanel();
       audOpen(id);
@@ -794,25 +943,28 @@ async function _scoutSave(existingId) {
 }
 
 async function _scoutFindSimilar() {
-  const prompt  = document.getElementById('scout-prompt')?.value?.trim()
-    || document.getElementById('scout-name')?.value?.trim() || '';
+  const prompt =
+    document.getElementById('scout-prompt')?.value?.trim() ||
+    document.getElementById('scout-name')?.value?.trim() ||
+    '';
   const country = document.getElementById('scout-f-country')?.value?.trim() || '';
-  const city    = document.getElementById('scout-f-city')?.value?.trim()    || '';
-  const type    = document.getElementById('scout-f-type')?.value            || '';
-  const cBody   = document.getElementById('scout-c-body');
+  const city = document.getElementById('scout-f-city')?.value?.trim() || '';
+  const type = document.getElementById('scout-f-type')?.value || '';
+  const cBody = document.getElementById('scout-c-body');
   if (!cBody) return;
   if (!prompt && !country && !city) {
-    cBody.innerHTML = '<div class="scout-empty">Add a Scout Prompt or Country/City filter first</div>';
+    cBody.innerHTML =
+      '<div class="scout-empty">Add a Scout Prompt or Country/City filter first</div>';
     return;
   }
 
   cBody.innerHTML = '<div class="scout-running">&#9889; Searching external databases&#8230;</div>';
-  const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
+  const existingNames = new Set((S.companies || []).map((c) => c.name.toLowerCase()));
 
   // Build a focused query from all available context
-  const geoCtx   = [city, country].filter(Boolean).join(', ');
-  const typeCtx  = type ? `${type} companies` : 'companies';
-  const fullQ    = [prompt, geoCtx ? `located in ${geoCtx}` : ''].filter(Boolean).join(', ');
+  const geoCtx = [city, country].filter(Boolean).join(', ');
+  const typeCtx = type ? `${type} companies` : 'companies';
+  const fullQ = [prompt, geoCtx ? `located in ${geoCtx}` : ''].filter(Boolean).join(', ');
 
   let candidates = [];
 
@@ -823,28 +975,43 @@ async function _scoutFindSimilar() {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
-      messages: [{ role: 'user', content:
-        `Use the b2b search tool to find 10-15 ${typeCtx} matching: "${fullQ}" for potential data partnership with onAudience (EU first-party audience data).
+      messages: [
+        {
+          role: 'user',
+          content: `Use the b2b search tool to find 10-15 ${typeCtx} matching: "${fullQ}" for potential data partnership with onAudience (EU first-party audience data).
 
 Find companies that: ${prompt || 'match the specified criteria'}
 ${geoCtx ? `Location: ${geoCtx}` : ''}
-Exclude these already in CRM: ${(S.companies || []).slice(0,30).map(c=>c.name).join(', ')}
+Exclude these already in CRM: ${(S.companies || [])
+            .slice(0, 30)
+            .map((c) => c.name)
+            .join(', ')}
 
 After searching, return ONLY a JSON array:
-[{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
+[{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]`,
+        },
+      ],
     });
 
     // Extract JSON from response (may be in tool results or text)
-    const textBlocks = (b2bRes.content||[]).filter(b => b.type === 'text').map(b => b.text).join('');
-    const toolResults = (b2bRes.content||[]).filter(b => b.type === 'mcp_tool_result')
-      .map(b => b.content?.[0]?.text || '').join('\n');
+    const textBlocks = (b2bRes.content || [])
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+    const toolResults = (b2bRes.content || [])
+      .filter((b) => b.type === 'mcp_tool_result')
+      .map((b) => b.content?.[0]?.text || '')
+      .join('\n');
     const raw = textBlocks.trim() || toolResults;
     const m = raw.match(/\[[\s\S]*\]/);
     if (m) {
       const parsed = JSON.parse(m[0]);
       if (parsed.length) {
         candidates = parsed;
-        cBody.innerHTML = '<div class="scout-running">&#9889; b2b matched ' + parsed.length + ' — verifying&#8230;</div>';
+        cBody.innerHTML =
+          '<div class="scout-running">&#9889; b2b matched ' +
+          parsed.length +
+          ' — verifying&#8230;</div>';
       }
     }
   } catch (e) {
@@ -859,12 +1026,19 @@ After searching, return ONLY a JSON array:
         model: 'claude-sonnet-4-20250514',
         max_tokens: 700,
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-        messages: [{ role: 'user', content:
-          `Find 8-10 real ${typeCtx} matching: "${fullQ}" — for onAudience EU first-party data partnerships.
-Exclude: ${(S.companies || []).slice(0, 30).map(c => c.name).join(', ')}
-Return ONLY JSON: [{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]` }],
+        messages: [
+          {
+            role: 'user',
+            content: `Find 8-10 real ${typeCtx} matching: "${fullQ}" — for onAudience EU first-party data partnerships.
+Exclude: ${(S.companies || [])
+              .slice(0, 30)
+              .map((c) => c.name)
+              .join(', ')}
+Return ONLY JSON: [{"name":"...","category":"...","hq":"...","website":"...","why":"..."}]`,
+          },
+        ],
       });
-      const raw2 = res.content?.find(b => b.type === 'text')?.text?.trim() || '[]';
+      const raw2 = res.content?.find((b) => b.type === 'text')?.text?.trim() || '[]';
       const m2 = raw2.match(/\[[\s\S]*\]/);
       if (m2) candidates = JSON.parse(m2[0]);
     } catch (e2) {
@@ -874,28 +1048,31 @@ Return ONLY JSON: [{"name":"...","category":"...","hq":"...","website":"...","wh
   }
 
   if (!candidates.length) {
-    cBody.innerHTML = '<div class="scout-empty">No new candidates found — try a different prompt or location</div>';
+    cBody.innerHTML =
+      '<div class="scout-empty">No new candidates found — try a different prompt or location</div>';
     return;
   }
 
   // Render candidates (filter out existing companies)
-  const fresh = candidates.filter(co => !existingNames.has((co.name||'').toLowerCase()));
-  cBody.innerHTML = fresh.map(co => {
-    const slug = _slug(co.name||'');
-    return `<div class="scout-row" style="padding:5px 8px;border-bottom:1px solid var(--rule2)">
+  const fresh = candidates.filter((co) => !existingNames.has((co.name || '').toLowerCase()));
+  cBody.innerHTML =
+    fresh
+      .map((co) => {
+        const slug = _slug(co.name || '');
+        return `<div class="scout-row" style="padding:5px 8px;border-bottom:1px solid var(--rule2)">
       <div style="display:flex;align-items:baseline;gap:6px">
         <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;color:var(--t1)">${esc(co.name)}</span>
         ${co.hq ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>` : ''}
       </div>
-      <div style="font-size:10px;color:var(--t2);margin:1px 0 3px">${esc(co.why||co.category||'')}</div>
-      ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
+      <div style="font-size:10px;color:var(--t2);margin:1px 0 3px">${esc(co.why || co.category || '')}</div>
+      ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//, '')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
       <div style="display:flex;gap:4px;margin-top:4px">
-        <button class="btn sm" onclick="audAddExternalCo('${esc(slug)}','${esc(co.name||'')}','${esc(co.category||'')}','${esc(co.hq||'')}','${esc(co.website||'')}')">+ Add to DB</button>
+        <button class="btn sm" onclick="audAddExternalCo('${esc(slug)}','${esc(co.name || '')}','${esc(co.category || '')}','${esc(co.hq || '')}','${esc(co.website || '')}')">+ Add to DB</button>
       </div>
     </div>`;
-  }).join('') || '<div class="scout-empty">All found companies are already in your DB</div>';
+      })
+      .join('') || '<div class="scout-empty">All found companies are already in your DB</div>';
 }
-
 
 async function wrapGapAction(btnEl, label, actionFn) {
   btnEl.disabled = true;
@@ -905,11 +1082,19 @@ async function wrapGapAction(btnEl, label, actionFn) {
     btnEl.textContent = 'Done ✓';
     btnEl.style.color = 'var(--g)';
     audRefreshDetail(_scoutExistingId || S.activeAudience?.id);
-    setTimeout(() => { btnEl.textContent = label; btnEl.style.color = ''; btnEl.disabled = false; }, 2000);
-  } catch(e) {
+    setTimeout(() => {
+      btnEl.textContent = label;
+      btnEl.style.color = '';
+      btnEl.disabled = false;
+    }, 2000);
+  } catch (e) {
     btnEl.textContent = 'Error — retry';
     btnEl.style.color = 'var(--cr)';
-    setTimeout(() => { btnEl.textContent = label; btnEl.style.color = ''; btnEl.disabled = false; }, 2000);
+    setTimeout(() => {
+      btnEl.textContent = label;
+      btnEl.style.color = '';
+      btnEl.disabled = false;
+    }, 2000);
   }
 }
 
@@ -919,26 +1104,28 @@ async function _renderGaps(list) {
   bBody.innerHTML = '<div class="scout-running">&#9889; Computing gaps&#8230;</div>';
 
   // Fast local gaps
-  const noDesc  = list.filter(c => !c.description?.trim());
-  const noHq    = list.filter(c => !c.hq_city?.trim());
-  const noAngle = list.filter(c => !c.outreach_angle?.trim());
+  const noDesc = list.filter((c) => !c.description?.trim());
+  const noHq = list.filter((c) => !c.hq_city?.trim());
+  const noAngle = list.filter((c) => !c.outreach_angle?.trim());
 
   // Contacts gap via Supabase for accuracy
-  const allIds = list.map(c => c.id || _slug(c.name)).filter(Boolean);
+  const allIds = list.map((c) => c.id || _slug(c.name)).filter(Boolean);
   let noContact = list;
   if (allIds.length) {
     try {
       const res = await fetch(
         `${SB_URL}/rest/v1/contacts?select=company_id&company_id=in.(${allIds.join(',')})`,
-        { headers: authHdr() }
+        { headers: authHdr() },
       );
       if (res.ok) {
         const rows = await res.json();
-        const withContact = new Set(rows.map(r => r.company_id));
-        noContact = list.filter(c => !withContact.has(c.id || _slug(c.name)));
+        const withContact = new Set(rows.map((r) => r.company_id));
+        noContact = list.filter((c) => !withContact.has(c.id || _slug(c.name)));
       }
     } catch {
-      noContact = list.filter(c => !S.contacts?.some(ct => ct.company_id === (c.id || _slug(c.name))));
+      noContact = list.filter(
+        (c) => !S.contacts?.some((ct) => ct.company_id === (c.id || _slug(c.name))),
+      );
     }
   }
 
@@ -954,25 +1141,35 @@ async function _renderGaps(list) {
     </div>`;
 
   bBody.innerHTML =
-    row('👤', 'No contacts',        noContact.length, 'contact', 'FIND CONTACTS &#9654;') +
-    row('📝', 'No description',     noDesc.length,    'desc',    'ENRICH &#9654;') +
-    row('📍', 'No HQ city',         noHq.length,      'hq',      'GEOCODE &#9654;') +
-    row('💡', 'No outreach angle',  noAngle.length,   'angle',   'GEN ANGLES &#9654;');
+    row('👤', 'No contacts', noContact.length, 'contact', 'FIND CONTACTS &#9654;') +
+    row('📝', 'No description', noDesc.length, 'desc', 'ENRICH &#9654;') +
+    row('📍', 'No HQ city', noHq.length, 'hq', 'GEOCODE &#9654;') +
+    row('💡', 'No outreach angle', noAngle.length, 'angle', 'GEN ANGLES &#9654;');
 
   // Bug 2: wrap each button with loading state + feedback
   const btnContact = document.getElementById('scout-gap-btn-contact');
-  const btnDesc    = document.getElementById('scout-gap-btn-desc');
-  const btnHq      = document.getElementById('scout-gap-btn-hq');
-  const btnAngle   = document.getElementById('scout-gap-btn-angle');
-  if (btnContact) btnContact.addEventListener('click', () => wrapGapAction(btnContact, 'FIND CONTACTS &#9654;', _gapFindContacts));
-  if (btnDesc)    btnDesc.addEventListener('click',    () => wrapGapAction(btnDesc,    'ENRICH &#9654;',        _gapEnrichDesc));
-  if (btnHq)      btnHq.addEventListener('click',      () => wrapGapAction(btnHq,      'GEOCODE &#9654;',       _gapGeocode));
-  if (btnAngle)   btnAngle.addEventListener('click',   () => wrapGapAction(btnAngle,   'GEN ANGLES &#9654;',    _gapGenAngles));
+  const btnDesc = document.getElementById('scout-gap-btn-desc');
+  const btnHq = document.getElementById('scout-gap-btn-hq');
+  const btnAngle = document.getElementById('scout-gap-btn-angle');
+  if (btnContact)
+    btnContact.addEventListener('click', () =>
+      wrapGapAction(btnContact, 'FIND CONTACTS &#9654;', _gapFindContacts),
+    );
+  if (btnDesc)
+    btnDesc.addEventListener('click', () =>
+      wrapGapAction(btnDesc, 'ENRICH &#9654;', _gapEnrichDesc),
+    );
+  if (btnHq)
+    btnHq.addEventListener('click', () => wrapGapAction(btnHq, 'GEOCODE &#9654;', _gapGeocode));
+  if (btnAngle)
+    btnAngle.addEventListener('click', () =>
+      wrapGapAction(btnAngle, 'GEN ANGLES &#9654;', _gapGenAngles),
+    );
 }
 
 function _gapFindContacts() {
   if (!_gapLists.noContact.length) return;
-  const names = _gapLists.noContact.map(c => c.name).join(', ');
+  const names = _gapLists.noContact.map((c) => c.name).join(', ');
   // Use internal AI bar to find contacts — no external session
   const inp = document.getElementById('aiInp');
   if (inp) {
@@ -986,15 +1183,17 @@ function _gapFindContacts() {
 
 function _gapEnrichDesc() {
   if (!_gapLists.noDesc.length) return;
-  window.enrFilteredIds = new Set(_gapLists.noDesc.map(c => c.id || _slug(c.name)));
-  const _se=document.getElementById('scout-status'); if(_se) _se.textContent=`Queued for enrichment — switch to Enricher tab`;
+  window.enrFilteredIds = new Set(_gapLists.noDesc.map((c) => c.id || _slug(c.name)));
+  const _se = document.getElementById('scout-status');
+  if (_se) _se.textContent = `Queued for enrichment — switch to Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noDesc.length} companies need description`);
 }
 
 function _gapGeocode() {
   if (!_gapLists.noHq.length) return;
-  window.enrFilteredIds = new Set(_gapLists.noHq.map(c => c.id || _slug(c.name)));
-  const _se=document.getElementById('scout-status'); if(_se) _se.textContent=`Queued for enrichment — switch to Enricher tab`;
+  window.enrFilteredIds = new Set(_gapLists.noHq.map((c) => c.id || _slug(c.name)));
+  const _se = document.getElementById('scout-status');
+  if (_se) _se.textContent = `Queued for enrichment — switch to Enricher tab`;
   clog('db', `Enricher queued: ${_gapLists.noHq.length} companies need HQ city`);
 }
 
@@ -1002,36 +1201,50 @@ async function _gapGenAngles() {
   const companies = _gapLists.noAngle;
   if (!companies.length) return;
   const progEl = document.getElementById('scout-gap-prog-angle');
-  const cntEl  = document.getElementById('scout-gap-cnt-angle');
-  const btn    = document.getElementById('scout-gap-btn-angle');
+  const cntEl = document.getElementById('scout-gap-cnt-angle');
+  const btn = document.getElementById('scout-gap-btn-angle');
   if (btn) btn.disabled = true;
 
   const BATCH = 3;
   let done = 0;
   for (let i = 0; i < companies.length; i += BATCH) {
     if (progEl) progEl.textContent = `Generating… ${done} / ${companies.length}`;
-    await Promise.all(companies.slice(i, i + BATCH).map(async c => {
-      try {
-        const res = await anthropicFetch({
-          model: MODEL_CREATIVE, max_tokens: 120,
-          messages: [{ role: 'user', content:
-            `Write a 2-sentence outreach angle for selling audience data to ${c.name} (${c.category || 'unknown'}): ${c.description || 'no description'}. Be specific and direct.` }],
-        });
-        const angle = res.content?.[0]?.text?.trim();
-        if (!angle) return;
-        c.outreach_angle = angle;
-        const sc = S.companies.find(co => (co.id || _slug(co.name)) === (c.id || _slug(c.name)));
-        if (sc) sc.outreach_angle = angle;
-        await dbCo.patch(c.id || _slug(c.name), { outreach_angle: angle }).catch(() => {});
-        done++;
-      } catch { /* skip */ }
-    }));
+    await Promise.all(
+      companies.slice(i, i + BATCH).map(async (c) => {
+        try {
+          const res = await anthropicFetch({
+            model: MODEL_CREATIVE,
+            max_tokens: 120,
+            messages: [
+              {
+                role: 'user',
+                content: `Write a 2-sentence outreach angle for selling audience data to ${c.name} (${c.category || 'unknown'}): ${c.description || 'no description'}. Be specific and direct.`,
+              },
+            ],
+          });
+          const angle = res.content?.[0]?.text?.trim();
+          if (!angle) return;
+          c.outreach_angle = angle;
+          const sc = S.companies.find(
+            (co) => (co.id || _slug(co.name)) === (c.id || _slug(c.name)),
+          );
+          if (sc) sc.outreach_angle = angle;
+          await dbCo.patch(c.id || _slug(c.name), { outreach_angle: angle }).catch(() => {});
+          done++;
+        } catch {
+          /* skip */
+        }
+      }),
+    );
   }
 
-  _gapLists.noAngle = _scoutResults.filter(c => !c.outreach_angle?.trim());
-  if (cntEl)  cntEl.textContent  = _gapLists.noAngle.length;
+  _gapLists.noAngle = _scoutResults.filter((c) => !c.outreach_angle?.trim());
+  if (cntEl) cntEl.textContent = _gapLists.noAngle.length;
   if (progEl) progEl.textContent = `&#10003; ${done}/${companies.length} done`;
-  if (btn)  { btn.disabled = false; btn.textContent = '&#8635; REGEN &#9654;'; }
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '&#8635; REGEN &#9654;';
+  }
   clog('db', `Generated ${done} outreach angles`);
 }
 
@@ -1039,15 +1252,33 @@ async function _gapFillAll() {
   // Bug 2: run each gap action sequentially with per-step status
   const fillBtn = document.getElementById('scout-fill-all-btn');
   const steps = [
-    { key: 'contact', label: 'FIND CONTACTS ▶', fn: _gapFindContacts, hasItems: () => _gapLists.noContact.length > 0 },
-    { key: 'desc',    label: 'ENRICH ▶',         fn: _gapEnrichDesc,  hasItems: () => _gapLists.noDesc.length > 0 },
-    { key: 'hq',      label: 'GEOCODE ▶',        fn: _gapGeocode,     hasItems: () => _gapLists.noHq.length > 0 },
-    { key: 'angle',   label: 'GEN ANGLES ▶',     fn: _gapGenAngles,   hasItems: () => _gapLists.noAngle.length > 0 },
-  ].filter(s => s.hasItems());
+    {
+      key: 'contact',
+      label: 'FIND CONTACTS ▶',
+      fn: _gapFindContacts,
+      hasItems: () => _gapLists.noContact.length > 0,
+    },
+    {
+      key: 'desc',
+      label: 'ENRICH ▶',
+      fn: _gapEnrichDesc,
+      hasItems: () => _gapLists.noDesc.length > 0,
+    },
+    { key: 'hq', label: 'GEOCODE ▶', fn: _gapGeocode, hasItems: () => _gapLists.noHq.length > 0 },
+    {
+      key: 'angle',
+      label: 'GEN ANGLES ▶',
+      fn: _gapGenAngles,
+      hasItems: () => _gapLists.noAngle.length > 0,
+    },
+  ].filter((s) => s.hasItems());
 
   if (!steps.length) return;
 
-  if (fillBtn) { fillBtn.disabled = true; fillBtn.textContent = 'Running…'; }
+  if (fillBtn) {
+    fillBtn.disabled = true;
+    fillBtn.textContent = 'Running…';
+  }
 
   for (let i = 0; i < steps.length; i++) {
     const s = steps[i];
@@ -1055,43 +1286,57 @@ async function _gapFillAll() {
     const btn = document.getElementById(`scout-gap-btn-${s.key}`);
     try {
       await s.fn();
-      if (btn) { btn.textContent = 'Done ✓'; btn.style.color = 'var(--g)'; }
-    } catch(e) {
-      if (btn) { btn.textContent = 'Error'; btn.style.color = 'var(--cr)'; }
+      if (btn) {
+        btn.textContent = 'Done ✓';
+        btn.style.color = 'var(--g)';
+      }
+    } catch (e) {
+      if (btn) {
+        btn.textContent = 'Error';
+        btn.style.color = 'var(--cr)';
+      }
     }
   }
 
-  if (fillBtn) { fillBtn.textContent = `✓ Done (${steps.length}/${steps.length})`; fillBtn.disabled = false; }
+  if (fillBtn) {
+    fillBtn.textContent = `✓ Done (${steps.length}/${steps.length})`;
+    fillBtn.disabled = false;
+  }
   audRefreshDetail(_scoutExistingId || S.activeAudience?.id);
 }
 
-
 export function audCloseModal() {
   const modal = document.getElementById('audience-modal');
-  if (modal) { modal.innerHTML = ''; modal.style.display = 'none'; }
+  if (modal) {
+    modal.innerHTML = '';
+    modal.style.display = 'none';
+  }
 }
 
 /* ── Audience map view ────────────────────────────────────── */
 
 export function toggleAudienceMap(view) {
   const listWrap = document.getElementById('aud-co-list-wrap');
-  const mapWrap  = document.getElementById('aud-map-wrap');
-  const btnList  = document.getElementById('aud-toggle-list');
-  const btnMap   = document.getElementById('aud-toggle-map');
+  const mapWrap = document.getElementById('aud-map-wrap');
+  const btnList = document.getElementById('aud-toggle-list');
+  const btnMap = document.getElementById('aud-toggle-map');
   if (!listWrap || !mapWrap) return;
 
   if (view === 'map') {
     listWrap.style.display = 'none';
-    mapWrap.style.display  = 'flex';
+    mapWrap.style.display = 'flex';
     btnList?.classList.remove('active');
     btnMap?.classList.add('active');
     _initAudMap(_audMapMembers);
   } else {
-    mapWrap.style.display  = 'none';
+    mapWrap.style.display = 'none';
     listWrap.style.display = '';
     btnList?.classList.add('active');
     btnMap?.classList.remove('active');
-    if (_audMap) { _audMap.remove(); _audMap = null; }
+    if (_audMap) {
+      _audMap.remove();
+      _audMap = null;
+    }
   }
 }
 
@@ -1131,7 +1376,7 @@ function _initAudMap(members) {
   const cityCounts = {};
   let geocodeDelay = 0;
 
-  members.forEach(c => {
+  members.forEach((c) => {
     if (c.hq_lat && c.hq_lng) {
       if (c.hq_city) cityCounts[c.hq_city] = (cityCounts[c.hq_city] || 0) + 1;
       _addAudMarker(cluster, c, c.hq_lat, c.hq_lng);
@@ -1154,9 +1399,13 @@ function _initAudMap(members) {
   const geoList = document.getElementById('aud-geo-list');
   if (geoList) {
     const sorted = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]);
-    geoList.innerHTML = sorted.map(([city, n]) =>
-      `<div class="aud-map-geo-row"><span>${esc(city)}</span><span>${n}</span></div>`
-    ).join('') || `<div style="color:var(--t4);font-size:8px">No location data</div>`;
+    geoList.innerHTML =
+      sorted
+        .map(
+          ([city, n]) =>
+            `<div class="aud-map-geo-row"><span>${esc(city)}</span><span>${n}</span></div>`,
+        )
+        .join('') || `<div style="color:var(--t4);font-size:8px">No location data</div>`;
   }
 
   setTimeout(() => _audMap?.invalidateSize(), 100);
@@ -1166,13 +1415,13 @@ function _audPreviewFilter() {
   const type = document.getElementById('aud-f-type')?.value || '';
   const region = document.getElementById('aud-f-region')?.value || '';
   const minIcp = parseInt(document.getElementById('aud-f-icp')?.value) || 0;
-  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map((el) => el.value);
 
   let list = S.companies || [];
-  if (type) list = list.filter(c => c.type === type);
-  if (region) list = list.filter(c => c.region === region);
-  if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
-  if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
+  if (type) list = list.filter((c) => c.type === type);
+  if (region) list = list.filter((c) => c.region === region);
+  if (minIcp) list = list.filter((c) => (c.icp || 0) >= minIcp);
+  if (tags.length) list = list.filter((c) => tags.every((t) => getCoTags(c).includes(t)));
 
   const preview = document.getElementById('aud-preview');
   if (!preview) return;
@@ -1189,13 +1438,17 @@ function _audPreviewFilter() {
   const more = list.length - shown.length;
   preview.innerHTML = `
 <div class="aud-preview-head">FILTER PREVIEW: ${list.length} MATCH${list.length !== 1 ? 'ES' : ''}</div>
-${shown.map(c => `
+${shown
+  .map(
+    (c) => `
 <div class="aud-preview-row">
   <span>${esc(c.name)}</span>
   <span class="tag ${tClass(c.type)}" style="font-size:7px">${esc(tLabel(c.type))}</span>
   ${c.hq_city ? `<span style="color:var(--t3);font-size:9px">${esc(c.hq_city)}</span>` : ''}
   ${c.icp ? `<span style="color:var(--t3);font-size:9px">ICP ${c.icp}</span>` : ''}
-</div>`).join('')}
+</div>`,
+  )
+  .join('')}
 ${more > 0 ? `<div class="aud-preview-more">+${more} MORE</div>` : ''}`;
 }
 
@@ -1206,25 +1459,29 @@ export async function audAIBuild() {
   if (!prompt) return;
 
   const statusEl = document.getElementById('aud-ai-status');
-  const setStatus = msg => { if (statusEl) statusEl.innerHTML = msg; };
+  const setStatus = (msg) => {
+    if (statusEl) statusEl.innerHTML = msg;
+  };
   setStatus(`<span style="color:var(--t2)">⟳ Querying DB…</span>`);
 
   // Read active hard filters
   const type = document.getElementById('aud-f-type')?.value || '';
   const region = document.getElementById('aud-f-region')?.value || '';
   const minIcp = parseInt(document.getElementById('aud-f-icp')?.value) || 0;
-  const activeTags = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const activeTags = [...document.querySelectorAll('.aud-tag-check input:checked')].map(
+    (el) => el.value,
+  );
 
   // Pre-filter candidates
   let candidates = S.companies || [];
-  if (type) candidates = candidates.filter(c => c.type === type);
-  if (region) candidates = candidates.filter(c => c.region === region);
-  if (minIcp) candidates = candidates.filter(c => (c.icp || 0) >= minIcp);
-  if (activeTags.length) candidates = candidates.filter(c =>
-    activeTags.every(t => getCoTags(c).includes(t)));
+  if (type) candidates = candidates.filter((c) => c.type === type);
+  if (region) candidates = candidates.filter((c) => c.region === region);
+  if (minIcp) candidates = candidates.filter((c) => (c.icp || 0) >= minIcp);
+  if (activeTags.length)
+    candidates = candidates.filter((c) => activeTags.every((t) => getCoTags(c).includes(t)));
 
   // Compact DB summary for Claude (max 200 companies)
-  const dbSummary = candidates.slice(0, 200).map(c => ({
+  const dbSummary = candidates.slice(0, 200).map((c) => ({
     id: c.id || _slug(c.name),
     name: c.name,
     type: c.type,
@@ -1237,8 +1494,11 @@ export async function audAIBuild() {
     note: (c.note || '').substring(0, 80),
     description: (c.description || '').substring(0, 100),
     tech: Array.isArray(c.tech_stack)
-      ? c.tech_stack.slice(0, 4).map(t => (typeof t === 'string' ? t : t?.tool || '')).filter(Boolean)
-      : []
+      ? c.tech_stack
+          .slice(0, 4)
+          .map((t) => (typeof t === 'string' ? t : t?.tool || ''))
+          .filter(Boolean)
+      : [],
   }));
 
   const system = `You are an audience-building AI for onAudience sales intelligence.
@@ -1258,22 +1518,28 @@ ${JSON.stringify(dbSummary).substring(0, 14000)}
 Return JSON only.`;
 
   try {
-    setStatus(`<span style="color:var(--poc)">⟳ AI matching ${candidates.length} companies…</span>`);
+    setStatus(
+      `<span style="color:var(--poc)">⟳ AI matching ${candidates.length} companies…</span>`,
+    );
     const data = await anthropicFetch({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       system,
-      messages: [{ role: 'user', content: userMsg }]
+      messages: [{ role: 'user', content: userMsg }],
     });
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const text = (data.content || [])
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const objMatch = clean.match(/\{[\s\S]*\}/);
     if (!objMatch) throw new Error('No JSON in response');
     const result = JSON.parse(objMatch[0]);
 
     S._audienceBuiltIds = result.company_ids || [];
-    const matched = S._audienceBuiltIds.map(id =>
-      candidates.find(c => (c.id || _slug(c.name)) === id)).filter(Boolean);
+    const matched = S._audienceBuiltIds
+      .map((id) => candidates.find((c) => (c.id || _slug(c.name)) === id))
+      .filter(Boolean);
 
     // Auto-fill name/desc if empty
     if (result.name && !document.getElementById('aud-name')?.value) {
@@ -1292,16 +1558,24 @@ Return JSON only.`;
       preview.innerHTML = `
 <div class="aud-preview-head">AI MATCHED: ${matched.length} COMPANIES</div>
 ${result.reasoning ? `<div style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:var(--t3);font-style:italic;margin-bottom:6px">${esc(result.reasoning)}</div>` : ''}
-${matched.slice(0, 8).map(c => `
+${matched
+  .slice(0, 8)
+  .map(
+    (c) => `
 <div class="aud-preview-row">
   <span>${esc(c.name)}</span>
   <span class="tag ${tClass(c.type)}" style="font-size:7px">${esc(tLabel(c.type))}</span>
   ${c.category ? `<span style="color:var(--t3);font-size:9px">${esc(c.category)}</span>` : ''}
   ${c.icp ? `<span style="color:var(--t3);font-size:9px">ICP ${c.icp}</span>` : ''}
-</div>`).join('')}
+</div>`,
+  )
+  .join('')}
 ${matched.length > 8 ? `<div class="aud-preview-more">+${matched.length - 8} MORE</div>` : ''}`;
     }
-    clog('ai', `Audience AI build: "${esc(prompt.slice(0, 40))}" → <b>${matched.length}</b> matches`);
+    clog(
+      'ai',
+      `Audience AI build: "${esc(prompt.slice(0, 40))}" → <b>${matched.length}</b> matches`,
+    );
   } catch (e) {
     setStatus(`<span style="color:var(--prc)">✕ ${esc(e.message)}</span>`);
     clog('ai', `Audience AI build error: ${esc(e.message)}`);
@@ -1312,18 +1586,24 @@ ${matched.length > 8 ? `<div class="aud-preview-more">+${matched.length - 8} MOR
 
 function _audErr(msg) {
   const el = document.getElementById('aud-save-err');
-  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+  if (el) {
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+  }
 }
 
 export async function audSave(existingId) {
   _audErr('');
   const name = document.getElementById('aud-name')?.value?.trim();
-  if (!name) { _audErr('Name required'); return; }
+  if (!name) {
+    _audErr('Name required');
+    return;
+  }
 
   const type = document.getElementById('aud-f-type')?.value || '';
   const region = document.getElementById('aud-f-region')?.value || '';
   const minIcp = parseInt(document.getElementById('aud-f-icp')?.value) || 0;
-  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map(el => el.value);
+  const tags = [...document.querySelectorAll('.aud-tag-check input:checked')].map((el) => el.value);
   const sortField = document.getElementById('aud-sort')?.value || 'updated_at';
   const desc = document.getElementById('aud-desc')?.value?.trim() || '';
 
@@ -1332,11 +1612,11 @@ export async function audSave(existingId) {
     let companyIds = S._audienceBuiltIds;
     if (!companyIds || companyIds.length === 0) {
       let list = S.companies;
-      if (type) list = list.filter(c => c.type === type);
-      if (region) list = list.filter(c => c.region === region);
-      if (minIcp) list = list.filter(c => (c.icp || 0) >= minIcp);
-      if (tags.length) list = list.filter(c => tags.every(t => getCoTags(c).includes(t)));
-      companyIds = list.map(c => c.id || _slug(c.name));
+      if (type) list = list.filter((c) => c.type === type);
+      if (region) list = list.filter((c) => c.region === region);
+      if (minIcp) list = list.filter((c) => (c.icp || 0) >= minIcp);
+      if (tags.length) list = list.filter((c) => tags.every((t) => getCoTags(c).includes(t)));
+      companyIds = list.map((c) => c.id || _slug(c.name));
     }
     S._audienceBuiltIds = null;
 
@@ -1348,7 +1628,7 @@ export async function audSave(existingId) {
       company_ids: companyIds,
       filters: { type: type || null, region: region || null, minIcp: minIcp || null, tags },
       sort_field: sortField,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
     if (!existingId) payload.created_at = new Date().toISOString();
 
@@ -1366,30 +1646,33 @@ export async function audSave(existingId) {
 /* ─── Actions ───────────────────────────────────────────────── */
 
 export function audOpen(id) {
-  S.activeAudience = S.audiences.find(a => a.id === id) || null;
+  S.activeAudience = S.audiences.find((a) => a.id === id) || null;
   // Highlight row in left panel
-  document.querySelectorAll('.aud-row').forEach(el => el.classList.remove('aud-row-active'));
+  document.querySelectorAll('.aud-row').forEach((el) => el.classList.remove('aud-row-active'));
   const rows = document.querySelectorAll('.aud-row');
-  rows.forEach(el => {
+  rows.forEach((el) => {
     if (el.getAttribute('onclick')?.includes(JSON.stringify(id)))
       el.classList.add('aud-row-active');
   });
   renderAudienceDetail(id);
   // Auto-generate hook if empty
-  const _aud = S.audiences?.find(a => a.id === id);
+  const _aud = S.audiences?.find((a) => a.id === id);
   if (_aud && !_aud.outreach_hook && (_aud.company_ids || []).length > 0) {
     setTimeout(() => generateCampaignHook(id), 600);
   }
 }
 
 export function audCloseDetail() {
-  if (_audMap) { _audMap.remove(); _audMap = null; }
+  if (_audMap) {
+    _audMap.remove();
+    _audMap = null;
+  }
   S.activeAudience = null;
   const wrap = document.getElementById('aud-detail-wrap');
   if (wrap) wrap.style.display = 'none';
   const es = document.getElementById('emptyState');
   if (es) es.style.display = 'flex';
-  document.querySelectorAll('.aud-row').forEach(el => el.classList.remove('aud-row-active'));
+  document.querySelectorAll('.aud-row').forEach((el) => el.classList.remove('aud-row-active'));
 }
 
 export function audNew() {
@@ -1398,14 +1681,17 @@ export function audNew() {
 }
 
 export function audEdit(id) {
-  const aud = S.audiences.find(a => a.id === id);
-  if (aud?.is_system) { clog('info','System audiences cannot be edited'); return; }
+  const aud = S.audiences.find((a) => a.id === id);
+  if (aud?.is_system) {
+    clog('info', 'System audiences cannot be edited');
+    return;
+  }
   S._audienceBuiltIds = null;
   openAudienceModal(id); // works even if aud is undefined — modal handles missing gracefully
 }
 
 export async function audDelete(id) {
-  const aud = S.audiences.find(a => a.id === id);
+  const aud = S.audiences.find((a) => a.id === id);
   if (!confirm(`Delete audience "${aud?.name || id}"? Companies are not affected.`)) return;
   try {
     await sbDeleteAudience(id);
@@ -1418,22 +1704,33 @@ export async function audDelete(id) {
 }
 
 export async function audToggleCo(audienceId, companyId) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   if (!aud) return;
   const ids = Array.isArray(aud.company_ids) ? [...aud.company_ids] : [];
   const idx = ids.indexOf(companyId);
   const adding = idx < 0;
-  if (adding) ids.push(companyId); else ids.splice(idx, 1);
+  if (adding) ids.push(companyId);
+  else ids.splice(idx, 1);
   aud.company_ids = ids;
   try {
     await sbSaveAudience(aud);
-    clog('db', `${adding?'➕':'➖'} <b>${esc(aud.name)}</b>: ${adding?'added':'removed'} company`);
+    clog(
+      'db',
+      `${adding ? '➕' : '➖'} <b>${esc(aud.name)}</b>: ${adding ? 'added' : 'removed'} company`,
+    );
     // Refresh audience detail if open
     if (S.activeAudience?.id === audienceId) renderAudienceDetail(audienceId);
     // Refresh left panel counts
     renderAudiencesPanel();
     // Re-render company panel so chips update immediately
-    const co = S.companies.find(c => c.id === companyId || (c.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') === companyId);
+    const co = S.companies.find(
+      (c) =>
+        c.id === companyId ||
+        (c.name || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') === companyId,
+    );
     if (co && window.openCompany) window.openCompany(co);
   } catch (e) {
     clog('db', `Toggle audience error: ${esc(e.message)}`);
@@ -1444,16 +1741,24 @@ export async function audToggleCo(audienceId, companyId) {
 
 export async function sysCoSetType(companyId, targetType) {
   const all = S.companies;
-  const co = all.find(c => c.id === companyId || _slug(c.name) === companyId);
+  const co = all.find((c) => c.id === companyId || _slug(c.name) === companyId);
   if (!co) return;
   const sysTypes = { client: 'Clients', partner: 'Partners', nogo: 'NoOutreach' };
   if (targetType !== 'prospect' && sysTypes[co.type] && co.type !== targetType) {
-    if (!confirm(`This will move "${co.name}" from ${sysTypes[co.type]} → ${sysTypes[targetType]}. Continue?`)) return;
+    if (
+      !confirm(
+        `This will move "${co.name}" from ${sysTypes[co.type]} → ${sysTypes[targetType]}. Continue?`,
+      )
+    )
+      return;
   }
   try {
     await sbPatchCompanyType(companyId, targetType);
     co.type = targetType;
-    if (window.currentCompany?.id === companyId || _slug(window.currentCompany?.name || '') === companyId) {
+    if (
+      window.currentCompany?.id === companyId ||
+      _slug(window.currentCompany?.name || '') === companyId
+    ) {
       window.currentCompany.type = targetType;
       window.openCompany?.(window.currentCompany);
     }
@@ -1465,7 +1770,7 @@ export async function sysCoSetType(companyId, targetType) {
 }
 
 export async function addToSystemAudience(companyId, audienceId) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   const targetType = aud?.system_filter?.type;
   if (!targetType) return;
   await sysCoSetType(companyId, targetType);
@@ -1473,7 +1778,10 @@ export async function addToSystemAudience(companyId, audienceId) {
   const inp = document.getElementById('sys-aud-input');
   const sug = document.getElementById('sys-aud-suggest');
   if (inp) inp.value = '';
-  if (sug) { sug.innerHTML = ''; sug.style.display = 'none'; }
+  if (sug) {
+    sug.innerHTML = '';
+    sug.style.display = 'none';
+  }
 }
 
 export async function removeFromSystemAudience(companyId, audienceId) {
@@ -1481,31 +1789,41 @@ export async function removeFromSystemAudience(companyId, audienceId) {
 }
 
 export function sysAudSearchInput(audienceId, query) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   if (!aud) return;
   const targetType = aud.system_filter?.type;
   const all = S.companies;
   const q = (query || '').toLowerCase().trim();
   const el = document.getElementById('sys-aud-suggest');
   if (!el) return;
-  if (!q) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  if (!q) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
   const hits = all
-    .filter(c => c.type !== targetType && (c.name || '').toLowerCase().includes(q))
+    .filter((c) => c.type !== targetType && (c.name || '').toLowerCase().includes(q))
     .slice(0, 8);
-  if (!hits.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  if (!hits.length) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
   el.style.display = 'block';
   const audId = esc(audienceId);
-  el.innerHTML = hits.map(c => {
-    const slug = esc(c.id || _slug(c.name));
-    return `<div class="sys-suggest-row" onclick="addToSystemAudience('${slug}','${audId}')">
+  el.innerHTML = hits
+    .map((c) => {
+      const slug = esc(c.id || _slug(c.name));
+      return `<div class="sys-suggest-row" onclick="addToSystemAudience('${slug}','${audId}')">
   <span>${esc(c.name)}</span>
   <span class="tag ${tClass(c.type)}" style="font-size:7px">${esc(tLabel(c.type))}</span>
 </div>`;
-  }).join('');
+    })
+    .join('');
 }
 
 export async function audSetSort(audienceId, sortField) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   if (!aud) return;
   aud.sort_field = sortField;
   await sbSaveAudience(aud).catch(() => {});
@@ -1519,15 +1837,16 @@ export function audRefreshDetail(id) {
 /* ─── Export CSV (Lemlist-ready) ────────────────────────────── */
 
 export function audExportCsv(audienceId) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   if (!aud) return;
 
   const companies = getAudienceCompanies(aud);
-  const contacts = (S.contacts || []).filter(ct =>
-    companies.some(c =>
-      (c.name || '').toLowerCase() === (ct.company_name || '').toLowerCase() ||
-      (c.id || _slug(c.name)) === (ct.company_slug || _slug(ct.company_name || ''))
-    )
+  const contacts = (S.contacts || []).filter((ct) =>
+    companies.some(
+      (c) =>
+        (c.name || '').toLowerCase() === (ct.company_name || '').toLowerCase() ||
+        (c.id || _slug(c.name)) === (ct.company_slug || _slug(ct.company_name || '')),
+    ),
   );
 
   let rows, filename;
@@ -1535,7 +1854,7 @@ export function audExportCsv(audienceId) {
   if (contacts.length > 0) {
     // Contacts CSV (Lemlist-ready)
     rows = [['firstName', 'lastName', 'email', 'companyName', 'linkedinUrl', 'title']];
-    contacts.forEach(ct => {
+    contacts.forEach((ct) => {
       const parts = (ct.full_name || '').split(' ');
       rows.push([
         parts[0] || '',
@@ -1543,7 +1862,7 @@ export function audExportCsv(audienceId) {
         ct.email || '',
         ct.company_name || '',
         ct.linkedin_url || '',
-        ct.title || ''
+        ct.title || '',
       ]);
     });
     filename = `${_slug(aud.name)}-contacts.csv`;
@@ -1551,7 +1870,7 @@ export function audExportCsv(audienceId) {
   } else {
     // Company CSV fallback
     rows = [['name', 'type', 'category', 'region', 'hq_city', 'size', 'icp', 'website', 'note']];
-    companies.forEach(c => {
+    companies.forEach((c) => {
       rows.push([
         c.name || '',
         c.type || '',
@@ -1561,16 +1880,19 @@ export function audExportCsv(audienceId) {
         c.size || '',
         c.icp || '',
         c.website || '',
-        (c.note || '').replace(/\n/g, ' ')
+        (c.note || '').replace(/\n/g, ' '),
       ]);
     });
     filename = `${_slug(aud.name)}-companies.csv`;
-    clog('info', `CSV export: "${esc(aud.name)}" → <b>${companies.length} companies</b> (no contacts found — use 👤 GET CONTACTS first)`);
+    clog(
+      'info',
+      `CSV export: "${esc(aud.name)}" → <b>${companies.length} companies</b> (no contacts found — use 👤 GET CONTACTS first)`,
+    );
   }
 
-  const csv = rows.map(r =>
-    r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
-  ).join('\n');
+  const csv = rows
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -1590,21 +1912,27 @@ export function audExportCsv(audienceId) {
 /* ─── Find contacts (trigger per-company lookup hint) ────────── */
 
 export function audFindContacts(audienceId) {
-  const aud = S.audiences.find(a => a.id === audienceId);
+  const aud = S.audiences.find((a) => a.id === audienceId);
   if (!aud) return;
   const companies = getAudienceCompanies(aud);
-  const noContacts = companies.filter(c =>
-    !(S.contacts || []).some(ct =>
-      (ct.company_name || '').toLowerCase() === (c.name || '').toLowerCase()
-    )
+  const noContacts = companies.filter(
+    (c) =>
+      !(S.contacts || []).some(
+        (ct) => (ct.company_name || '').toLowerCase() === (c.name || '').toLowerCase(),
+      ),
   );
   if (noContacts.length === 0) {
     alert(`All ${companies.length} companies already have contacts in DB. Use ↗ CSV to export.`);
     return;
   }
-  const names = noContacts.slice(0, 5).map(c => c.name).join(', ');
+  const names = noContacts
+    .slice(0, 5)
+    .map((c) => c.name)
+    .join(', ');
   const more = noContacts.length - 5;
-  alert(`${noContacts.length} companies have no contacts yet:\n${names}${more > 0 ? ` … +${more} more` : ''}\n\nClick each company → 👤 Find DMs to research decision-makers.\nThen come back and export ↗ CSV for Lemlist.`);
+  alert(
+    `${noContacts.length} companies have no contacts yet:\n${names}${more > 0 ? ` … +${more} more` : ''}\n\nClick each company → 👤 Find DMs to research decision-makers.\nThen come back and export ↗ CSV for Lemlist.`,
+  );
 }
 
 /* ═══ ICP Matching ══════════════════════════════════════════ */
@@ -1624,7 +1952,9 @@ function _icpSetContent(html) {
 
 function _icpUpdateSelCount() {
   let cnt = 0;
-  document.querySelectorAll('.icp-chk').forEach(b => { if (b.checked) cnt++; });
+  document.querySelectorAll('.icp-chk').forEach((b) => {
+    if (b.checked) cnt++;
+  });
   const el = document.getElementById('icp-sel-count');
   if (el) el.textContent = `${cnt} selected`;
 }
@@ -1634,14 +1964,9 @@ window._icpUpdateSelCount = _icpUpdateSelCount;
 
 /* ─── Campaign planning exports ────────────────────────────── */
 
-
 /* ─── Company detail overlay inside audience detail ─────────── */
 
 // (moved to later declaration)
-
-
-
-
 
 export function audToggleCoRow(slug) {
   const exp = document.getElementById(`aud-coe-${slug}`);
@@ -1659,36 +1984,44 @@ let _ovClickOutsideHandler = null;
 export function audOpenCoOverlay(slug, audId) {
   audCloseCoOverlay();
 
-  const co = S.companies.find(c => (c.id || _slug(c.name)) === slug);
+  const co = S.companies.find((c) => (c.id || _slug(c.name)) === slug);
   if (!co) return;
 
   const wrap = document.getElementById('aud-detail-wrap');
   if (!wrap) return;
   wrap.style.position = 'relative';
 
-  const aud = audId ? S.audiences.find(a => a.id === audId) : null;
-  const contacts = (S.contacts || []).filter(ct =>
-    ct.company_id === (co.id || slug) ||
-    _slug(ct.company_name || '') === _slug(co.name));
+  const aud = audId ? S.audiences.find((a) => a.id === audId) : null;
+  const contacts = (S.contacts || []).filter(
+    (ct) => ct.company_id === (co.id || slug) || _slug(ct.company_name || '') === _slug(co.name),
+  );
 
-  const tc = tClass(co.type), tl = tLabel(co.type);
+  const tc = tClass(co.type),
+    tl = tLabel(co.type);
   const st = co.icp ? '★'.repeat(Math.min(5, Math.round(co.icp / 2))) : '';
   const rs = co.relationship_status || '';
   const audIdJ = JSON.stringify(audId || '');
-  const slugJ  = JSON.stringify(slug);
+  const slugJ = JSON.stringify(slug);
 
   const factsArr = [co.category, co.hq_city, co.size].filter(Boolean);
-  const factsHtml = factsArr.map((v, i) =>
-    `<span>${esc(v)}</span>${i < factsArr.length - 1 ? '<span style="opacity:.35">·</span>' : ''}`
-  ).join('');
+  const factsHtml = factsArr
+    .map(
+      (v, i) =>
+        `<span>${esc(v)}</span>${i < factsArr.length - 1 ? '<span style="opacity:.35">·</span>' : ''}`,
+    )
+    .join('');
 
   const ctHtml = contacts.length
-    ? contacts.map(ct => `
+    ? contacts
+        .map(
+          (ct) => `
       <div class="aud-co-ov-ct">
         <span class="aud-co-ov-ct-name">${esc(ct.full_name || '?')}</span>
-        ${ct.title  ? `<span class="aud-co-ov-ct-title">${esc(ct.title)}</span>`  : ''}
-        ${ct.email  ? `<span class="aud-co-ov-ct-email">${esc(ct.email)}</span>`  : ''}
-      </div>`).join('')
+        ${ct.title ? `<span class="aud-co-ov-ct-title">${esc(ct.title)}</span>` : ''}
+        ${ct.email ? `<span class="aud-co-ov-ct-email">${esc(ct.email)}</span>` : ''}
+      </div>`,
+        )
+        .join('')
     : `<div style="font:400 9px 'IBM Plex Sans',sans-serif;color:var(--t4);padding:3px 0">No contacts yet</div>`;
 
   const ov = document.createElement('div');
@@ -1708,16 +2041,24 @@ export function audOpenCoOverlay(slug, audId) {
     <button class="btn sm" id="aud-co-ov-close" style="flex-shrink:0;margin-left:8px">✕</button>
   </div>
   ${factsHtml ? `<div class="aud-co-ov-facts">${factsHtml}</div>` : ''}
-  ${(co.description || co.note) ? `
+  ${
+    co.description || co.note
+      ? `
   <div class="aud-co-ov-section">
     <div class="aud-co-ov-lbl">DESCRIPTION</div>
     <div class="aud-co-ov-text">${esc((co.description || co.note || '').slice(0, 500))}</div>
-  </div>` : ''}
-  ${co.outreach_angle ? `
+  </div>`
+      : ''
+  }
+  ${
+    co.outreach_angle
+      ? `
   <div class="aud-co-ov-section">
     <div class="aud-co-ov-lbl">OUTREACH ANGLE</div>
     <div class="aud-co-ov-text" style="color:var(--g)">${esc(co.outreach_angle)}</div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
   <div class="aud-co-ov-section" style="flex:1">
     <div class="aud-co-ov-lbl">CONTACTS (${contacts.length})</div>
     ${ctHtml}
@@ -1733,23 +2074,24 @@ export function audOpenCoOverlay(slug, audId) {
   requestAnimationFrame(() => ov.classList.add('open'));
 
   /* Close button */
-  ov.querySelector('#aud-co-ov-close')?.addEventListener('click', e => {
-    e.stopPropagation(); audCloseCoOverlay();
+  ov.querySelector('#aud-co-ov-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    audCloseCoOverlay();
   });
 
   /* Action buttons */
-  ov.querySelector('#aud-ov-email')?.addEventListener('click', e => {
+  ov.querySelector('#aud-ov-email')?.addEventListener('click', (e) => {
     e.stopPropagation();
     window.openComposer?.({ company: co.name, companyId: co.id || slug });
     audCloseCoOverlay();
   });
-  ov.querySelector('#aud-ov-dms')?.addEventListener('click', e => {
+  ov.querySelector('#aud-ov-dms')?.addEventListener('click', (e) => {
     e.stopPropagation();
     window.openCompany?.(co);
     window.bgFindDMs?.();
     audCloseCoOverlay();
   });
-  ov.querySelector('#aud-ov-full')?.addEventListener('click', e => {
+  ov.querySelector('#aud-ov-full')?.addEventListener('click', (e) => {
     e.stopPropagation();
     window.openCompany?.(co);
     audCloseCoOverlay();
@@ -1758,7 +2100,7 @@ export function audOpenCoOverlay(slug, audId) {
   /* Click-outside: use capture so we intercept before any row onclick fires.
      Stop propagation entirely — only the overlay close should happen,
      NOT whatever is underneath (row open, audCloseDetail, etc.) */
-  _ovClickOutsideHandler = e => {
+  _ovClickOutsideHandler = (e) => {
     if (!ov.contains(e.target)) {
       e.stopPropagation();
       audCloseCoOverlay();
@@ -1785,7 +2127,7 @@ export function audFilterCoList(q) {
   const inner = document.getElementById('aud-co-list-inner');
   if (!inner) return;
   const term = (q || '').toLowerCase();
-  inner.querySelectorAll('.aud-co-row').forEach(row => {
+  inner.querySelectorAll('.aud-co-row').forEach((row) => {
     const name = (row.querySelector('.aud-co-name')?.textContent || '').toLowerCase();
     row.style.display = term && !name.includes(term) ? 'none' : '';
   });
@@ -1797,7 +2139,7 @@ export function audProviderChange(val) {
 }
 
 export async function audB2bLookup(audId) {
-  const aud = S.audiences.find(a => a.id === audId);
+  const aud = S.audiences.find((a) => a.id === audId);
   if (!aud) return;
 
   // Build / reuse dialog element
@@ -1807,13 +2149,14 @@ export async function audB2bLookup(audId) {
     dlg.id = 'b2b-dlg';
     document.body.appendChild(dlg);
   }
-  dlg.style.cssText = 'position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)';
+  dlg.style.cssText =
+    'position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)';
 
-  const prompt  = aud.icp_prompt || aud.description || aud.name || '';
+  const prompt = aud.icp_prompt || aud.description || aud.name || '';
   const country = aud.filters?.country || '';
-  const city    = aud.filters?.city    || '';
-  const geoCtx  = [city, country].filter(Boolean).join(', ');
-  const fullQ   = [prompt, geoCtx ? `in ${geoCtx}` : ''].filter(Boolean).join(' ');
+  const city = aud.filters?.city || '';
+  const geoCtx = [city, country].filter(Boolean).join(', ');
+  const fullQ = [prompt, geoCtx ? `in ${geoCtx}` : ''].filter(Boolean).join(' ');
 
   dlg.innerHTML = `
 <div style="background:var(--surf);border:1px solid var(--rule);border-radius:4px;width:640px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">
@@ -1833,10 +2176,15 @@ export async function audB2bLookup(audId) {
 </div>`;
 
   // Wire close buttons
-  const close = () => { dlg.style.display = 'none'; dlg.innerHTML = ''; };
+  const close = () => {
+    dlg.style.display = 'none';
+    dlg.innerHTML = '';
+  };
   document.getElementById('b2b-close-btn').addEventListener('click', close);
   document.getElementById('b2b-cancel-btn').addEventListener('click', close);
-  dlg.addEventListener('mousedown', e => { if (e.target === dlg) close(); });
+  dlg.addEventListener('mousedown', (e) => {
+    if (e.target === dlg) close();
+  });
 
   // Wire add button
   const addBtn = document.getElementById('b2b-add-btn');
@@ -1852,28 +2200,37 @@ export async function audB2bLookup(audId) {
   // ── Query b2b MCP ──────────────────────────────────────────────────────
   let candidates = [];
   const existingIds = new Set(aud.company_ids || []);
-  const existingNames = new Set((S.companies || []).map(c => c.name.toLowerCase()));
+  const existingNames = new Set((S.companies || []).map((c) => c.name.toLowerCase()));
 
   try {
     const res = await anthropicMcpFetch({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1400,
       mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
-      messages: [{ role: 'user', content:
-        `Use the b2b search_companies tool to find 15-20 companies for: "${fullQ}".
+      messages: [
+        {
+          role: 'user',
+          content: `Use the b2b search_companies tool to find 15-20 companies for: "${fullQ}".
 Focus on adtech, media, data, or publisher companies relevant to EU data partnerships.
 ${geoCtx ? `Prioritise companies based in or operating in: ${geoCtx}.` : ''}
 Deduplicate — skip subdomains, blogs, or case-study sites of the same company.
 Return ONLY a compact JSON array, no prose:
-[{"name":"...","category":"...","hq":"...","website":"...","why":"one sentence"}]` }],
+[{"name":"...","category":"...","hq":"...","website":"...","why":"one sentence"}]`,
+        },
+      ],
     });
-    const textBlocks = (res.content||[]).filter(b => b.type==='text').map(b=>b.text).join('');
-    const toolResults = (res.content||[]).filter(b => b.type==='mcp_tool_result')
-      .map(b => b.content?.[0]?.text || '').join('\n');
+    const textBlocks = (res.content || [])
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+    const toolResults = (res.content || [])
+      .filter((b) => b.type === 'mcp_tool_result')
+      .map((b) => b.content?.[0]?.text || '')
+      .join('\n');
     const raw = textBlocks.trim() || toolResults;
     const m = raw.match(/\[[\s\S]*\]/);
     candidates = m ? JSON.parse(m[0]) : [];
-  } catch(e) {
+  } catch (e) {
     resultsEl.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--prc);padding:16px 0;text-align:center">b2b lookup failed: ${esc(e.message)}</div>`;
     return;
   }
@@ -1884,13 +2241,17 @@ Return ONLY a compact JSON array, no prose:
   }
 
   // Render results as checkboxes
-  resultsEl.innerHTML = candidates.map((co, i) => {
-    const slug = _slug(co.name||'');
-    const inAud = existingIds.has(slug);
-    const inDb  = existingNames.has((co.name||'').toLowerCase());
-    const badge = inAud ? '<span style="font-size:8px;color:var(--g);margin-left:4px">✓ in audience</span>'
-                : inDb  ? '<span style="font-size:8px;color:var(--t3);margin-left:4px">in DB</span>' : '';
-    return `<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3);cursor:pointer">
+  resultsEl.innerHTML = candidates
+    .map((co, i) => {
+      const slug = _slug(co.name || '');
+      const inAud = existingIds.has(slug);
+      const inDb = existingNames.has((co.name || '').toLowerCase());
+      const badge = inAud
+        ? '<span style="font-size:8px;color:var(--g);margin-left:4px">✓ in audience</span>'
+        : inDb
+          ? '<span style="font-size:8px;color:var(--t3);margin-left:4px">in DB</span>'
+          : '';
+      return `<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule3);cursor:pointer">
       <input type="checkbox" class="b2b-cb" data-idx="${i}" data-slug="${esc(slug)}"
         style="margin-top:3px;flex-shrink:0" ${inAud ? 'disabled' : ''} />
       <div style="flex:1;min-width:0">
@@ -1899,11 +2260,12 @@ Return ONLY a compact JSON array, no prose:
           ${co.hq ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3)">${esc(co.hq)}</span>` : ''}
           ${badge}
         </div>
-        <div style="font-size:10px;color:var(--t2);margin-top:1px">${esc(co.why||co.category||'')}</div>
-        ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//,'')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
+        <div style="font-size:10px;color:var(--t2);margin-top:1px">${esc(co.why || co.category || '')}</div>
+        ${co.website ? `<a href="https://${co.website.replace(/^https?:\/\//, '')}" target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--g)">${esc(co.website)}</a>` : ''}
       </div>
     </label>`;
-  }).join('');
+    })
+    .join('');
 
   // Checkbox change listener
   resultsEl.addEventListener('change', updateSelCount);
@@ -1918,38 +2280,51 @@ Return ONLY a compact JSON array, no prose:
     addBtn.textContent = '⟳ Adding…';
 
     const SB = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
-    const HDR = { 'apikey': window._oaToken||'', 'Authorization': 'Bearer '+(window._oaToken||''), 'Content-Type': 'application/json' };
+    const HDR = {
+      apikey: window._oaToken || '',
+      Authorization: 'Bearer ' + (window._oaToken || ''),
+      'Content-Type': 'application/json',
+    };
 
     const newIds = [];
     for (const cb of checked) {
       const idx = parseInt(cb.dataset.idx);
       const co = candidates[idx];
-      const slug = _slug(co.name||'');
+      const slug = _slug(co.name || '');
       if (!slug) continue;
 
       // Save to Supabase companies if not already there
-      if (!existingNames.has((co.name||'').toLowerCase())) {
-        const body = { id: slug, name: co.name, category: co.category||null,
-          hq_city: co.hq||null, website: co.website||null,
-          type: 'prospect', note: 'Added via b2b Lookup',
-          updated_at: new Date().toISOString() };
+      if (!existingNames.has((co.name || '').toLowerCase())) {
+        const body = {
+          id: slug,
+          name: co.name,
+          category: co.category || null,
+          hq_city: co.hq || null,
+          website: co.website || null,
+          type: 'prospect',
+          note: 'Added via b2b Lookup',
+          updated_at: new Date().toISOString(),
+        };
         const r = await fetch(`${SB}/rest/v1/companies`, {
           method: 'POST',
-          headers: { ...HDR, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(body)
+          headers: { ...HDR, Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(body),
         });
-        if (r.ok && !S.companies.find(c => c.id === slug)) S.companies.push({...body});
+        if (r.ok && !S.companies.find((c) => c.id === slug)) S.companies.push({ ...body });
       }
       newIds.push(slug);
     }
 
     // Update audience company_ids
-    const merged = [...new Set([...(aud.company_ids||[]), ...newIds])];
-    const r = await fetch(`https://nyzkkqqjnkctcmxoirdj.supabase.co/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`, {
-      method: 'PATCH',
-      headers: { ...HDR, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ company_ids: merged, updated_at: new Date().toISOString() })
-    });
+    const merged = [...new Set([...(aud.company_ids || []), ...newIds])];
+    const r = await fetch(
+      `https://nyzkkqqjnkctcmxoirdj.supabase.co/rest/v1/audiences?id=eq.${encodeURIComponent(audId)}`,
+      {
+        method: 'PATCH',
+        headers: { ...HDR, Prefer: 'return=minimal' },
+        body: JSON.stringify({ company_ids: merged, updated_at: new Date().toISOString() }),
+      },
+    );
 
     if (r.ok) {
       aud.company_ids = merged;
@@ -1966,24 +2341,27 @@ Return ONLY a compact JSON array, no prose:
   });
 }
 
-
 export async function audAddExternalCo(slug, name, category, hq, website) {
   if (!name) return;
   try {
     const body = {
-      id:         slug || _slug(name),
+      id: slug || _slug(name),
       name,
-      category:   category || null,
-      hq_city:    hq || null,
-      website:    website || null,
-      type:       'prospect',
-      note:       'Added via Audience Scout (external)',
+      category: category || null,
+      hq_city: hq || null,
+      website: website || null,
+      type: 'prospect',
+      note: 'Added via Audience Scout (external)',
       updated_at: new Date().toISOString(),
     };
     await dbCo.upsert(body);
-    if (!S.companies.find(c => c.id === body.id)) S.companies.push({ ...body });
+    if (!S.companies.find((c) => c.id === body.id)) S.companies.push({ ...body });
     const btn = document.querySelector(`[data-add-slug="${slug}"]`);
-    if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.color = 'var(--g)'; }
+    if (btn) {
+      btn.textContent = '✓ Added';
+      btn.disabled = true;
+      btn.style.color = 'var(--g)';
+    }
     clog('db', `Added <b>${esc(name)}</b> to CRM as prospect`);
   } catch (e) {
     clog('db', `Failed to add ${esc(name)}: ${e.message}`);
@@ -1991,8 +2369,21 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 }
 
 /* ── Re-exports from extracted modules ──────────────────────── */
-export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260410d22';
+export {
+  icpFindByIcp,
+  icpMatch,
+  icpSaveStep,
+  icpSaveAudience,
+  icpEditModal,
+  icpRegenHook,
+  icpPatchAudience,
+} from './aud-icp.js?v=20260410d22';
 
-export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260410d22';
+export {
+  generateCampaignHook,
+  generateEmailTemplate,
+  saveCampaignTemplate,
+  launchCampaign,
+  audDraftEmailToCo,
+  audGenAngleForCo,
+} from './aud-campaign.js?v=20260410d22';

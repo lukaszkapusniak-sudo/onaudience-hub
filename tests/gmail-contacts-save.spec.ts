@@ -46,18 +46,42 @@ async function expandEmailHistory(page: Page) {
 async function injectMockScan(page: Page, domain: string) {
   await page.evaluate((domain) => {
     const THREADS = [
-      { from: `John Smith <john@${domain}>`, subject: 'Hello',    date: '1 Jan', id: 'a', threadId: 'ta' },
-      { from: `Jane Doe <jane@${domain}>`,   subject: 'Follow up', date: '2 Jan', id: 'b', threadId: 'tb' },
-      { from: 'Noreply <no@gmail.com>',       subject: 'Spam',     date: '3 Jan', id: 'c', threadId: 'tc' },
+      {
+        from: `John Smith <john@${domain}>`,
+        subject: 'Hello',
+        date: '1 Jan',
+        id: 'a',
+        threadId: 'ta',
+      },
+      {
+        from: `Jane Doe <jane@${domain}>`,
+        subject: 'Follow up',
+        date: '2 Jan',
+        id: 'b',
+        threadId: 'tb',
+      },
+      { from: 'Noreply <no@gmail.com>', subject: 'Spam', date: '3 Jan', id: 'c', threadId: 'tc' },
     ];
     window._gmailLastThreads = THREADS;
-    window._gmailLastSlug    = 'test-co';
-    window._gmailLastName    = 'Test Co';
+    window._gmailLastSlug = 'test-co';
+    window._gmailLastName = 'Test Co';
 
     // Simulate what gmailScanCompany does when it finds domain-matching contacts
     const contacts = [
-      { full_name: 'John Smith', email: `john@${domain}`, company_name: 'Test Co', company_id: 'test-co', source: 'gmail_scan' },
-      { full_name: 'Jane Doe',   email: `jane@${domain}`, company_name: 'Test Co', company_id: 'test-co', source: 'gmail_scan' },
+      {
+        full_name: 'John Smith',
+        email: `john@${domain}`,
+        company_name: 'Test Co',
+        company_id: 'test-co',
+        source: 'gmail_scan',
+      },
+      {
+        full_name: 'Jane Doe',
+        email: `jane@${domain}`,
+        company_name: 'Test Co',
+        company_id: 'test-co',
+        source: 'gmail_scan',
+      },
     ];
     window._gmailFoundContacts = contacts;
 
@@ -67,11 +91,15 @@ async function injectMockScan(page: Page, domain: string) {
     const strip = document.getElementById('ib-email-contacts-strip');
     if (strip) {
       strip.style.display = 'block';
-      strip.innerHTML = contacts.map((c, i) =>
-        `<label><input type="checkbox" checked data-i="${i}"/>
+      strip.innerHTML =
+        contacts
+          .map(
+            (c, i) =>
+              `<label><input type="checkbox" checked data-i="${i}"/>
          <span>${c.full_name}</span>
-         <span>${c.email}</span></label>`
-      ).join('') +
+         <span>${c.email}</span></label>`,
+          )
+          .join('') +
         '<button class="btn sm p" onclick="window.gmailSaveSelectedContacts()" style="margin-top:6px;width:100%">Save selected to CRM</button>';
     }
   }, domain);
@@ -80,7 +108,6 @@ async function injectMockScan(page: Page, domain: string) {
 
 // ── SUITE: scan results persist through section toggle ────────────
 test.describe('Gmail scan results persist on section toggle', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await fakeGmailConnect(page);
@@ -88,7 +115,9 @@ test.describe('Gmail scan results persist on section toggle', () => {
     await expandEmailHistory(page);
   });
 
-  test.afterEach(async ({ page }) => { await fakeGmailDisconnect(page); });
+  test.afterEach(async ({ page }) => {
+    await fakeGmailDisconnect(page);
+  });
 
   test('contacts strip visible after scan', async ({ page }) => {
     await injectMockScan(page, 'test-company.com');
@@ -96,7 +125,9 @@ test.describe('Gmail scan results persist on section toggle', () => {
     await expect(strip).toBeVisible({ timeout: 3000 });
   });
 
-  test('checkboxes remain after collapsing and expanding section (regression)', async ({ page }) => {
+  test('checkboxes remain after collapsing and expanding section (regression)', async ({
+    page,
+  }) => {
     await injectMockScan(page, 'test-company.com');
 
     // Verify checkboxes exist before toggle
@@ -167,7 +198,6 @@ test.describe('Gmail scan results persist on section toggle', () => {
 
 // ── SUITE: gmailSaveSelectedContacts logic ────────────────────────
 test.describe('Gmail contact save logic', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
   });
@@ -175,7 +205,10 @@ test.describe('Gmail contact save logic', () => {
   test('gmailSaveSelectedContacts alert on no selection', async ({ page }) => {
     // With empty _gmailFoundContacts, should alert not crash
     let dialogText = '';
-    page.once('dialog', dialog => { dialogText = dialog.message(); dialog.dismiss(); });
+    page.once('dialog', (dialog) => {
+      dialogText = dialog.message();
+      dialog.dismiss();
+    });
     await page.evaluate(() => {
       window._gmailFoundContacts = [];
       window.gmailSaveSelectedContacts?.();
@@ -188,9 +221,27 @@ test.describe('Gmail contact save logic', () => {
     const saved = await page.evaluate(async (SB_KEY) => {
       // Inject 3 contacts, check only 2
       window._gmailFoundContacts = [
-        { full_name:'Alice', email:'alice@a.com', company_id:'co', company_name:'Co', source:'test' },
-        { full_name:'Bob',   email:'bob@a.com',   company_id:'co', company_name:'Co', source:'test' },
-        { full_name:'Carol', email:'carol@a.com', company_id:'co', company_name:'Co', source:'test' },
+        {
+          full_name: 'Alice',
+          email: 'alice@a.com',
+          company_id: 'co',
+          company_name: 'Co',
+          source: 'test',
+        },
+        {
+          full_name: 'Bob',
+          email: 'bob@a.com',
+          company_id: 'co',
+          company_name: 'Co',
+          source: 'test',
+        },
+        {
+          full_name: 'Carol',
+          email: 'carol@a.com',
+          company_id: 'co',
+          company_name: 'Co',
+          source: 'test',
+        },
       ];
 
       // Create a fake strip in DOM
@@ -200,21 +251,21 @@ test.describe('Gmail contact save logic', () => {
         strip.id = 'ib-email-contacts-strip';
         document.body.appendChild(strip);
       }
-      strip.innerHTML = [0,1,2].map(i =>
-        `<input type="checkbox" ${i < 2 ? 'checked' : ''} data-i="${i}"/>`
-      ).join('');
+      strip.innerHTML = [0, 1, 2]
+        .map((i) => `<input type="checkbox" ${i < 2 ? 'checked' : ''} data-i="${i}"/>`)
+        .join('');
 
       // Mock gmailSaveContacts to capture what gets passed
       const orig = window.gmailSaveContacts;
       let captured: any[] = [];
-      window.gmailSaveContacts = async function() {
+      window.gmailSaveContacts = async function () {
         captured = window._gmailFoundContacts || [];
         window._gmailFoundContacts = [];
         return;
       };
 
       window.gmailSaveSelectedContacts?.();
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 100));
 
       window.gmailSaveContacts = orig;
       return captured.length;
@@ -234,11 +285,11 @@ test.describe('Gmail contact save logic', () => {
         'News <news@newsletter.io>',
         'Jane <jane@criteo.com>',
       ];
-      fromHeaders.forEach(from => {
+      fromHeaders.forEach((from) => {
         const m = from.match(/^(.+?)\s*<(.+?)>/) || from.match(/^(.+)$/);
         if (m) {
-          const email = (m[2]||m[1]||'').trim().toLowerCase();
-          if (email.includes('@') && dc && email.includes('@'+dc) && !cmap[email]) {
+          const email = (m[2] || m[1] || '').trim().toLowerCase();
+          if (email.includes('@') && dc && email.includes('@' + dc) && !cmap[email]) {
             cmap[email] = { email };
           }
         }

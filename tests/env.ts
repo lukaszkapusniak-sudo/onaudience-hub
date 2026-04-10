@@ -17,27 +17,18 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-function required(name: string, fallback?: string): string {
-  const v = process.env[name] || fallback;
-  if (!v) throw new Error(`Missing required env var: ${name} — add it to .env or GitHub Secrets`);
-  return v;
-}
-
 function optional(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
-const SB_URL = optional(
-  'SB_URL',
-  'https://nyzkkqqjnkctcmxoirdj.supabase.co'
-);
+const SB_URL = optional('SB_URL', 'https://nyzkkqqjnkctcmxoirdj.supabase.co');
 
 // Public anon key — no admin privileges, safe to commit to .env.example
 // Inline fallback kept so tests work without any .env setup (read-only access only)
 const SB_ANON_KEY = optional(
   'SB_ANON_KEY',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0',
 );
 
 // ── Lemlist ───────────────────────────────────────────────────────────────────
@@ -46,7 +37,7 @@ const SB_ANON_KEY = optional(
 // Inline default is temp — will break when key is rotated in production
 const LEMLIST_API_KEY = optional(
   'LEMLIST_API_KEY',
-  'f83f42f7fe5054879499222e393eba95' // ← rotate this: update .env + GitHub Secret
+  'f83f42f7fe5054879499222e393eba95', // ← rotate this: update .env + GitHub Secret
 );
 
 // ── Anthropic ─────────────────────────────────────────────────────────────────
@@ -57,7 +48,7 @@ const ANTHROPIC_API_KEY = optional('ANTHROPIC_API_KEY', '');
 // ── Auth (browser tests) ──────────────────────────────────────────────────────
 // Set in .env locally and as GitHub Secrets OA_EMAIL / OA_PASSWORD for CI
 // If absent: auth.setup.ts skips gracefully, browser tests are skipped
-const OA_EMAIL    = optional('OA_EMAIL',    '');
+const OA_EMAIL = optional('OA_EMAIL', '');
 const OA_PASSWORD = optional('OA_PASSWORD', '');
 
 // ── Derived constants ─────────────────────────────────────────────────────────
@@ -66,14 +57,14 @@ export const ENV = {
   SB_URL,
   SB_ANON_KEY,
   SB_HEADERS: {
-    apikey:        SB_ANON_KEY,
+    apikey: SB_ANON_KEY,
     Authorization: `Bearer ${SB_ANON_KEY}`,
   } as Record<string, string>,
 
   // Edge functions
   LEMLIST_PROXY: `${SB_URL}/functions/v1/lemlist-proxy`,
-  LEMLIST_SYNC:  `${SB_URL}/functions/v1/lemlist-sync`,
-  CLAUDE_PROXY:  `${SB_URL}/functions/v1/claude-proxy`,
+  LEMLIST_SYNC: `${SB_URL}/functions/v1/lemlist-sync`,
+  CLAUDE_PROXY: `${SB_URL}/functions/v1/claude-proxy`,
 
   // Auth
   LEMLIST_API_KEY,
@@ -81,13 +72,13 @@ export const ENV = {
   OA_EMAIL,
   OA_PASSWORD,
   // Computed: true when all browser-test credentials are present
-  HAS_AUTH: !!(optional('OA_EMAIL','') && optional('OA_PASSWORD','')),
-  HAS_LEMLIST: !!optional('LEMLIST_API_KEY','f83f42f7fe5054879499222e393eba95'),
+  HAS_AUTH: !!(optional('OA_EMAIL', '') && optional('OA_PASSWORD', '')),
+  HAS_LEMLIST: !!optional('LEMLIST_API_KEY', 'f83f42f7fe5054879499222e393eba95'),
 
   // Well-known test fixtures (stable Lemlist campaign IDs)
   // These are archived/ended campaigns — safe to use as test seeds
   CAMPAIGNS: {
-    ORACLE_B2B: 'cam_qCnf7FZ7cR4mn6tcr',         // "Oracle B2B data" — archived, 100 leads
+    ORACLE_B2B: 'cam_qCnf7FZ7cR4mn6tcr', // "Oracle B2B data" — archived, 100 leads
   },
 
   // Hub URL

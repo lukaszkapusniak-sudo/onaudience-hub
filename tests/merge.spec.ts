@@ -19,7 +19,6 @@ async function openFirstCompany(page: Page) {
 
 // ── SUITE: Merge panel access ─────────────────────────────────────
 test.describe('Merge panel — access', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await openFirstCompany(page);
@@ -45,12 +44,11 @@ test.describe('Merge panel — access', () => {
 
 // ── SUITE: Merge API resilience ───────────────────────────────────
 test.describe('Merge panel — API resilience', () => {
-
   test('merge_suggestions 403 does not break company list', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
 
-    await page.route('**/merge_suggestions**', route => {
+    await page.route('**/merge_suggestions**', (route) => {
       route.fulfill({ status: 403, body: 'Forbidden' });
     });
 
@@ -65,9 +63,9 @@ test.describe('Merge panel — API resilience', () => {
 
   test('merge_suggestions 500 does not break company list', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
 
-    await page.route('**/merge_suggestions**', route => {
+    await page.route('**/merge_suggestions**', (route) => {
       route.fulfill({ status: 500, body: 'Server Error' });
     });
 
@@ -82,9 +80,9 @@ test.describe('Merge panel — API resilience', () => {
 
   test('merge_suggestions network failure does not break hub', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
 
-    await page.route('**/merge_suggestions**', route => route.abort('failed'));
+    await page.route('**/merge_suggestions**', (route) => route.abort('failed'));
 
     await waitForHub(page);
     await page.evaluate(() => {
@@ -98,8 +96,9 @@ test.describe('Merge panel — API resilience', () => {
 
 // ── SUITE: Merge drawer UI ────────────────────────────────────────
 test.describe('Merge drawer UI', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('merge drawer is attached to DOM', async ({ page }) => {
     // The merge drawer should exist in DOM even if closed
@@ -109,12 +108,11 @@ test.describe('Merge drawer UI', () => {
 
   test('opening merge panel via JS does not throw', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
 
     await page.evaluate(() => {
-      // Call whatever merge opener exists — safe even if no-op
-      if (typeof window.openMergeModal === 'function') window.openMergeModal();
-      else if (typeof window.openMergeModal === 'function') window.openMergeModal();
+      const open = window.openMergeModal;
+      if (typeof open === 'function') open();
     });
 
     await page.waitForTimeout(500);
@@ -123,11 +121,11 @@ test.describe('Merge drawer UI', () => {
 
   test('merge drawer can be closed without error', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
 
     await page.evaluate(() => {
-      if (typeof window.closePanel === 'function') window.closePanel();
-      else if (typeof window.closePanel === 'function') window.closePanel();
+      const close = window.closePanel;
+      if (typeof close === 'function') close();
     });
 
     await page.waitForTimeout(300);

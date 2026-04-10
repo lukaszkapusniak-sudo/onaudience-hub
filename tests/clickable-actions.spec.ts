@@ -17,7 +17,9 @@ async function openFirstCompany(page: Page) {
 
 // ── NAV BAR ──────────────────────────────────────────────────────
 test.describe('Nav bar actions', () => {
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('🔑 key button opens key panel', async ({ page }) => {
     await page.locator('#keyBtn').click();
@@ -58,7 +60,9 @@ test.describe('Nav bar actions', () => {
 
 // ── STATS BAR / FILTER CHIPS ─────────────────────────────────────
 test.describe('Stats bar filter chips', () => {
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('All chip shows all companies', async ({ page }) => {
     await page.locator('#sbAll').click();
@@ -136,7 +140,9 @@ test.describe('Company CTA bar actions', () => {
   });
 
   test('No "Gmail History" button in CTA bar (moved to section)', async ({ page }) => {
-    const gmailBtn = page.locator('.ib-cta button, .ib-cta a').filter({ hasText: /gmail history/i });
+    const gmailBtn = page
+      .locator('.ib-cta button, .ib-cta a')
+      .filter({ hasText: /gmail history/i });
     expect(await gmailBtn.count()).toBe(0);
   });
 
@@ -148,7 +154,7 @@ test.describe('Company CTA bar actions', () => {
 
   test('👤 Find DMs triggers DM search in Contacts section', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('.ib-cta button', { hasText: /find dms/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
@@ -156,7 +162,7 @@ test.describe('Company CTA bar actions', () => {
 
   test('💡 Gen Angle triggers angle generation', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('.ib-cta button', { hasText: /gen angle/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
@@ -164,7 +170,7 @@ test.describe('Company CTA bar actions', () => {
 
   test('📰 News button triggers intelligence refresh', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('.ib-cta button', { hasText: /news/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
@@ -172,7 +178,7 @@ test.describe('Company CTA bar actions', () => {
 
   test('🔗 Similar button triggers similar company search', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('.ib-cta button', { hasText: /similar/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
@@ -188,7 +194,7 @@ test.describe('Company CTA bar actions', () => {
 
   test('⚙ Merge opens merge modal', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('.ib-cta button', { hasText: /merge/i }).click();
     await page.waitForTimeout(400);
     expect(errors).toHaveLength(0);
@@ -208,38 +214,40 @@ test.describe('Contact card actions', () => {
       await page.waitForTimeout(200);
       const ctH = page.locator('.ib-sh', { hasText: /contacts/i }).first();
       if (await ctH.isVisible()) {
-        if (!await page.locator('#ib-ct-body').isVisible()) await ctH.click();
+        if (!(await page.locator('#ib-ct-body').isVisible())) await ctH.click();
         await page.waitForTimeout(150);
-        if (await page.locator('#ib-ct-body .ib-ct').count() > 0) return;
+        if ((await page.locator('#ib-ct-body .ib-ct').count()) > 0) return;
       }
     }
   });
 
   test('Contact card click opens drawer', async ({ page }) => {
     const card = page.locator('#ib-ct-body .ib-ct').first();
-    if (!await card.isVisible()) return;
+    if (!(await card.isVisible())) return;
     await card.click();
     await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 5000 });
     await page.evaluate(() => window.closeDrawer?.());
   });
 
-  test('Contact card has NO duplicate "Research" button (was same as clicking)', async ({ page }) => {
+  test('Contact card has NO duplicate "Research" button (was same as clicking)', async ({
+    page,
+  }) => {
     const card = page.locator('#ib-ct-body .ib-ct').first();
-    if (!await card.isVisible()) return;
+    if (!(await card.isVisible())) return;
     const researchBtns = card.locator('.ib-ct-btn', { hasText: /research/i });
     expect(await researchBtns.count()).toBe(0); // removed
   });
 
   test('Contact card has NO duplicate "Draft" Gmail button', async ({ page }) => {
     const card = page.locator('#ib-ct-body .ib-ct').first();
-    if (!await card.isVisible()) return;
+    if (!(await card.isVisible())) return;
     const draftBtns = card.locator('.ib-ct-btn', { hasText: /^✉ draft$/i });
     expect(await draftBtns.count()).toBe(0); // removed
   });
 
   test('Contact card ✉ Email opens Meeseeks', async ({ page }) => {
     const card = page.locator('#ib-ct-body .ib-ct').first();
-    if (!await card.isVisible()) return;
+    if (!(await card.isVisible())) return;
     await card.locator('.ib-ct-btn', { hasText: /✉ email/i }).click();
     await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 5000 });
     await page.evaluate(() => window.closeComposer?.());
@@ -247,7 +255,7 @@ test.describe('Contact card actions', () => {
 
   test('Contact card max 3 buttons (Email + optional LI + optional Lemlist)', async ({ page }) => {
     const card = page.locator('#ib-ct-body .ib-ct').first();
-    if (!await card.isVisible()) return;
+    if (!(await card.isVisible())) return;
     const btnCount = await card.locator('.ib-ct-btn').count();
     expect(btnCount).toBeLessThanOrEqual(3);
   });
@@ -265,7 +273,7 @@ test.describe('Section header actions', () => {
     const findDMs = page.locator('.ib-sh-act', { hasText: /find dms/i });
     if (await findDMs.isVisible()) {
       const errors: string[] = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', (e) => errors.push(e.message));
       await findDMs.click();
       await page.waitForTimeout(500);
       expect(errors).toHaveLength(0);
@@ -276,7 +284,7 @@ test.describe('Section header actions', () => {
     const regen = page.locator('.ib-sh-act', { hasText: /regen/i });
     if (await regen.isVisible()) {
       const errors: string[] = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', (e) => errors.push(e.message));
       await regen.click();
       await page.waitForTimeout(500);
       expect(errors).toHaveLength(0);
@@ -287,7 +295,7 @@ test.describe('Section header actions', () => {
     const refresh = page.locator('#ib-intel-refresh, .ib-sh-act', { hasText: /refresh/i }).first();
     if (await refresh.isVisible()) {
       const errors: string[] = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', (e) => errors.push(e.message));
       await refresh.click();
       await page.waitForTimeout(500);
       expect(errors).toHaveLength(0);
@@ -297,11 +305,11 @@ test.describe('Section header actions', () => {
   test('Segment mapper ↺ Remap triggers remapping', async ({ page }) => {
     const segH = page.locator('.ib-sh', { hasText: /segment/i }).first();
     if (await segH.isVisible()) {
-      if (!await page.locator('#ib-segments-body').isVisible()) await segH.click();
+      if (!(await page.locator('#ib-segments-body').isVisible())) await segH.click();
       const remap = page.locator('.ib-sh-act', { hasText: /remap/i });
       if (await remap.isVisible()) {
         const errors: string[] = [];
-        page.on('pageerror', e => errors.push(e.message));
+        page.on('pageerror', (e) => errors.push(e.message));
         await remap.click();
         await page.waitForTimeout(500);
         expect(errors).toHaveLength(0);
@@ -345,7 +353,7 @@ test.describe('Context menu actions', () => {
 
   test('Context menu items: no duplicates', async ({ page }) => {
     const texts = await page.locator('#ctxMenu .ctx-item').allTextContents();
-    const unique = new Set(texts.map(t => t.trim()));
+    const unique = new Set(texts.map((t) => t.trim()));
     expect(unique.size).toBe(texts.length);
   });
 
@@ -357,7 +365,7 @@ test.describe('Context menu actions', () => {
 
   test('Find decision makers triggers DM search', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('#ctxMenu .ctx-item', { hasText: /decision makers/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
@@ -365,14 +373,19 @@ test.describe('Context menu actions', () => {
 
   test('Find similar triggers similar search', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('#ctxMenu .ctx-item', { hasText: /similar/i }).click();
     await page.waitForTimeout(500);
     expect(errors).toHaveLength(0);
   });
 
   test('Escape closes context menu', async ({ page }) => {
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement)?.blur();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
     await page.waitForTimeout(500);
     await expect(page.locator('#ctxMenu')).not.toBeVisible({ timeout: 6000 });
   });
@@ -386,7 +399,9 @@ test.describe('Context menu actions', () => {
 
 // ── AI BAR ───────────────────────────────────────────────────────
 test.describe('AI bar actions', () => {
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('AI bar input accepts text', async ({ page }) => {
     await page.locator('#aiInp').fill('EU DSPs with CTV');
@@ -395,7 +410,7 @@ test.describe('AI bar actions', () => {
 
   test('AI bar → button submits query', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.locator('#aiInp').fill('test');
     await page.locator('#aiBtn').click();
     await page.waitForTimeout(500);
@@ -428,7 +443,9 @@ test.describe('AI bar actions', () => {
 
 // ── SORT DROPDOWN ────────────────────────────────────────────────
 test.describe('Sort dropdown', () => {
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('Sort dropdown is visible', async ({ page }) => {
     await expect(page.locator('#sortSel')).toBeVisible();
@@ -477,7 +494,10 @@ test.describe('Contact drawer actions', () => {
   });
 
   test('Draft Email button in drawer opens Meeseeks', async ({ page }) => {
-    await page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).first().click();
+    await page
+      .locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i })
+      .first()
+      .click();
     await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 5000 });
     await page.evaluate(() => window.closeComposer?.());
   });
@@ -498,12 +518,17 @@ test.describe('Keyboard shortcuts', () => {
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     // Close any open panel, ensure list is visible and a row exists
-    await page.evaluate(() => { window.closePanel?.(); window.closeDrawer?.(); });
+    await page.evaluate(() => {
+      window.closePanel?.();
+      window.closeDrawer?.();
+    });
     await page.waitForTimeout(300);
     await expect(page.locator('.c-row').first()).toBeVisible({ timeout: 10000 });
     // Click in a neutral area (not a row) then blur focus
     await page.mouse.click(10, 10);
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); });
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement)?.blur();
+    });
     await page.waitForTimeout(200);
   });
 
@@ -529,13 +554,23 @@ test.describe('Keyboard shortcuts', () => {
   test('Escape closes open panel', async ({ page }) => {
     await page.locator('.c-row').first().click();
     await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement)?.blur();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
     await page.waitForTimeout(400);
     await expect(page.locator('#emptyState')).toBeVisible({ timeout: 5000 });
   });
 
   test('/ focuses search input', async ({ page }) => {
-    await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true })); });
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement)?.blur();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true }),
+      );
+    });
     await page.waitForTimeout(400);
     const inp = page.locator('input[placeholder*="Search"]').first();
     await expect(inp).toBeFocused({ timeout: 5000 });

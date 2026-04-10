@@ -42,8 +42,9 @@ async function expandContactsSection(page: Page) {
 
 // ── SUITE: Contacts section renders ─────────────────────────────
 test.describe('Company panel — Contacts section', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('Contacts section header exists in company panel', async ({ page }) => {
     await page.locator('.c-row').first().click();
@@ -63,24 +64,30 @@ test.describe('Company panel — Contacts section', () => {
     await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });
     const body = await expandContactsSection(page);
     // Either contacts grid or the "Find DMs" empty state — both are valid
-    const hasContacts = await body.locator('.ib-ct').count() > 0;
-    const hasFindDMs  = await body.locator('button', { hasText: /find dms/i }).isVisible();
+    const hasContacts = (await body.locator('.ib-ct').count()) > 0;
+    const hasFindDMs = await body.locator('button', { hasText: /find dms/i }).isVisible();
     expect(hasContacts || hasFindDMs).toBeTruthy();
   });
 
-  test('company_id-matched contacts appear in section (regression: Ltd suffix)', async ({ page }) => {
+  test('company_id-matched contacts appear in section (regression: Ltd suffix)', async ({
+    page,
+  }) => {
     // Use currentCompany (set by beforeEach) as the anchor — ensures consistency
     const coId = await page.evaluate(() => {
-      const co = window.currentCompany || window._oaState?.currentCompany || window._oaState?.companies?.[0];
+      const co = (window.currentCompany ||
+        window._oaState?.currentCompany ||
+        window._oaState?.companies?.[0]) as { id: string; name?: string } | undefined;
       if (!co) return null;
       // Inject mock contact keyed to the SAME company we'll re-open
       if (window._oaState?.contacts) {
-        window._oaState.contacts = window._oaState.contacts.filter((c: any) => c.id !== 'test-contact-ltd-suffix');
+        window._oaState.contacts = window._oaState.contacts.filter(
+          (c: any) => c.id !== 'test-contact-ltd-suffix',
+        );
       }
       window._oaState?.contacts?.push({
         id: 'test-contact-ltd-suffix',
         company_id: co.id,
-        company_name: co.name + ' Ltd',  // name with suffix — tests the id-based match
+        company_name: co.name + ' Ltd', // name with suffix — tests the id-based match
         full_name: 'Test Contact Ltd',
         title: 'Test Title',
         email: 'test@test-company.com',
@@ -89,25 +96,35 @@ test.describe('Company panel — Contacts section', () => {
       window.openCompany(co);
       return co.id;
     });
-    if (!coId) { console.log('No currentCompany — skip'); return; }
+    if (!coId) {
+      console.log('No currentCompany — skip');
+      return;
+    }
 
     await expect(page.locator('#coPanel')).toBeVisible({ timeout: 8000 });
     await page.waitForTimeout(800);
 
     // Expand contacts section
-    const ctH = page.locator('.ib-sh').filter({ hasText: /contacts/i }).first();
+    const ctH = page
+      .locator('.ib-sh')
+      .filter({ hasText: /contacts/i })
+      .first();
     await expect(ctH).toBeVisible({ timeout: 8000 });
     const ctBody = page.locator('#ib-ct-body');
-    if (!await ctBody.isVisible()) await ctH.click();
+    if (!(await ctBody.isVisible())) await ctH.click();
     await expect(ctBody).toBeVisible({ timeout: 3000 });
 
     // The injected contact should appear (company_id match overrides name mismatch)
-    await expect(page.locator('#ib-ct-body .ib-ct').filter({ hasText: 'Test Contact Ltd' })).toBeVisible({ timeout: 8000 });
+    await expect(
+      page.locator('#ib-ct-body .ib-ct').filter({ hasText: 'Test Contact Ltd' }),
+    ).toBeVisible({ timeout: 8000 });
 
     // Cleanup
     await page.evaluate(() => {
       if (window._oaState?.contacts) {
-        window._oaState.contacts = window._oaState.contacts.filter((c: any) => c.id !== 'test-contact-ltd-suffix');
+        window._oaState.contacts = window._oaState.contacts.filter(
+          (c: any) => c.id !== 'test-contact-ltd-suffix',
+        );
       }
     });
   });
@@ -121,7 +138,7 @@ test.describe('Company panel — Contacts section', () => {
       await page.waitForTimeout(300);
       await expandContactsSection(page);
       const cards = page.locator('#ib-ct-body .ib-ct');
-      if (await cards.count() > 0) {
+      if ((await cards.count()) > 0) {
         await expect(cards.first().locator('.ib-ct-name')).toBeVisible();
         await expect(cards.first().locator('.ib-ct-title')).toBeVisible();
         return;
@@ -156,7 +173,7 @@ test.describe('Company panel — Contacts section', () => {
       await page.waitForTimeout(200);
       await expandContactsSection(page);
       const cards = page.locator('#ib-ct-body .ib-ct');
-      if (await cards.count() > 0) {
+      if ((await cards.count()) > 0) {
         const btns = cards.first().locator('.ib-ct-btn');
         expect(await btns.count()).toBeGreaterThan(0);
         await expect(btns.first()).toContainText('Email');
@@ -173,7 +190,7 @@ test.describe('Company panel — Contacts section', () => {
       await page.waitForTimeout(200);
       await expandContactsSection(page);
       const cards = page.locator('#ib-ct-body .ib-ct');
-      if (await cards.count() > 0) {
+      if ((await cards.count()) > 0) {
         await cards.first().click();
         await expect(page.locator('#ctDrawer')).toHaveClass(/open/, { timeout: 5000 });
         return;
@@ -185,8 +202,9 @@ test.describe('Company panel — Contacts section', () => {
 
 // ── SUITE: Contact drawer content ────────────────────────────────
 test.describe('Contact drawer — enriched fields', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   async function openAnyDrawer(page: Page): Promise<boolean> {
     // Try to open a drawer from the contacts section of the first company with contacts
@@ -201,9 +219,11 @@ test.describe('Contact drawer — enriched fields', () => {
         if (!(await body.isVisible())) await hdr.click();
         await page.waitForTimeout(100);
         const cards = page.locator('#ib-ct-body .ib-ct');
-        if (await cards.count() > 0) {
+        if ((await cards.count()) > 0) {
           await cards.first().click();
-          const drawerOpen = await page.locator('#ctDrawer').evaluate(el => el.classList.contains('open'));
+          const drawerOpen = await page
+            .locator('#ctDrawer')
+            .evaluate((el) => el.classList.contains('open'));
           if (drawerOpen) return true;
         }
       }
@@ -213,7 +233,10 @@ test.describe('Contact drawer — enriched fields', () => {
 
   test('drawer opens with contact name in header', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     await expect(page.locator('#drName')).toBeVisible({ timeout: 5000 });
     const name = await page.locator('#drName').textContent();
     expect(name?.trim().length).toBeGreaterThan(0);
@@ -222,7 +245,10 @@ test.describe('Contact drawer — enriched fields', () => {
 
   test('drawer shows subtitle with title and company', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     await expect(page.locator('#drSub')).toBeVisible({ timeout: 3000 });
     const sub = await page.locator('#drSub').textContent();
     expect(sub?.trim().length).toBeGreaterThan(0);
@@ -230,7 +256,10 @@ test.describe('Contact drawer — enriched fields', () => {
 
   test('drawer body has at least one field', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     const fields = page.locator('#drBody .dr-field');
     await expect(fields.first()).toBeVisible({ timeout: 3000 });
     expect(await fields.count()).toBeGreaterThan(0);
@@ -238,21 +267,30 @@ test.describe('Contact drawer — enriched fields', () => {
 
   test('drawer field labels are visible', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     const labels = page.locator('#drBody .dr-field label');
     await expect(labels.first()).toBeVisible({ timeout: 3000 });
   });
 
   test('drawer never shows empty body', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     const body = await page.locator('#drBody').textContent();
     expect(body?.trim().length).toBeGreaterThan(0);
   });
 
   test('drawer action buttons are present', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     const actions = page.locator('#ctDrawer .dr-actions .btn');
     await expect(actions.first()).toBeVisible({ timeout: 3000 });
     expect(await actions.count()).toBeGreaterThanOrEqual(2);
@@ -260,13 +298,21 @@ test.describe('Contact drawer — enriched fields', () => {
 
   test('drawer Draft Email button is present', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
-    await expect(page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).first()).toBeVisible();
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
+    await expect(
+      page.locator('#ctDrawer .dr-actions .btn', { hasText: /draft email/i }).first(),
+    ).toBeVisible();
   });
 
   test('drawer close button dismisses drawer', async ({ page }) => {
     const opened = await openAnyDrawer(page);
-    if (!opened) { console.log('No drawer opened — skip'); return; }
+    if (!opened) {
+      console.log('No drawer opened — skip');
+      return;
+    }
     await expect(page.locator('#ctDrawer')).toHaveClass(/open/);
     await page.locator('.dr-close').click();
     await expect(page.locator('#ctDrawer')).not.toHaveClass(/open/, { timeout: 3000 });
@@ -302,9 +348,12 @@ test.describe('Contact drawer — enriched fields', () => {
       const contacts = window.S?.contacts || [];
       if (!contacts.find((c: any) => c.id === 'drawer-test-full-contact')) {
         contacts.push({
-          id: 'drawer-test-full-contact', company_id: 'test-co',
-          company_name: 'Test Company', full_name: 'Jane Richfield',
-          title: 'VP of Partnerships', email: 'jane@testcompany.com'
+          id: 'drawer-test-full-contact',
+          company_id: 'test-co',
+          company_name: 'Test Company',
+          full_name: 'Jane Richfield',
+          title: 'VP of Partnerships',
+          email: 'jane@testcompany.com',
         });
       }
       window.openDrawer?.('drawer-test-full-contact');
@@ -317,22 +366,24 @@ test.describe('Contact drawer — enriched fields', () => {
 
     // Fields that should now be in the drawer
     const body = page.locator('#drBody');
-    await expect(body).toContainText('VP of Partnerships');  // Title field
+    await expect(body).toContainText('VP of Partnerships'); // Title field
     await expect(body).toContainText('jane@testcompany.com'); // Email
-    await expect(body).toContainText('+44 7911 123456');      // Phone
-    await expect(body).toContainText('Partnerships');          // Dept
-    await expect(body).toContainText('vp');                    // Seniority
-    await expect(body).toContainText('London, UK');            // Location
-    await expect(body).toContainText('contacted');             // Outreach status
-    await expect(body).toContainText('warm');                  // Relationship
-    await expect(body).toContainText('2025-12-01');            // Last contacted
-    await expect(body).toContainText('Via Adrian');            // Warm intro path
-    await expect(body).toContainText('Key decision maker');    // Notes
+    await expect(body).toContainText('+44 7911 123456'); // Phone
+    await expect(body).toContainText('Partnerships'); // Dept
+    await expect(body).toContainText('vp'); // Seniority
+    await expect(body).toContainText('London, UK'); // Location
+    await expect(body).toContainText('contacted'); // Outreach status
+    await expect(body).toContainText('warm'); // Relationship
+    await expect(body).toContainText('2025-12-01'); // Last contacted
+    await expect(body).toContainText('Via Adrian'); // Warm intro path
+    await expect(body).toContainText('Key decision maker'); // Notes
 
     // Cleanup
     await page.evaluate(() => {
       if (window.S?.contacts) {
-        window.S.contacts = window.S.contacts.filter((c: any) => c.id !== 'drawer-test-full-contact');
+        window.S.contacts = window.S.contacts.filter(
+          (c: any) => c.id !== 'drawer-test-full-contact',
+        );
       }
       window.closeDrawer?.();
     });
@@ -341,7 +392,6 @@ test.describe('Contact drawer — enriched fields', () => {
 
 // ── SUITE: Contacts from contacts tab also open full drawer ──────
 test.describe('Contacts tab — drawer via openContactFull', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await page.evaluate(() => window.switchTab('contacts'));

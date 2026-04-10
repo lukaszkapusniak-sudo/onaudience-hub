@@ -5,7 +5,6 @@ import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d22';
    Safe to skip, restart, or ignore entirely.
    ═══════════════════════════════════════════════════════════ */
 
-
 /* ═══════════════════════════════════════════════════════════════════
    CHIPTUNE SOUND ENGINE — Nintendo JRPG style (Web Audio API)
    All sounds generated procedurally. No external files.
@@ -14,14 +13,19 @@ let _ctx = null;
 
 function _ac() {
   if (!_ctx) {
-    try { _ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; }
+    try {
+      _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      return null;
+    }
   }
   if (_ctx.state === 'suspended') _ctx.resume();
   return _ctx;
 }
 
-function _beep(freq, dur, type='square', gain=0.15, delay=0) {
-  const ac = _ac(); if(!ac) return;
+function _beep(freq, dur, type = 'square', gain = 0.15, delay = 0) {
+  const ac = _ac();
+  if (!ac) return;
   const g = ac.createGain();
   const o = ac.createOscillator();
   o.type = type;
@@ -29,13 +33,14 @@ function _beep(freq, dur, type='square', gain=0.15, delay=0) {
   g.gain.setValueAtTime(0, ac.currentTime + delay);
   g.gain.linearRampToValueAtTime(gain, ac.currentTime + delay + 0.01);
   g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + dur);
-  o.connect(g); g.connect(ac.destination);
+  o.connect(g);
+  g.connect(ac.destination);
   o.start(ac.currentTime + delay);
   o.stop(ac.currentTime + delay + dur + 0.05);
 }
 
-function _chord(notes, dur, type='square', gain=0.12, delay=0) {
-  notes.forEach(f => _beep(f, dur, type, gain, delay));
+function _chord(notes, dur, type = 'square', gain = 0.12, delay = 0) {
+  notes.forEach((f) => _beep(f, dur, type, gain, delay));
 }
 
 const SFX = {
@@ -54,14 +59,14 @@ const SFX = {
 
   // Tutorial start — 4-note fanfare (classic JRPG intro jingle)
   start() {
-    const notes = [262,330,392,524];
+    const notes = [262, 330, 392, 524];
     const times = [0, 0.12, 0.24, 0.36];
-    notes.forEach((f,i) => _beep(f, i===3?0.35:0.10, 'square', 0.14, times[i]));
+    notes.forEach((f, i) => _beep(f, i === 3 ? 0.35 : 0.1, 'square', 0.14, times[i]));
   },
 
   // Achievement unlock — ascending arpeggio + sparkle (FF item get)
   achievement() {
-    [523, 659, 784, 1047].forEach((f, i) => _beep(f, 0.10, 'square', 0.14, i * 0.07));
+    [523, 659, 784, 1047].forEach((f, i) => _beep(f, 0.1, 'square', 0.14, i * 0.07));
     // Sparkle overtone
     [2093, 2637].forEach((f, i) => _beep(f, 0.08, 'sine', 0.06, 0.35 + i * 0.06));
   },
@@ -69,13 +74,13 @@ const SFX = {
   // Level up — classic FF level-up arpeggio
   levelUp() {
     const seq = [
-      [262, 0.08, 0.00],
+      [262, 0.08, 0.0],
       [330, 0.08, 0.09],
       [392, 0.08, 0.18],
       [524, 0.08, 0.27],
       [392, 0.08, 0.36],
       [524, 0.08, 0.45],
-      [659, 0.20, 0.54],
+      [659, 0.2, 0.54],
     ];
     seq.forEach(([f, d, t]) => _beep(f, d, 'square', 0.16, t));
     // Harmony
@@ -90,30 +95,38 @@ const SFX = {
   // Victory fanfare — tutorial complete (short FF victory theme)
   victory() {
     const melody = [
-      [392,0.12,0.0],[392,0.12,0.13],[392,0.12,0.26],
-      [523,0.30,0.40],[392,0.12,0.72],[523,0.50,0.85],
+      [392, 0.12, 0.0],
+      [392, 0.12, 0.13],
+      [392, 0.12, 0.26],
+      [523, 0.3, 0.4],
+      [392, 0.12, 0.72],
+      [523, 0.5, 0.85],
     ];
     const bass = [
-      [196,0.12,0.0],[196,0.12,0.13],[196,0.12,0.26],
-      [262,0.30,0.40],[196,0.12,0.72],[262,0.50,0.85],
+      [196, 0.12, 0.0],
+      [196, 0.12, 0.13],
+      [196, 0.12, 0.26],
+      [262, 0.3, 0.4],
+      [196, 0.12, 0.72],
+      [262, 0.5, 0.85],
     ];
-    melody.forEach(([f,d,t]) => _beep(f, d, 'square', 0.16, t));
-    bass.forEach(([f,d,t])   => _beep(f, d, 'square', 0.10, t));
+    melody.forEach(([f, d, t]) => _beep(f, d, 'square', 0.16, t));
+    bass.forEach(([f, d, t]) => _beep(f, d, 'square', 0.1, t));
   },
 
   // Konami code — dramatic power-up fanfare + power chord
   konami() {
     // Ascending sweep
-    [131,165,196,247,262,330,392,494,523].forEach((f,i) =>
-      _beep(f, 0.06, 'square', 0.14, i * 0.055)
+    [131, 165, 196, 247, 262, 330, 392, 494, 523].forEach((f, i) =>
+      _beep(f, 0.06, 'square', 0.14, i * 0.055),
     );
     // Power chord hit at 0.5s
-    [131,196,262,392].forEach(f => _beep(f, 0.4, 'square', 0.12, 0.5));
+    [131, 196, 262, 392].forEach((f) => _beep(f, 0.4, 'square', 0.12, 0.5));
     // Final high notes
     _beep(1047, 0.15, 'square', 0.18, 0.92);
-    _beep(1319, 0.35, 'square', 0.20, 1.08);
+    _beep(1319, 0.35, 'square', 0.2, 1.08);
     // Overtone shimmer
-    [2093,2637,3136].forEach((f,i) => _beep(f, 0.12, 'sine', 0.05, 1.1 + i*0.06));
+    [2093, 2637, 3136].forEach((f, i) => _beep(f, 0.12, 'sine', 0.05, 1.1 + i * 0.06));
   },
 
   // Error / close — descending minor (Zelda wrong answer)
@@ -124,9 +137,7 @@ const SFX = {
 
   // Gmail connect — water/magic sound (Zelda secret)
   gmail() {
-    [523,659,784,1047,784,659,523].forEach((f,i) =>
-      _beep(f, 0.07, 'sine', 0.10, i * 0.06)
-    );
+    [523, 659, 784, 1047, 784, 659, 523].forEach((f, i) => _beep(f, 0.07, 'sine', 0.1, i * 0.06));
   },
 
   // XP tick — tiny point sound
@@ -136,112 +147,158 @@ const SFX = {
 
   // Mario coin — NES-accurate Super Mario Bros coin (B5→E6)
   marioCoin() {
-    _beep(987.77, 0.035, 'square', 0.22);           // B5 blip
-    _beep(1318.51, 0.13, 'square', 0.20, 0.04);    // E6 sustain
-    _beep(2637, 0.07, 'sine', 0.05, 0.04);          // sine shimmer
+    _beep(987.77, 0.035, 'square', 0.22); // B5 blip
+    _beep(1318.51, 0.13, 'square', 0.2, 0.04); // E6 sustain
+    _beep(2637, 0.07, 'sine', 0.05, 0.04); // sine shimmer
   },
 };
 
-const TKEY_DONE  = 'oaTutorialDone';
-const TKEY_XP    = 'oaTutXP';
-const TKEY_ACHV  = 'oaAchievements';
-const TKEY_STEP  = 'oaTutStep';
+const TKEY_DONE = 'oaTutorialDone';
+const TKEY_XP = 'oaTutXP';
+const TKEY_ACHV = 'oaAchievements';
+const TKEY_STEP = 'oaTutStep';
 
 const XP_LEVELS = [0, 100, 350, 700, 1100, 1750];
 const LEVEL_NAMES = ['RECRUIT', 'PRIVATE', 'CORPORAL', 'SERGEANT', 'LIEUTENANT', 'OPERATOR'];
-const LEVEL_ICONS = ['○','◉','◈','◆','★','⬡'];
+const LEVEL_ICONS = ['○', '◉', '◈', '◆', '★', '⬡'];
 
 const STEPS = [
   {
-    id: 'welcome', xp: 100,
+    id: 'welcome',
+    xp: 100,
     levelUp: 1,
     title: '★  INTEL BRIEF  ★',
     sub: 'Operator Onboarding — Sequence Initiated',
     body: 'Welcome to the <b>Sales Intelligence Hub</b>.\n\nYou are about to become very dangerous in a sales meeting. This 5-minute training covers six essential operations. Everything else lives in the manual — <b>FM-OA-2026</b>.',
-    target: null, card: 'center',
+    target: null,
+    card: 'center',
     btn: 'BEGIN TRAINING  ▶',
-    achievement: {id:'enlisted', icon:'🪖', name:'ENLISTED', desc:'Joined the operator corps', xp:50},
+    achievement: {
+      id: 'enlisted',
+      icon: '🪖',
+      name: 'ENLISTED',
+      desc: 'Joined the operator corps',
+      xp: 50,
+    },
   },
   {
-    id: 'company_list', xp: 150,
+    id: 'company_list',
+    xp: 150,
     title: '📋  THE COMPANY LIST',
     sub: 'SECTION 2  //  FM-OA-2026',
     body: '<b>2,062 companies</b>. Sorted by ICP score — highest potential first.\n\nClick any row to open the company dossier. The list is your entire target universe. Scroll it. Filter it. Own it.',
-    target: '.list-scroll', card: 'right',
+    target: '.list-scroll',
+    card: 'right',
     btn: 'ROGER THAT  →',
     hint: 'TIP: Right-click any row for 8 quick actions',
   },
   {
-    id: 'stats_bar', xp: 100,
+    id: 'stats_bar',
+    xp: 100,
     title: '📊  PIPELINE FILTERS',
     sub: 'SECTION 2.1  //  FM-OA-2026',
     body: 'The stats bar shows your pipeline split:\n<b>Clients · POC · Partners · Prospects · No Outreach · Fresh</b>\n\nClick <b>PROSPECTS</b> to focus on targets that have not been converted yet. That is your primary hunting ground.',
-    target: '.stats-bar', card: 'below',
+    target: '.stats-bar',
+    card: 'below',
     btn: 'UNDERSTOOD  →',
   },
   {
-    id: 'company_panel', xp: 150,
+    id: 'company_panel',
+    xp: 150,
     title: '🏢  THE DOSSIER',
     sub: 'SECTION 3  //  FM-OA-2026',
     body: 'Click any company to open its full profile. <b>Eleven collapsible sections</b> load from the database in real time:\n\nContacts · News · Outreach Angle · Email History · Lemlist · Products · Segment Mapper · Relations\n\nAll of it. One click.',
-    target: '.left', card: 'right',
+    target: '.left',
+    card: 'right',
     btn: 'CONTINUE  →',
-    achievement: {id:'eyes_open', icon:'👁', name:'EYES OPEN', desc:'Opened a company dossier', xp:75},
+    achievement: {
+      id: 'eyes_open',
+      icon: '👁',
+      name: 'EYES OPEN',
+      desc: 'Opened a company dossier',
+      xp: 75,
+    },
   },
   {
-    id: 'outreach_angle', xp: 200,
+    id: 'outreach_angle',
+    xp: 200,
     levelUp: 2,
     title: '💡  OUTREACH ANGLE  +  PERSONAS',
     sub: 'SECTION 5  //  FM-OA-2026',
     body: 'Open any company → expand <b>💡 Outreach Angle</b> → click <b>↺ Regen</b>.\n\nA row of <b>10 persona buttons</b> appears. Each one writes in a completely different voice:\n🍎 Steve — minimal  · ⚡ Jeff — metrics · 📦 Gary — blunt\n🌊 Maya — story · 🏛 Winston — dramatic\n\nPick one. The AI writes your angle in 3 seconds.',
-    target: '.left', card: 'right',
+    target: '.left',
+    card: 'right',
     btn: 'EXCELLENT  →',
-    achievement: {id:'wordsmith', icon:'✍', name:'WORDSMITH', desc:'Unlocked the persona system', xp:100},
+    achievement: {
+      id: 'wordsmith',
+      icon: '✍',
+      name: 'WORDSMITH',
+      desc: 'Unlocked the persona system',
+      xp: 100,
+    },
   },
   {
-    id: 'ai_bar', xp: 150,
+    id: 'ai_bar',
+    xp: 150,
     title: '🤖  THE AI QUERY BAR',
     sub: 'SECTION 5.1  //  FM-OA-2026',
     body: 'The AI bar at the bottom of the left panel filters your company list using natural language.\n\nType <b>"high ICP no outreach"</b> or click the <b>No angle</b> chip. The list instantly shows only high-potential companies with no angle written yet.\n\nMonday morning starts here.',
-    target: '.ai-bar', card: 'above',
+    target: '.ai-bar',
+    card: 'above',
     btn: 'LOUD AND CLEAR  →',
     hint: 'TIP: Use the quick chips for the most common queries',
   },
   {
-    id: 'compose', xp: 250,
+    id: 'compose',
+    xp: 250,
     levelUp: 3,
     title: '✉  MEESEEKS COMPOSER',
     sub: 'SECTION 5.2  //  FM-OA-2026',
     body: 'Click <b>✉ Compose</b> in the nav (top right). The Meeseeks Composer opens.\n\nSelect a company → select a contact → pick a persona → click <b>✉ Generate Email</b>.\n\nSubject line + full email body in ~3 seconds. Edit one sentence. Send. Take the credit.',
-    target: '[onclick="openComposer(null)"]', card: 'below',
+    target: '[onclick="openComposer(null)"]',
+    card: 'below',
     btn: 'MISSION CLEAR  →',
-    achievement: {id:'first_contact', icon:'📨', name:'FIRST CONTACT', desc:'Discovered the Meeseeks Composer', xp:125},
+    achievement: {
+      id: 'first_contact',
+      icon: '📨',
+      name: 'FIRST CONTACT',
+      desc: 'Discovered the Meeseeks Composer',
+      xp: 125,
+    },
   },
   {
-    id: 'gmail', xp: 300,
+    id: 'gmail',
+    xp: 300,
     levelUp: 4,
     title: '📧  CONNECT GMAIL',
     sub: 'SECTION 4.1  //  FM-OA-2026',
     body: 'The hub can scan your Gmail inbox to:\n• Find existing threads with any company\n• Extract contact names and emails\n• Show relationship history in the Email History section\n\nOperators who connect Gmail see <b>3× more contact data</b>. It takes 10 seconds.',
-    target: null, card: 'center',
+    target: null,
+    card: 'center',
     btn: '⚡ CONNECT GMAIL',
     btnAlt: 'SKIP FOR NOW',
-    achievement: {id:'inbox_raider', icon:'📬', name:'INBOX RAIDER', desc:'Connected Gmail for relationship intelligence', xp:200},
+    achievement: {
+      id: 'inbox_raider',
+      icon: '📬',
+      name: 'INBOX RAIDER',
+      desc: 'Connected Gmail for relationship intelligence',
+      xp: 200,
+    },
     isGmail: true,
   },
   {
-    id: 'complete', xp: 500,
+    id: 'complete',
+    xp: 500,
     levelUp: 5,
     title: '🏆  OPERATOR CERTIFIED',
     sub: 'TRAINING COMPLETE  //  ALL OBJECTIVES CLEARED',
     body: 'You are now cleared for solo operations.\n\nThe <b>Field Manual FM-OA-2026</b> covers every feature in detail — check your downloads folder.\n\nGo find some data partners.',
-    target: null, card: 'center',
+    target: null,
+    card: 'center',
     btn: 'DISMISS  ⇒  HUB',
     isFinale: true,
   },
 ];
-
-
 
 /* ═══════════════════════════════════════════════════════════════════
    MARIO COIN SHAKE DETECTOR  —  DeviceMotion API
@@ -253,12 +310,18 @@ function _initShake() {
 
   if (typeof DeviceMotionEvent.requestPermission === 'function') {
     // iOS 13+ — need explicit permission, ask on first touch
-    document.addEventListener('touchend', function _ask() {
-      DeviceMotionEvent.requestPermission()
-        .then(s => { if (s === 'granted') _attachShake(); })
-        .catch(() => {});
-      document.removeEventListener('touchend', _ask);
-    }, {once: true});
+    document.addEventListener(
+      'touchend',
+      function _ask() {
+        DeviceMotionEvent.requestPermission()
+          .then((s) => {
+            if (s === 'granted') _attachShake();
+          })
+          .catch(() => {});
+        document.removeEventListener('touchend', _ask);
+      },
+      { once: true },
+    );
   } else {
     _attachShake();
   }
@@ -266,20 +329,20 @@ function _initShake() {
 
 function _attachShake() {
   const THRESHOLD = 18; // m/s² — firm wrist shake, not pocket jitter
-  const COOLDOWN  = 1200;
-  let _last = {x:0, y:0, z:0};
+  const COOLDOWN = 1200;
+  let _last = { x: 0, y: 0, z: 0 };
   let _lastTime = 0;
 
   window.addEventListener('devicemotion', (e) => {
     const a = e.accelerationIncludingGravity || e.acceleration;
     if (!a) return;
-    const dx = Math.abs((a.x||0) - _last.x);
-    const dy = Math.abs((a.y||0) - _last.y);
-    const dz = Math.abs((a.z||0) - _last.z);
-    _last = {x: a.x||0, y: a.y||0, z: a.z||0};
+    const dx = Math.abs((a.x || 0) - _last.x);
+    const dy = Math.abs((a.y || 0) - _last.y);
+    const dz = Math.abs((a.z || 0) - _last.z);
+    _last = { x: a.x || 0, y: a.y || 0, z: a.z || 0 };
 
     const now = Date.now();
-    if (Math.sqrt(dx*dx + dy*dy + dz*dz) > THRESHOLD && now - _lastTime > COOLDOWN) {
+    if (Math.sqrt(dx * dx + dy * dy + dz * dz) > THRESHOLD && now - _lastTime > COOLDOWN) {
       _lastTime = now;
       SFX.marioCoin();
       _showCoinBurst();
@@ -292,7 +355,8 @@ function _showCoinBurst() {
   if (!document.getElementById('oa-coin-kf')) {
     const s = document.createElement('style');
     s.id = 'oa-coin-kf';
-    s.textContent = '@keyframes oa-coin-rise{0%{transform:translateY(0) scale(1);opacity:1}60%{transform:translateY(-55px) scale(1.3);opacity:1}100%{transform:translateY(-95px) scale(.7);opacity:0}}';
+    s.textContent =
+      '@keyframes oa-coin-rise{0%{transform:translateY(0) scale(1);opacity:1}60%{transform:translateY(-55px) scale(1.3);opacity:1}100%{transform:translateY(-95px) scale(.7);opacity:0}}';
     document.head.appendChild(s);
   }
   // Spawn 1-3 coins at random x
@@ -324,15 +388,24 @@ function _showCoinBurst() {
    Personal invitation from Łukasz to whoever found this.
    ═══════════════════════════════════════════════════════════════════ */
 
-const _KONAMI_SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown',
-                     'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight',
-                     'b','a']; // case-insensitive: matches b/B, a/A
+const _KONAMI_SEQ = [
+  'ArrowUp',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowLeft',
+  'ArrowRight',
+  'b',
+  'a',
+]; // case-insensitive: matches b/B, a/A
 let _konamiIdx = 0;
 
 function _initKonami() {
   document.addEventListener('keydown', (e) => {
     // Use e.code for arrow keys (physical), e.key.toLowerCase() for letters
-    const _k = e.code.startsWith('Arrow') ? e.code : (e.key||'').toLowerCase();
+    const _k = e.code.startsWith('Arrow') ? e.code : (e.key || '').toLowerCase();
     if (_k === _KONAMI_SEQ[_konamiIdx]) {
       _konamiIdx++;
       SFX.cursor();
@@ -341,7 +414,7 @@ function _initKonami() {
         _triggerKonami();
       }
     } else {
-      _konamiIdx = (_k === _KONAMI_SEQ[0]) ? 1 : 0;
+      _konamiIdx = _k === _KONAMI_SEQ[0] ? 1 : 0;
     }
   });
 }
@@ -351,10 +424,17 @@ function _triggerKonami() {
   _injectStyles();
   _ensureDom();
   _addXP(1337);
-  setTimeout(() => _unlock({
-    id:'hacker', icon:'🎩', name:'HACKER',
-    desc:'Found the Konami Code. Łukasz wants to meet you.', xp:0
-  }), 800);
+  setTimeout(
+    () =>
+      _unlock({
+        id: 'hacker',
+        icon: '🎩',
+        name: 'HACKER',
+        desc: 'Found the Konami Code. Łukasz wants to meet you.',
+        xp: 0,
+      }),
+    800,
+  );
 
   // Sound: dramatic power-up fanfare
   SFX.konami();
@@ -471,10 +551,13 @@ function _showKonamiOverlay() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const chars = 'アイウエオカキクケコサシスセソタチツテト0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]|/\#$%@'.split('');
+  const chars =
+    'アイウエオカキクケコサシスセソタチツテト0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]|/\#$%@'.split(
+      '',
+    );
   const fontSize = 14;
   const cols = Math.floor(canvas.width / fontSize);
-  const drops = Array.from({length: cols}, () => Math.random() * -canvas.height / fontSize);
+  const drops = Array.from({ length: cols }, () => (Math.random() * -canvas.height) / fontSize);
 
   const rain = setInterval(() => {
     ctx.fillStyle = 'rgba(0,0,0,.05)';
@@ -484,8 +567,8 @@ function _showKonamiOverlay() {
     drops.forEach((y, i) => {
       const char = chars[Math.floor(Math.random() * chars.length)];
       ctx.fillText(char, i * fontSize, y * fontSize);
-      if (y * fontSize > canvas.height && Math.random() > .975) drops[i] = 0;
-      drops[i] += .5;
+      if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 0.5;
     });
   }, 33);
 
@@ -493,17 +576,24 @@ function _showKonamiOverlay() {
   document.getElementById('kn-email-btn').addEventListener('click', () => {
     const sub = encodeURIComponent('I found the Konami Code in your hub');
     const body = encodeURIComponent(
-      'Hi %C5%81ukasz,%0A%0AI was exploring the onAudience Sales Intelligence Hub and found the Konami Code easter egg.%0A%0AI would love to connect.%0A%0ABest,'
+      'Hi %C5%81ukasz,%0A%0AI was exploring the onAudience Sales Intelligence Hub and found the Konami Code easter egg.%0A%0AI would love to connect.%0A%0ABest,',
     );
     window.open(`mailto:lukasz.kapusniak@ct.pl?subject=${sub}&body=${body}`);
   });
 
   // Close on click outside card or ESC
   el.addEventListener('click', (e) => {
-    if (e.target === el) { clearInterval(rain); el.remove(); }
+    if (e.target === el) {
+      clearInterval(rain);
+      el.remove();
+    }
   });
   document.addEventListener('keydown', function _esc(e) {
-    if (e.key === 'Escape') { clearInterval(rain); el?.remove(); document.removeEventListener('keydown', _esc); }
+    if (e.key === 'Escape') {
+      clearInterval(rain);
+      el?.remove();
+      document.removeEventListener('keydown', _esc);
+    }
   });
 
   // Auto-stop rain after 30s to save CPU (overlay stays)
@@ -523,7 +613,11 @@ let _lang = localStorage.getItem('oaTutLang') || 'en';
 function _load() {
   _xp = parseInt(localStorage.getItem(TKEY_XP) || '0');
   _level = _xpToLevel(_xp);
-  try { _achievements = JSON.parse(localStorage.getItem(TKEY_ACHV) || '[]'); } catch { _achievements = []; }
+  try {
+    _achievements = JSON.parse(localStorage.getItem(TKEY_ACHV) || '[]');
+  } catch {
+    _achievements = [];
+  }
   _step = parseInt(localStorage.getItem(TKEY_STEP) || '0');
 }
 
@@ -546,7 +640,6 @@ function _xpInLevel(xp, level) {
   return Math.min(1, (xp - lo) / (hi - lo));
 }
 
-
 /* ── i18n: localise a step for the current language ─────────────────── */
 function _L(step) {
   if (_lang === 'en' || !STEP_I18N[_lang]) return step;
@@ -567,12 +660,17 @@ function _setLang(code) {
 }
 
 function _langSwitcherHTML() {
-  return `<div class="oa-tut-langs">` +
-    Object.entries(LANG_META).map(([code, m]) =>
-      `<button class="oa-tut-lang-btn ${_lang === code ? 'active' : ''}"
-        onclick="window._tutLang('${code}')" title="${m.name}">${m.flag} ${m.label}</button>`
-    ).join('') +
-  `</div>`;
+  return (
+    `<div class="oa-tut-langs">` +
+    Object.entries(LANG_META)
+      .map(
+        ([code, m]) =>
+          `<button class="oa-tut-lang-btn ${_lang === code ? 'active' : ''}"
+        onclick="window._tutLang('${code}')" title="${m.name}">${m.flag} ${m.label}</button>`,
+      )
+      .join('') +
+    `</div>`
+  );
 }
 
 /* ── DOM creation ─────────────────────────────────────────────────────── */
@@ -833,7 +931,9 @@ function _injectStyles() {
   document.head.appendChild(s);
 }
 
-function _getEl(id) { return document.getElementById(id); }
+function _getEl(id) {
+  return document.getElementById(id);
+}
 
 function _ensureDom() {
   // JRPG FOCUS label
@@ -857,13 +957,15 @@ function _ensureDom() {
   if (!_getEl('oa-tut-achv')) {
     const a = document.createElement('div');
     a.id = 'oa-tut-achv';
-    a.innerHTML = '<div class="oa-achv-bar"></div><div class="oa-achv-inner"><div class="oa-achv-icon" id="oa-achv-icon">🏆</div><div class="oa-achv-text"><div class="oa-achv-label">Achievement Unlocked</div><div class="oa-achv-name" id="oa-achv-name"></div><div class="oa-achv-desc" id="oa-achv-desc"></div></div><div class="oa-achv-xp" id="oa-achv-xp"></div></div>';
+    a.innerHTML =
+      '<div class="oa-achv-bar"></div><div class="oa-achv-inner"><div class="oa-achv-icon" id="oa-achv-icon">🏆</div><div class="oa-achv-text"><div class="oa-achv-label">Achievement Unlocked</div><div class="oa-achv-name" id="oa-achv-name"></div><div class="oa-achv-desc" id="oa-achv-desc"></div></div><div class="oa-achv-xp" id="oa-achv-xp"></div></div>';
     document.body.appendChild(a);
   }
   if (!_getEl('oa-tut-levelup')) {
     const lu = document.createElement('div');
     lu.id = 'oa-tut-levelup';
-    lu.innerHTML = '<div class="oa-lu-icon" id="oa-lu-icon"></div><div class="oa-lu-badge">RANK UP</div><div class="oa-lu-name" id="oa-lu-name"></div>';
+    lu.innerHTML =
+      '<div class="oa-lu-icon" id="oa-lu-icon"></div><div class="oa-lu-badge">RANK UP</div><div class="oa-lu-name" id="oa-lu-name"></div>';
     document.body.appendChild(lu);
   }
 }
@@ -872,7 +974,10 @@ function _ensureDom() {
 function _spotlight(selector, label) {
   const sp = _getEl('oa-tut-spotlight');
   const lb = document.getElementById('oa-tut-sp-label');
-  { const _arC=document.getElementById('oa-tut-arrow'); if(_arC)_arC.classList.remove('vis'); }
+  {
+    const _arC = document.getElementById('oa-tut-arrow');
+    if (_arC) _arC.classList.remove('vis');
+  }
   if (!selector) {
     sp.style.display = 'none';
     if (lb) lb.classList.remove('vis');
@@ -897,21 +1002,20 @@ function _spotlight(selector, label) {
   const bc2 = _bottomClearance();
   const maxBottom = window.innerHeight - bc2 - pad;
   const spotTop = r.top - pad;
-  const spotH   = Math.min(r.height + pad * 2, maxBottom - spotTop);
+  const spotH = Math.min(r.height + pad * 2, maxBottom - spotTop);
   sp.style.display = 'block';
-  sp.style.top    = spotTop + 'px';
-  sp.style.left   = (r.left - pad) + 'px';
-  sp.style.width  = (r.width + pad * 2) + 'px';
+  sp.style.top = spotTop + 'px';
+  sp.style.left = r.left - pad + 'px';
+  sp.style.width = r.width + pad * 2 + 'px';
   sp.style.height = spotH + 'px';
   sp._targetLeft = r.left + r.width / 2;
 
   // FOCUS label — positioned below spotlight, or above if too low
   if (lb && label) {
     const lbBottom = spotTop + spotH + 6;
-    const lbTop = lbBottom > window.innerHeight - 60 - _bottomClearance()
-      ? spotTop - 22 : lbBottom;
-    lb.style.top  = lbTop + 'px';
-    lb.style.left = (r.left - pad) + 'px';
+    const lbTop = lbBottom > window.innerHeight - 60 - _bottomClearance() ? spotTop - 22 : lbBottom;
+    lb.style.top = lbTop + 'px';
+    lb.style.left = r.left - pad + 'px';
     lb.textContent = '▶ ' + label;
     lb.classList.add('vis');
   } else if (lb) {
@@ -929,21 +1033,26 @@ function _bottomClearance() {
 
 function _positionCard(card, position, target) {
   if (card._userDragged) return; // user moved it — respect their choice
-  const vw = window.innerWidth, rawVh = window.innerHeight;
+  const vw = window.innerWidth,
+    rawVh = window.innerHeight;
   const bc = _bottomClearance();
   const vh = rawVh - bc;
-  const cw = 560, ch = card.offsetHeight || 400;
+  const cw = 560,
+    ch = card.offsetHeight || 400;
 
-  if (vw <= 600) { card.style.bottom = (20 + bc) + 'px'; return; }
+  if (vw <= 600) {
+    card.style.bottom = 20 + bc + 'px';
+    return;
+  }
 
   if (position === 'center' || !target) {
-    card.style.top  = Math.round((vh - ch) / 2) + 'px';
+    card.style.top = Math.round((vh - ch) / 2) + 'px';
     card.style.left = Math.round((vw - cw) / 2) + 'px';
     return;
   }
   const el = document.querySelector(target);
   if (!el) {
-    card.style.top  = Math.round((vh - ch) / 2) + 'px';
+    card.style.top = Math.round((vh - ch) / 2) + 'px';
     card.style.left = Math.round((vw - cw) / 2) + 'px';
     return;
   }
@@ -957,23 +1066,23 @@ function _positionCard(card, position, target) {
     const spaceAvail = vw - r.right - cw - 24;
     if (coPanelOpen && spaceAvail < 60) {
       card.style.left = Math.max(r.right + 8, vw - cw - 12) + 'px';
-      card.style.top  = '48px';
+      card.style.top = '48px';
     } else {
       card.style.left = Math.min(r.right + gap, vw - cw - 8) + 'px';
-      card.style.top  = Math.max(8, Math.min(r.top, vh - ch - 8)) + 'px';
+      card.style.top = Math.max(8, Math.min(r.top, vh - ch - 8)) + 'px';
     }
   } else if (position === 'below') {
-    card.style.top  = Math.min(r.bottom + gap, vh - ch - 8) + 'px';
+    card.style.top = Math.min(r.bottom + gap, vh - ch - 8) + 'px';
     card.style.left = Math.max(8, Math.min(r.left, vw - cw - 8)) + 'px';
   } else if (position === 'above') {
     const cardBtm = r.top - gap;
-    card.style.top  = Math.max(52, cardBtm - ch) + 'px';
+    card.style.top = Math.max(52, cardBtm - ch) + 'px';
     card.style.left = Math.max(8, Math.min(r.left, vw - cw - 8)) + 'px';
     const arEl = document.getElementById('oa-tut-arrow');
     const spEl = document.getElementById('oa-tut-spotlight');
     if (arEl) {
-      arEl.style.top  = (cardBtm + 4) + 'px';
-      arEl.style.left = ((spEl && spEl._targetLeft) || (r.left + r.width/2)) - 12 + 'px';
+      arEl.style.top = cardBtm + 4 + 'px';
+      arEl.style.left = ((spEl && spEl._targetLeft) || r.left + r.width / 2) - 12 + 'px';
       arEl.classList.add('vis');
     }
   }
@@ -984,33 +1093,43 @@ function _initTutDrag(card) {
   const handle = card.querySelector('.oa-tut-stripe');
   if (!handle || handle._dragBound) return;
   handle._dragBound = true;
-  let sx, sy, sl, st, active = false;
-  const xy = e => e.touches ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
-  const down = e => {
+  let sx,
+    sy,
+    sl,
+    st,
+    active = false;
+  const xy = (e) =>
+    e.touches ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
+  const down = (e) => {
     if (card.classList.contains('oa-tut-mini')) return;
     [sx, sy] = xy(e);
     sl = parseInt(card.style.left) || card.getBoundingClientRect().left;
-    st = parseInt(card.style.top)  || card.getBoundingClientRect().top;
-    active = true; card.classList.add('oa-tut-dragging'); e.preventDefault();
+    st = parseInt(card.style.top) || card.getBoundingClientRect().top;
+    active = true;
+    card.classList.add('oa-tut-dragging');
+    e.preventDefault();
   };
-  const move = e => {
+  const move = (e) => {
     if (!active) return;
     const [cx, cy] = xy(e);
-    const vw = window.innerWidth, vh = window.innerHeight;
-    card.style.left = Math.max(4, Math.min(vw - card.offsetWidth  - 4, sl + cx - sx)) + 'px';
-    card.style.top  = Math.max(4, Math.min(vh - 60,                    st + cy - sy)) + 'px';
+    const vw = window.innerWidth,
+      vh = window.innerHeight;
+    card.style.left = Math.max(4, Math.min(vw - card.offsetWidth - 4, sl + cx - sx)) + 'px';
+    card.style.top = Math.max(4, Math.min(vh - 60, st + cy - sy)) + 'px';
     e.preventDefault();
   };
   const up = () => {
     if (!active) return;
-    active = false; card.classList.remove('oa-tut-dragging'); card._userDragged = true;
+    active = false;
+    card.classList.remove('oa-tut-dragging');
+    card._userDragged = true;
   };
-  handle.addEventListener('mousedown',  down);
-  handle.addEventListener('touchstart', down, {passive:false});
-  document.addEventListener('mousemove',  move);
-  document.addEventListener('touchmove',  move, {passive:false});
-  document.addEventListener('mouseup',   up);
-  document.addEventListener('touchend',  up);
+  handle.addEventListener('mousedown', down);
+  handle.addEventListener('touchstart', down, { passive: false });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('mouseup', up);
+  document.addEventListener('touchend', up);
 }
 
 /* ── Mini / expand toggle ────────────────────────────────────────── */
@@ -1035,8 +1154,9 @@ function _renderCard() {
   card.style.display = 'block';
 
   // Progress dots
-  const dots = STEPS.map((st, i) =>
-    `<div class="oa-tut-dot ${i < _step ? 'done' : i === _step ? 'current' : ''}"></div>`
+  const dots = STEPS.map(
+    (st, i) =>
+      `<div class="oa-tut-dot ${i < _step ? 'done' : i === _step ? 'current' : ''}"></div>`,
   ).join('');
 
   // Language switcher + XP bar
@@ -1053,22 +1173,26 @@ function _renderCard() {
 
   if (s.isFinale) {
     const _allAchvDefs = [
-      ...STEPS.flatMap(st => st.achievement ? [st.achievement] : []),
+      ...STEPS.flatMap((st) => (st.achievement ? [st.achievement] : [])),
       ...Object.values(typeof LANG_ACHIEVEMENTS !== 'undefined' ? LANG_ACHIEVEMENTS : {}),
-      ...( typeof LANG_MILESTONE_ACHVS !== 'undefined' ? LANG_MILESTONE_ACHVS : []),
-      {id:'hacker', icon:'🎩', name:'HACKER'},
+      ...(typeof LANG_MILESTONE_ACHVS !== 'undefined' ? LANG_MILESTONE_ACHVS : []),
+      { id: 'hacker', icon: '🎩', name: 'HACKER' },
     ];
-    const achvGrid = _achievements.map(id => {
-      const found = _allAchvDefs.find(a => a.id === id);
-      return found ? `<div class="oa-tut-achv-chip unlocked">${found.icon} ${found.name}</div>` : '';
-    }).join('');
+    const achvGrid = _achievements
+      .map((id) => {
+        const found = _allAchvDefs.find((a) => a.id === id);
+        return found
+          ? `<div class="oa-tut-achv-chip unlocked">${found.icon} ${found.name}</div>`
+          : '';
+      })
+      .join('');
     inner = `
       <div class="oa-tut-stripe"><div class="oa-tut-stripe-inner"></div></div>
       <div class="oa-tut-finale">
         <div class="oa-tut-finale-icon">🏆</div>
         <div class="oa-tut-finale-level">LEVEL ${_level} — ${LEVEL_NAMES[_level]}</div>
         <div class="oa-tut-finale-name">${_xp} XP EARNED</div>
-        <div class="oa-tut-body" style="text-align:left;font-size:12px">${s.body.replace(/\n/g,'<br/>')}</div>
+        <div class="oa-tut-body" style="text-align:left;font-size:12px">${s.body.replace(/\n/g, '<br/>')}</div>
         ${achvGrid ? `<div class="oa-tut-achv-grid">${achvGrid}</div>` : ''}
         <div class="oa-tut-footer">
           <button class="oa-tut-btn" onclick="window._tutNext()">🎖️ ${s.btn}</button>
@@ -1086,12 +1210,14 @@ function _renderCard() {
         <button class="oa-tut-close" onclick="window._tutClose()" title="Skip tutorial">✕</button>
       </div>
       ${s.sub ? `<div class="oa-tut-sub">${s.sub}</div>` : ''}
-      <div class="oa-tut-body">${s.body.replace(/\n/g,'<br/>')}</div>
+      <div class="oa-tut-body">${s.body.replace(/\n/g, '<br/>')}</div>
       <div class="oa-tut-footer">
-        ${gmailConnected
-          ? `<button class="oa-tut-btn" onclick="window._tutNext()">✓ GMAIL CONNECTED  →</button>`
-          : `<button class="oa-tut-btn" onclick="window._tutGmail()">⚡ CONNECT GMAIL</button>
-             <button class="oa-tut-btn alt" onclick="window._tutNext()">${s.btnAlt}</button>`}
+        ${
+          gmailConnected
+            ? `<button class="oa-tut-btn" onclick="window._tutNext()">✓ GMAIL CONNECTED  →</button>`
+            : `<button class="oa-tut-btn" onclick="window._tutGmail()">⚡ CONNECT GMAIL</button>
+             <button class="oa-tut-btn alt" onclick="window._tutNext()">${s.btnAlt}</button>`
+        }
       </div>
       ${langBar}${xpBar}`;
   } else {
@@ -1104,7 +1230,7 @@ function _renderCard() {
         <button class="oa-tut-close" onclick="window._tutClose()" title="Skip tutorial">✕</button>
       </div>
       ${s.sub ? `<div class="oa-tut-sub">${s.sub}</div>` : ''}
-      <div class="oa-tut-body">${s.body.replace(/\n/g,'<br/>')}</div>
+      <div class="oa-tut-body">${s.body.replace(/\n/g, '<br/>')}</div>
       ${s.hint ? `<div class="oa-tut-hint">${s.hint}</div>` : ''}
       <div class="oa-tut-footer">
         <button class="oa-tut-btn" onclick="window._tutNext()">${s.btn}</button>
@@ -1113,7 +1239,8 @@ function _renderCard() {
   }
 
   // Mini pill — visible only when .oa-tut-mini
-  card.innerHTML = `<div class="oa-tut-mini-pill" onclick="window._tutToggleMini()">
+  card.innerHTML =
+    `<div class="oa-tut-mini-pill" onclick="window._tutToggleMini()">
     <div class="oa-tut-mini-dot"></div>STEP ${_step + 1}/${STEPS.length} ▲</div>` + inner;
 
   // Add — minimise button next to ✕ close
@@ -1123,7 +1250,10 @@ function _renderCard() {
     _mBtn.className = 'oa-tut-close oa-tut-min-btn';
     _mBtn.title = 'Minimise — move out of the way';
     _mBtn.textContent = '—';
-    _mBtn.onclick = e => { e.stopPropagation(); window._tutToggleMini(); };
+    _mBtn.onclick = (e) => {
+      e.stopPropagation();
+      window._tutToggleMini();
+    };
     _xBtn.parentNode.insertBefore(_mBtn, _xBtn);
   }
 
@@ -1132,11 +1262,15 @@ function _renderCard() {
 
   // Position after render
   requestAnimationFrame(() => {
-    const _spLabel = {
-      company_list:'Company List',stats_bar:'Pipeline Filters',
-      company_panel:'Left Panel',outreach_angle:'Left Panel',
-      ai_bar:'AI Query Bar',compose:'Compose Button'
-    }[s.id] || null;
+    const _spLabel =
+      {
+        company_list: 'Company List',
+        stats_bar: 'Pipeline Filters',
+        company_panel: 'Left Panel',
+        outreach_angle: 'Left Panel',
+        ai_bar: 'AI Query Bar',
+        compose: 'Compose Button',
+      }[s.id] || null;
     _spotlight(s.target, _spLabel);
     if (!card.classList.contains('oa-tut-mini')) _positionCard(card, s.card, s.target);
   });
@@ -1152,11 +1286,11 @@ function _addXP(amount, targetLevel) {
 
   // Animate XP bar update
   const fill = document.querySelector('.oa-tut-xp-fill');
-  const num  = document.querySelector('.oa-tut-xp-num');
-  const lvl  = document.querySelector('.oa-tut-level');
+  const num = document.querySelector('.oa-tut-xp-num');
+  const lvl = document.querySelector('.oa-tut-level');
   if (fill) fill.style.width = Math.round(_xpInLevel(_xp, _level) * 100) + '%';
-  if (num)  num.textContent = _xp + ' XP';
-  if (lvl)  lvl.textContent = LEVEL_ICONS[_level] + ' ' + LEVEL_NAMES[_level];
+  if (num) num.textContent = _xp + ' XP';
+  if (lvl) lvl.textContent = LEVEL_ICONS[_level] + ' ' + LEVEL_NAMES[_level];
 
   if (targetLevel && _level >= targetLevel && prevLevel < targetLevel) {
     _showLevelUp(targetLevel);
@@ -1182,7 +1316,10 @@ function _unlock(achievement) {
 }
 
 function _showNextAchv() {
-  if (!_achvQueue.length) { _achvTimer = null; return; }
+  if (!_achvQueue.length) {
+    _achvTimer = null;
+    return;
+  }
   const a = _achvQueue.shift();
   const el = _getEl('oa-tut-achv');
   _getEl('oa-achv-icon').textContent = a.icon;
@@ -1202,7 +1339,11 @@ function _showNextAchv() {
 function _tutNext() {
   const s = STEPS[_step];
   if (!s) return;
-  if (s.isFinale) { SFX.victory(); } else { SFX.next(); }
+  if (s.isFinale) {
+    SFX.victory();
+  } else {
+    SFX.next();
+  }
 
   // Award XP for this step
   _addXP(s.xp, s.levelUp);
@@ -1257,7 +1398,13 @@ function _tutClose() {
   _active = false;
   const card = _getEl('oa-tut-card');
   const sp = _getEl('oa-tut-spotlight');
-  if (card) { card.style.opacity = '0'; setTimeout(() => { card.style.display = 'none'; card.style.opacity = ''; }, 200); }
+  if (card) {
+    card.style.opacity = '0';
+    setTimeout(() => {
+      card.style.display = 'none';
+      card.style.opacity = '';
+    }, 200);
+  }
   if (sp) sp.style.display = 'none';
 }
 
@@ -1266,12 +1413,17 @@ function _tutFinish() {
   _active = false;
   const card = _getEl('oa-tut-card');
   const sp = _getEl('oa-tut-spotlight');
-  if (card) { card.style.display = 'none'; }
+  if (card) {
+    card.style.display = 'none';
+  }
   if (sp) sp.style.display = 'none';
 }
 
 /* ── Public API ───────────────────────────────────────────────────────── */
-export function initKonami() { _initKonami(); _initShake(); }
+export function initKonami() {
+  _initKonami();
+  _initShake();
+}
 
 export function startTutorial(force = false) {
   if (!force && localStorage.getItem(TKEY_DONE)) return;
@@ -1289,7 +1441,10 @@ export function resetTutorial() {
   localStorage.removeItem(TKEY_XP);
   localStorage.removeItem(TKEY_ACHV);
   localStorage.removeItem(TKEY_STEP);
-  _xp = 0; _level = 0; _achievements = []; _step = 0;
+  _xp = 0;
+  _level = 0;
+  _achievements = [];
+  _step = 0;
   startTutorial(true);
 }
 
@@ -1298,9 +1453,9 @@ export function isTutorialDone() {
 }
 
 /* window exports (onclick handlers) */
-window._tutNext  = _tutNext;
+window._tutNext = _tutNext;
 window._tutClose = _tutClose;
 window._tutToggleMini = _tutToggleMiniCard;
 window._tutToggleMiniCard = _tutToggleMiniCard;
 window._tutGmail = _tutGmail;
-window._tutLang  = _setLang;
+window._tutLang = _setLang;

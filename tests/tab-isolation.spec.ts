@@ -8,12 +8,14 @@ async function switchTab(page: Page, tab: string) {
 
 // ── SUITE: Panel isolation ────────────────────────────────────────
 test.describe('Tab panel isolation', () => {
-
   test.beforeEach(async ({ page }) => {
-  await waitForHub(page);
-  await page.evaluate(() => { window.closePanel?.(); window.switchTab?.('companies'); });
-  await page.waitForTimeout(200);
-});
+    await waitForHub(page);
+    await page.evaluate(() => {
+      window.closePanel?.();
+      window.switchTab?.('companies');
+    });
+    await page.waitForTimeout(200);
+  });
 
   test('companies tab: coPanel hidden, emptyState visible by default', async ({ page }) => {
     await switchTab(page, 'companies');
@@ -48,7 +50,9 @@ test.describe('Tab panel isolation', () => {
     await expect(page.locator('#sortBar')).toBeHidden();
   });
 
-  test('contacts tab: clicking a contact row opens company in center + drawer on right', async ({ page }) => {
+  test('contacts tab: clicking a contact row opens company in center + drawer on right', async ({
+    page,
+  }) => {
     await switchTab(page, 'contacts');
     await expect(page.locator('.ct-row').first()).toBeVisible({ timeout: 10000 });
     await page.locator('.ct-row').first().click();
@@ -102,7 +106,7 @@ test.describe('Tab panel isolation', () => {
   test('audiences tab: aud detail wrap hidden until audience selected', async ({ page }) => {
     await switchTab(page, 'audiences');
     // aud-detail-wrap only visible if S.activeAudience is set
-    const state = await page.evaluate(() => !!(window._oaState?.activeAudience));
+    const state = await page.evaluate(() => !!window._oaState?.activeAudience);
     if (!state) {
       // No active audience — detail wrap should be hidden
       const wrap = page.locator('#aud-detail-wrap');
@@ -144,7 +148,6 @@ test.describe('Tab panel isolation', () => {
 
 // ── SUITE: TCF company selection ──────────────────────────────────
 test.describe('TCF tab selection', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await page.evaluate(() => window.switchTab('tcf'));

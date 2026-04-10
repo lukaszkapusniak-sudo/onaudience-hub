@@ -7,31 +7,52 @@
  *   2. JS SyntaxError in any file      (→ module fails to load   → blank screen)
  *   3. JSON.stringify inside onclick="" (→ broken HTML attribute  → silent buttons)
  */
-const fs   = require('fs');
-const vm   = require('vm');
-const HUB  = 'www/hub/';
-const FILES = ['app.js','hub.js','audiences.js','api.js','auth.js','meeseeks.js','utils.js','state.js','lemlist.js','drawer.js','aud-icp.js','aud-campaign.js','list.js','db.js','vibe.js'];
+const fs = require('fs');
+const vm = require('vm');
+const HUB = 'www/hub/';
+const FILES = [
+  'app.js',
+  'hub.js',
+  'audiences.js',
+  'api.js',
+  'auth.js',
+  'meeseeks.js',
+  'utils.js',
+  'state.js',
+  'lemlist.js',
+  'drawer.js',
+  'aud-icp.js',
+  'aud-campaign.js',
+  'list.js',
+  'db.js',
+  'vibe.js',
+];
 let issues = 0;
 
 for (const f of FILES) {
   const path = HUB + f;
   if (!fs.existsSync(path)) continue;
-  const src   = fs.readFileSync(path, 'utf8');
+  const src = fs.readFileSync(path, 'utf8');
   const lines = src.split('\n');
 
   // ── Check 1: duplicate identifiers in import { ... } blocks ────────────
-  let inImport = false, importBuf = '';
+  let inImport = false,
+    importBuf = '';
   for (const line of lines) {
-    if (line.trim().match(/^import\s*\{/)) { inImport = true; importBuf = ''; }
+    if (line.trim().match(/^import\s*\{/)) {
+      inImport = true;
+      importBuf = '';
+    }
     if (inImport) {
       importBuf += ' ' + line;
       if (line.includes('}')) {
         inImport = false;
-        const ids   = importBuf.match(/\b[a-zA-Z_]\w*\b/g) || [];
-        const seen  = {}, dups = [];
-        ids.forEach(id => {
-          if (!['import','from','as','default','type'].includes(id)) {
-            seen[id] = (seen[id]||0)+1;
+        const ids = importBuf.match(/\b[a-zA-Z_]\w*\b/g) || [];
+        const seen = {},
+          dups = [];
+        ids.forEach((id) => {
+          if (!['import', 'from', 'as', 'default', 'type'].includes(id)) {
+            seen[id] = (seen[id] || 0) + 1;
             if (seen[id] === 2) dups.push(id);
           }
         });
@@ -49,19 +70,19 @@ for (const f of FILES) {
       // Strip multi-line import { ... } from '...' blocks first (non-greedy, no 's' flag needed with [\s\S])
       .replace(/import\s*\{[\s\S]*?\}\s*from\s*['"][^'"]+['"]\s*;?/g, '/* import */')
       // Strip single-identifier imports: import S from '...'
-      .replace(/^import\s+\w+\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm,   '/* import */')
+      .replace(/^import\s+\w+\s+from\s+['"][^'"]+['"]\s*;?\s*$/gm, '/* import */')
       // Strip side-effect imports: import '...'
-      .replace(/^import\s+['"][^'"]+['"]\s*;?\s*$/gm,                '/* import */')
+      .replace(/^import\s+['"][^'"]+['"]\s*;?\s*$/gm, '/* import */')
       // Dynamic import() → Promise.resolve()
-      .replace(/\bimport\s*\(/g,                                      'Promise.resolve(')
-      .replace(/^export\s+default\s+/gm,                             'var _default = ')
+      .replace(/\bimport\s*\(/g, 'Promise.resolve(')
+      .replace(/^export\s+default\s+/gm, 'var _default = ')
       .replace(/^export\s+(async\s+)?(function|class|const|let|var)\s+/gm, '$1$2 ')
       // Strip export { ... } (local)
-      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm,                    '/* export */')
+      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '/* export */')
       // Strip multi-line re-exports: export { ... } from '...'
       .replace(/export\s*\{[\s\S]*?\}\s*from\s*['"][^'"]+['"]\s*;?/g, '/* re-export */');
     new vm.Script(stripped, { filename: f });
-  } catch(e) {
+  } catch (e) {
     console.error(`FAIL ${f} — SyntaxError: ${e.message.split('\n')[0]}`);
     issues++;
   }
@@ -69,8 +90,8 @@ for (const f of FILES) {
   // ── Check 3: JSON.stringify inside onclick="" (breaks HTML attribute) ───
   const badOnclick = [...src.matchAll(/onclick="[^"]*JSON\.stringify[^"]*"/g)];
   if (badOnclick.length) {
-    badOnclick.forEach(m =>
-      console.error(`FAIL ${f} — JSON.stringify in onclick attr: ${m[0].slice(0, 90)}`)
+    badOnclick.forEach((m) =>
+      console.error(`FAIL ${f} — JSON.stringify in onclick attr: ${m[0].slice(0, 90)}`),
     );
     issues += badOnclick.length;
   }
@@ -89,7 +110,13 @@ for (const f of FILES) {
     exports.add(m[1]);
   // Re-export { a, b } from '...'
   for (const m of src.matchAll(/^export\s*\{([^}]+)\}/gm))
-    for (const name of m[1].split(',').map(n => n.trim().split(/\s+as\s+/).pop().trim()))
+    for (const name of m[1].split(',').map((n) =>
+      n
+        .trim()
+        .split(/\s+as\s+/)
+        .pop()
+        .trim(),
+    ))
       if (name) exports.add(name);
   exportMap[f] = exports;
 }
@@ -100,9 +127,20 @@ for (const f of FILES) {
   if (!fs.existsSync(path)) continue;
   const src = fs.readFileSync(path, 'utf8');
   // Split into lines, strip comment lines, then check imports
-  const srcNoComments = src.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+  const srcNoComments = src
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('//'))
+    .join('\n');
   for (const m of srcNoComments.matchAll(/import\s*\{([^}]+)\}\s*from\s*['"]\.\/([^'"?]+)/g)) {
-    const names = m[1].split(',').map(n => n.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+    const names = m[1]
+      .split(',')
+      .map((n) =>
+        n
+          .trim()
+          .split(/\s+as\s+/)[0]
+          .trim(),
+      )
+      .filter(Boolean);
     const fromFile = m[2].replace(/\.js$/, '') + '.js';
     const available = exportMap[fromFile];
     if (!available) continue; // external module
@@ -117,16 +155,31 @@ for (const f of FILES) {
 }
 
 // ── Check 5: undeclared utils function calls ─────────────────────────────
-const UTILS_EXPORTS = new Set(['classify','_slug','getCoTags','getAv','ini',
-  'tClass','tLabel','stars','esc','relTime','authHdr','safeUrl']);
+const UTILS_EXPORTS = new Set([
+  'classify',
+  '_slug',
+  'getCoTags',
+  'getAv',
+  'ini',
+  'tClass',
+  'tLabel',
+  'stars',
+  'esc',
+  'relTime',
+  'authHdr',
+  'safeUrl',
+]);
 
 for (const cf of FILES) {
   const cpath = HUB + cf;
   if (!fs.existsSync(cpath) || cf === 'utils.js') continue;
-  const csrc = fs.readFileSync(cpath,'utf8');
-  const csnc = csrc.split('\n').filter(l=>!l.trim().startsWith('//')).join('\n');
+  const csrc = fs.readFileSync(cpath, 'utf8');
+  const csnc = csrc
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('//'))
+    .join('\n');
   const uiMatch = csnc.match(/import\s*\{([^}]+)\}\s*from\s*['"]\.\/utils\.js/);
-  const imported5 = new Set(uiMatch ? uiMatch[1].split(',').map(x=>x.trim()) : []);
+  const imported5 = new Set(uiMatch ? uiMatch[1].split(',').map((x) => x.trim()) : []);
   for (const fn of UTILS_EXPORTS) {
     if (imported5.has(fn)) continue;
     if (new RegExp('(?<![.\\w])' + fn + '\\s*[(`]').test(csnc)) {
@@ -136,18 +189,29 @@ for (const cf of FILES) {
   }
 }
 
-
 // ── Check 5b: undeclared db.js symbol usage ─────────────────────────────
 // Only checks the canonical alias names we actually use — avoids false positives
 // like `dbStatus` (DOM element id) or `dbSummary` (local variable).
-const DB_KNOWN = new Set(['dbCo','dbCompanies','dbContacts','dbRelations',
-  'dbIntel','dbEnrich','dbMerge','dbAud','dbMergeSugg']);
+const DB_KNOWN = new Set([
+  'dbCo',
+  'dbCompanies',
+  'dbContacts',
+  'dbRelations',
+  'dbIntel',
+  'dbEnrich',
+  'dbMerge',
+  'dbAud',
+  'dbMergeSugg',
+]);
 
 for (const cf of FILES) {
   const cpath = HUB + cf;
   if (!fs.existsSync(cpath) || cf === 'db.js') continue;
-  const csrc = fs.readFileSync(cpath,'utf8');
-  const csnc = csrc.split('\n').filter(l=>!l.trim().startsWith('//')).join('\n');
+  const csrc = fs.readFileSync(cpath, 'utf8');
+  const csnc = csrc
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('//'))
+    .join('\n');
   const dbImp = csnc.match(/import\s*\{([^}]+)\}\s*from\s*['"]\.\/db\.js/);
   const importedDb = new Set();
   if (dbImp) {
@@ -170,32 +234,44 @@ for (const cf of FILES) {
 const { execSync } = require('child_process');
 try {
   execSync('python3 scripts/audit_css.py', { stdio: 'inherit' });
-} catch (e) {
+} catch {
   issues++;
-}
-
-if (issues === 0) {
-  console.log(`✓ All ${FILES.length} files pass (6 checks: imports, syntax, onclick, cross-module, utils, db, version)`);
-  process.exit(0);
-} else {
-  console.error(`\n✗ ${issues} issue(s) — fix before pushing`);
-  process.exit(1);
 }
 
 // ── Check 6: version string consistency across hub files ─────────────────
 const versRe = /v=20260409(\w+)/g;
 const allVers = new Map();
-const hubFiles = ['app.js','hub.js','audiences.js','api.js','auth.js','state.js',
-  'utils.js','config.js','style.css','index.html'].map(f => HUB+f);
+const hubFiles = [
+  'app.js',
+  'hub.js',
+  'audiences.js',
+  'api.js',
+  'auth.js',
+  'state.js',
+  'utils.js',
+  'config.js',
+  'style.css',
+  'index.html',
+].map((f) => HUB + f);
 for (const fp of hubFiles) {
   if (!fs.existsSync(fp)) continue;
-  const src = fs.readFileSync(fp,'utf8');
-  const vs = [...src.matchAll(versRe)].map(m=>m[1]);
+  const src = fs.readFileSync(fp, 'utf8');
+  const vs = [...src.matchAll(versRe)].map((m) => m[1]);
   if (vs.length) allVers.set(fp.split('/').pop(), new Set(vs));
 }
 const allVerSets = [...allVers.values()];
-const allVerUnion = new Set(allVerSets.flatMap(s=>[...s]));
+const allVerUnion = new Set(allVerSets.flatMap((s) => [...s]));
 if (allVerUnion.size > 1) {
   console.error('FAIL version mismatch across hub files: ' + [...allVerUnion].join(', '));
   issues++;
+}
+
+if (issues === 0) {
+  console.log(
+    `✓ All ${FILES.length} files pass (6 checks: imports, syntax, onclick, cross-module, utils, db, version)`,
+  );
+  process.exit(0);
+} else {
+  console.error(`\n✗ ${issues} issue(s) — fix before pushing`);
+  process.exit(1);
 }

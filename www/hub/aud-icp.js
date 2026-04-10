@@ -6,11 +6,16 @@ import { esc, _slug, getCoTags, authHdr } from './utils.js?v=20260410d22';
 import { anthropicFetch } from './api.js?v=20260410d22';
 import { audiences as dbAud } from './db.js?v=20260410d22';
 import { clog } from './hub.js?v=20260410d22';
-import { sbSaveAudience, audCloseModal, renderAudiencesPanel, openAudienceModal } from './audiences.js?v=20260410d22';
+import {
+  sbSaveAudience,
+  audCloseModal,
+  renderAudiencesPanel,
+  openAudienceModal,
+} from './audiences.js?v=20260410d22';
 
 export function icpFindByIcp() {
   const all = S.companies;
-  const n = all.filter(c => c.type !== 'nogo').length;
+  const n = all.filter((c) => c.type !== 'nogo').length;
   _icpSetContent(`
 <div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
@@ -44,7 +49,10 @@ export async function icpMatch() {
 
   const promptEl = document.getElementById('icp-prompt');
   const prompt = promptEl?.value?.trim();
-  if (!prompt) { promptEl?.focus(); return; }
+  if (!prompt) {
+    promptEl?.focus();
+    return;
+  }
   _icpPrompt = prompt;
   _icpThreshold = 70;
 
@@ -58,9 +66,9 @@ export async function icpMatch() {
 
   try {
     const all = S.companies;
-    const candidates = all.filter(c => c.type !== 'nogo').slice(0, 500);
+    const candidates = all.filter((c) => c.type !== 'nogo').slice(0, 500);
 
-    const coList = candidates.map(c => ({
+    const coList = candidates.map((c) => ({
       id: c.id || _slug(c.name),
       name: c.name,
       category: c.category || '',
@@ -75,7 +83,9 @@ export async function icpMatch() {
       model: MODEL_CREATIVE,
       max_tokens: 2000,
       system: `You are a B2B sales analyst. Score each company 0-100 for fit with the given ICP. Return ONLY valid JSON array: [{"id":"...","score":85,"reason":"..."}] sorted desc. reason max 10 words. Include only scores >= 40. No markdown, no explanation.`,
-      messages: [{ role: 'user', content: `ICP: ${prompt}\n\nCompanies: ${JSON.stringify(coList)}` }],
+      messages: [
+        { role: 'user', content: `ICP: ${prompt}\n\nCompanies: ${JSON.stringify(coList)}` },
+      ],
     });
 
     const raw = data.content?.[0]?.text || '[]';
@@ -83,12 +93,16 @@ export async function icpMatch() {
     try {
       const match = raw.match(/\[[\s\S]*\]/);
       scores = JSON.parse(match ? match[0] : raw);
-    } catch { scores = []; }
+    } catch {
+      scores = [];
+    }
 
-    _icpResults = scores.map(s => {
-      const co = candidates.find(c => (c.id || _slug(c.name)) === s.id);
-      return co ? { ...s, co } : null;
-    }).filter(Boolean);
+    _icpResults = scores
+      .map((s) => {
+        const co = candidates.find((c) => (c.id || _slug(c.name)) === s.id);
+        return co ? { ...s, co } : null;
+      })
+      .filter(Boolean);
 
     _icpRenderResults();
   } catch (e) {
@@ -123,13 +137,14 @@ function _icpRenderResults() {
     return;
   }
 
-  const rows = results.map((r, i) => {
-    const sc = r.score;
-    const cls = sc >= 80 ? 'hi' : sc >= 60 ? 'mid' : 'lo';
-    const co = r.co;
-    const presel = sc >= _icpThreshold ? 'checked' : '';
-    const meta = [co.region, co.size].filter(Boolean).join(' · ');
-    return `
+  const rows = results
+    .map((r, i) => {
+      const sc = r.score;
+      const cls = sc >= 80 ? 'hi' : sc >= 60 ? 'mid' : 'lo';
+      const co = r.co;
+      const presel = sc >= _icpThreshold ? 'checked' : '';
+      const meta = [co.region, co.size].filter(Boolean).join(' · ');
+      return `
 <label class="icp-row">
   <input type="checkbox" class="icp-chk" data-idx="${i}" ${presel} onchange="window._icpUpdateSelCount()"/>
   <span class="icp-score ${cls}">${sc}</span>
@@ -138,12 +153,13 @@ function _icpRenderResults() {
   ${meta ? `<span class="icp-cat">${esc(meta)}</span>` : ''}
   <span class="icp-reason">${esc(r.reason || '')}</span>
 </label>`;
-  }).join('');
+    })
+    .join('');
 
-  const preselCount = results.filter(r => r.score >= _icpThreshold).length;
-  const threshOpts = [50, 60, 70, 80].map(v =>
-    `<option value="${v}" ${_icpThreshold === v ? 'selected' : ''}>${v}</option>`
-  ).join('');
+  const preselCount = results.filter((r) => r.score >= _icpThreshold).length;
+  const threshOpts = [50, 60, 70, 80]
+    .map((v) => `<option value="${v}" ${_icpThreshold === v ? 'selected' : ''}>${v}</option>`)
+    .join('');
 
   _icpSetContent(`
 <div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
@@ -172,11 +188,13 @@ function _icpRenderResults() {
 }
 window._icpBack = () => _icpRenderResults();
 
-window._icpSelAll = function(sel) {
-  document.querySelectorAll('.icp-chk').forEach(b => { b.checked = sel; });
+window._icpSelAll = function (sel) {
+  document.querySelectorAll('.icp-chk').forEach((b) => {
+    b.checked = sel;
+  });
   _icpUpdateSelCount();
 };
-window._icpSetThreshold = function(val) {
+window._icpSetThreshold = function (val) {
   _icpThreshold = parseInt(val) || 70;
   document.querySelectorAll('.icp-chk').forEach((b, i) => {
     b.checked = _icpResults[i] && _icpResults[i].score >= _icpThreshold;
@@ -188,8 +206,12 @@ window._icpSetThreshold = function(val) {
 export async function icpSaveStep() {
   const boxes = document.querySelectorAll('.icp-chk');
   const selected = [];
-  boxes.forEach((b, i) => { if (b.checked && _icpResults[i]) selected.push(_icpResults[i]); });
-  if (!selected.length) { return; }
+  boxes.forEach((b, i) => {
+    if (b.checked && _icpResults[i]) selected.push(_icpResults[i]);
+  });
+  if (!selected.length) {
+    return;
+  }
 
   _icpSetContent(`
 <div class="aud-modal-overlay">
@@ -199,16 +221,29 @@ export async function icpSaveStep() {
 </div>
 </div>`);
 
-  let name = '', hook = '';
+  let name = '',
+    hook = '';
   try {
     const [tRes, hRes] = await Promise.all([
       anthropicFetch({
-        model: MODEL_CREATIVE, max_tokens: 20,
-        messages: [{ role: 'user', content: `Generate a short 3-5 word audience name for this ICP: "${_icpPrompt}". Only the name, no punctuation. Examples: EU CTV DSPs, Cookieless Mid-Market, DACH Agency Groups` }],
+        model: MODEL_CREATIVE,
+        max_tokens: 20,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a short 3-5 word audience name for this ICP: "${_icpPrompt}". Only the name, no punctuation. Examples: EU CTV DSPs, Cookieless Mid-Market, DACH Agency Groups`,
+          },
+        ],
       }),
       anthropicFetch({
-        model: MODEL_CREATIVE, max_tokens: 100,
-        messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${_icpPrompt}". Be specific, no fluff.` }],
+        model: MODEL_CREATIVE,
+        max_tokens: 100,
+        messages: [
+          {
+            role: 'user',
+            content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${_icpPrompt}". Be specific, no fluff.`,
+          },
+        ],
       }),
     ]);
     name = tRes.content?.[0]?.text?.trim() || '';
@@ -217,7 +252,7 @@ export async function icpSaveStep() {
     clog('ai', `ICP title/hook gen error: ${esc(e.message)}`);
   }
 
-  const ids = selected.map(r => r.co.id || _slug(r.co.name));
+  const ids = selected.map((r) => r.co.id || _slug(r.co.name));
   _icpSetContent(`
 <div class="aud-modal-overlay" onmousedown="event.target===this&&audCloseModal()">
 <div class="aud-modal-box icp-modal">
@@ -251,12 +286,16 @@ export async function icpSaveAudience(ids) {
   const name = document.getElementById('icp-save-name')?.value?.trim();
   const hook = document.getElementById('icp-save-hook')?.value?.trim() || '';
   const errEl = document.getElementById('icp-save-err');
-  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (!name) {
+    if (errEl) errEl.textContent = 'Name required';
+    return;
+  }
   if (errEl) errEl.textContent = '';
 
   const id = `aud-${Date.now()}`;
   const payload = {
-    id, name,
+    id,
+    name,
     company_ids: ids,
     filters: { icp_prompt: _icpPrompt, threshold: _icpThreshold },
     icp_prompt: _icpPrompt,
@@ -283,7 +322,7 @@ export async function icpSaveAudience(ids) {
 
 /* ── ICP audience edit modal ─────────────────────────────── */
 export function icpEditModal(id) {
-  const aud = S.audiences.find(a => a.id === id);
+  const aud = S.audiences.find((a) => a.id === id);
   if (!aud) return;
   const modal = document.getElementById('audience-modal');
   if (!modal) return;
@@ -321,20 +360,28 @@ export function icpEditModal(id) {
 }
 
 export async function icpRegenHook(id) {
-  const aud = S.audiences.find(a => a.id === id);
+  const aud = S.audiences.find((a) => a.id === id);
   const prompt = aud?.filters?.icp_prompt || aud?.icp_prompt || aud?.name || '';
   const statusEl = document.getElementById('icp-regen-status');
   if (statusEl) statusEl.textContent = '⟳ generating…';
   try {
     const res = await anthropicFetch({
-      model: MODEL_CREATIVE, max_tokens: 100,
-      messages: [{ role: 'user', content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${prompt}". Be specific, no fluff.` }],
+      model: MODEL_CREATIVE,
+      max_tokens: 100,
+      messages: [
+        {
+          role: 'user',
+          content: `Write a 2-sentence outreach hook for onAudience EU first-party data partnerships targeting: "${prompt}". Be specific, no fluff.`,
+        },
+      ],
     });
     const hook = res.content?.[0]?.text?.trim() || '';
     const el = document.getElementById('icp-edit-hook');
     if (el) el.value = hook;
     if (statusEl) statusEl.textContent = '✓';
-    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+    setTimeout(() => {
+      if (statusEl) statusEl.textContent = '';
+    }, 2000);
   } catch (e) {
     if (statusEl) statusEl.textContent = 'Error';
   }
@@ -344,12 +391,18 @@ export async function icpPatchAudience(id) {
   const name = document.getElementById('icp-edit-name')?.value?.trim();
   const hook = document.getElementById('icp-edit-hook')?.value?.trim() || '';
   const errEl = document.getElementById('icp-edit-err');
-  if (!name) { if (errEl) errEl.textContent = 'Name required'; return; }
+  if (!name) {
+    if (errEl) errEl.textContent = 'Name required';
+    return;
+  }
   if (errEl) errEl.textContent = '';
   try {
     await dbAud.patch(id, { name, outreach_hook: hook || null });
-    const aud = S.audiences.find(a => a.id === id);
-    if (aud) { aud.name = name; aud.outreach_hook = hook || null; }
+    const aud = S.audiences.find((a) => a.id === id);
+    if (aud) {
+      aud.name = name;
+      aud.outreach_hook = hook || null;
+    }
     audCloseModal();
     await renderAudiencesPanel();
     if (S.activeAudience?.id === id) renderAudienceDetail(id);

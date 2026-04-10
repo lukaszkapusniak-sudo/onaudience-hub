@@ -5,11 +5,10 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
   // Robust boot check — wait for companies to load (avoids nav-status text race)
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    undefined,
-    { timeout: 45000, polling: 500 }
-  );
+  await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+    timeout: 45000,
+    polling: 500,
+  });
   // Open composer
   await page.locator('button[onclick*=openComposer]').first().click();
   await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 8000 });
@@ -34,7 +33,7 @@ test('persona grid has at least 8 personas', async ({ page }) => {
 
 test('clicking persona changes active state', async ({ page }) => {
   const tiles = page.locator('.mc-right .mc-ptile');
-  if (await tiles.count() > 1) {
+  if ((await tiles.count()) > 1) {
     await tiles.nth(1).click();
     await page.waitForTimeout(300);
     await expect(tiles.nth(1)).toHaveClass(/active/);
@@ -47,25 +46,23 @@ test('meeseeks close button works', async ({ page }) => {
 });
 
 test.describe('Meeseeks drawer — full width layout', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
     await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
     await expect(page.locator('nav.nav')).toBeVisible({ timeout: 10000 });
     // Robust boot check — wait for companies to load (avoids nav-status text race)
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    undefined,
-    { timeout: 45000, polling: 500 }
-  );
+    await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+      timeout: 45000,
+      polling: 500,
+    });
     await page.locator('button[onclick*=openComposer]').first().click();
     await expect(page.locator('#mcDrawer')).toHaveClass(/open/, { timeout: 8000 });
     await expect(page.locator('.mc-right .mc-ptile').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('drawer fills at least 70% of viewport width when open', async ({ page }) => {
-    const drawerWidth = await page.evaluate(() =>
-      document.getElementById('mcDrawer')?.getBoundingClientRect().width || 0
+    const drawerWidth = await page.evaluate(
+      () => document.getElementById('mcDrawer')?.getBoundingClientRect().width || 0,
     );
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     expect(drawerWidth).toBeGreaterThan(viewportWidth * 0.7);
@@ -82,8 +79,8 @@ test.describe('Meeseeks drawer — full width layout', () => {
   });
 
   test('mc-left panel has adequate width', async ({ page }) => {
-    const leftWidth = await page.evaluate(() =>
-      document.querySelector('.mc-left')?.getBoundingClientRect().width || 0
+    const leftWidth = await page.evaluate(
+      () => document.querySelector('.mc-left')?.getBoundingClientRect().width || 0,
     );
     expect(leftWidth).toBeGreaterThanOrEqual(290);
   });

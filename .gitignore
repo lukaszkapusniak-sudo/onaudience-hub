@@ -6,6 +6,12 @@ www/files*/
 www/*.zip
 www/hub/*.zip
 
+# Turborepo
+.turbo/
+
+# Vite
+frontend/dist/
+
 # Test artifacts
 playwright-report/
 test-results/

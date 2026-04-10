@@ -1,410 +1,609 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-<meta charset="UTF-8"/>
-<title>onAudience Hub — Test Suite</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Mono',monospace;background:#0C0C0A;color:#F0EFE8;padding:24px;font-size:12px}
-h1{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#1FA882;margin-bottom:4px}
-.sub{font-size:9px;color:#555550;margin-bottom:24px;letter-spacing:.04em}
-.suite{margin-bottom:24px}
-.suite-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8A8A82;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;margin-bottom:10px}
-.test{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-.test:last-child{border-bottom:none}
-.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:2px}
-.dot.pass{background:#1FA882}
-.dot.fail{background:#F87171}
-.dot.skip{background:#555550}
-.dot.run{background:#FBBF24;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.test-name{flex:1;color:#F0EFE8}
-.test-detail{font-size:9px;color:#555550;margin-top:2px}
-.test-err{font-size:9px;color:#F87171;margin-top:2px}
-.summary{margin-top:24px;padding:12px 16px;background:#141412;border:1px solid rgba(255,255,255,0.08);border-radius:2px;display:flex;gap:24px;align-items:center}
-.sum-num{font-size:20px;font-weight:600}
-.sum-pass{color:#1FA882}.sum-fail{color:#F87171}.sum-skip{color:#555550}
-.sum-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#555550}
-.run-btn{margin-left:auto;height:30px;padding:0 16px;background:#1FA882;border:none;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#fff;cursor:pointer}
-.run-btn:hover{background:#178066}
-.run-btn:disabled{background:#2E2E2B;color:#555550;cursor:default}
-.log{margin-top:16px;padding:10px;background:#141412;border:1px solid rgba(255,255,255,0.08);border-radius:2px;max-height:200px;overflow-y:auto;font-size:9px;color:#555550;white-space:pre-wrap}
-</style>
-</head>
-<body>
-<h1>onAudience Hub — Test Suite</h1>
-<div class="sub">TAB ISOLATION · GMAIL INTEGRATION · PANEL STATE</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>onAudience Hub — Test Suite</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'IBM Plex Mono', monospace;
+        background: #0c0c0a;
+        color: #f0efe8;
+        padding: 24px;
+        font-size: 12px;
+      }
+      h1 {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #1fa882;
+        margin-bottom: 4px;
+      }
+      .sub {
+        font-size: 9px;
+        color: #555550;
+        margin-bottom: 24px;
+        letter-spacing: 0.04em;
+      }
+      .suite {
+        margin-bottom: 24px;
+      }
+      .suite-title {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #8a8a82;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 6px;
+        margin-bottom: 10px;
+      }
+      .test {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .test:last-child {
+        border-bottom: none;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .dot.pass {
+        background: #1fa882;
+      }
+      .dot.fail {
+        background: #f87171;
+      }
+      .dot.skip {
+        background: #555550;
+      }
+      .dot.run {
+        background: #fbbf24;
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .test-name {
+        flex: 1;
+        color: #f0efe8;
+      }
+      .test-detail {
+        font-size: 9px;
+        color: #555550;
+        margin-top: 2px;
+      }
+      .test-err {
+        font-size: 9px;
+        color: #f87171;
+        margin-top: 2px;
+      }
+      .summary {
+        margin-top: 24px;
+        padding: 12px 16px;
+        background: #141412;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        display: flex;
+        gap: 24px;
+        align-items: center;
+      }
+      .sum-num {
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .sum-pass {
+        color: #1fa882;
+      }
+      .sum-fail {
+        color: #f87171;
+      }
+      .sum-skip {
+        color: #555550;
+      }
+      .sum-lbl {
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #555550;
+      }
+      .run-btn {
+        margin-left: auto;
+        height: 30px;
+        padding: 0 16px;
+        background: #1fa882;
+        border: none;
+        border-radius: 2px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #fff;
+        cursor: pointer;
+      }
+      .run-btn:hover {
+        background: #178066;
+      }
+      .run-btn:disabled {
+        background: #2e2e2b;
+        color: #555550;
+        cursor: default;
+      }
+      .log {
+        margin-top: 16px;
+        padding: 10px;
+        background: #141412;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 9px;
+        color: #555550;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>onAudience Hub — Test Suite</h1>
+    <div class="sub">TAB ISOLATION · GMAIL INTEGRATION · PANEL STATE</div>
 
-<div id="app"></div>
-<div class="summary" id="summary">
-  <div><div class="sum-num sum-pass" id="s-pass">—</div><div class="sum-lbl">Passed</div></div>
-  <div><div class="sum-num sum-fail" id="s-fail">—</div><div class="sum-lbl">Failed</div></div>
-  <div><div class="sum-num sum-skip" id="s-skip">—</div><div class="sum-lbl">Skipped</div></div>
-  <button class="run-btn" id="runBtn" onclick="runAll()">Run All Tests</button>
-</div>
-<div class="log" id="log"></div>
+    <div id="app"></div>
+    <div class="summary" id="summary">
+      <div>
+        <div class="sum-num sum-pass" id="s-pass">—</div>
+        <div class="sum-lbl">Passed</div>
+      </div>
+      <div>
+        <div class="sum-num sum-fail" id="s-fail">—</div>
+        <div class="sum-lbl">Failed</div>
+      </div>
+      <div>
+        <div class="sum-num sum-skip" id="s-skip">—</div>
+        <div class="sum-lbl">Skipped</div>
+      </div>
+      <button class="run-btn" id="runBtn" onclick="runAll()">Run All Tests</button>
+    </div>
+    <div class="log" id="log"></div>
 
-<script type="module">
-// ── Minimal stubs so we can test logic without the full hub ──
-const _log = [];
-function log(msg) { _log.push(msg); document.getElementById('log').textContent = _log.join('\n'); }
+    <script type="module">
+      // ── Minimal stubs so we can test logic without the full hub ──
+      const _log = [];
+      function log(msg) {
+        _log.push(msg);
+        document.getElementById('log').textContent = _log.join('\n');
+      }
 
-// localStorage mock (isolated)
-const _ls = {};
-const ls = {
-  getItem: k => _ls[k] ?? null,
-  setItem: (k,v) => { _ls[k] = String(v); },
-  removeItem: k => { delete _ls[k]; }
-};
+      // localStorage mock (isolated)
+      const _ls = {};
+      const ls = {
+        getItem: (k) => _ls[k] ?? null,
+        setItem: (k, v) => {
+          _ls[k] = String(v);
+        },
+        removeItem: (k) => {
+          delete _ls[k];
+        },
+      };
 
-// ── Test runner ──
-const suites = [];
-let current = null;
+      // ── Test runner ──
+      const suites = [];
+      let current = null;
 
-function suite(name, fn) {
-  const s = { name, tests: [] };
-  suites.push(s);
-  current = s;
-  fn();
-  current = null;
-}
+      function suite(name, fn) {
+        const s = { name, tests: [] };
+        suites.push(s);
+        current = s;
+        fn();
+        current = null;
+      }
 
-function test(name, fn) {
-  current.tests.push({ name, fn, status: 'pending', detail: '', err: '' });
-}
+      function test(name, fn) {
+        current.tests.push({ name, fn, status: 'pending', detail: '', err: '' });
+      }
 
-function assert(cond, msg) {
-  if (!cond) throw new Error(msg || 'Assertion failed');
-}
+      function assert(cond, msg) {
+        if (!cond) throw new Error(msg || 'Assertion failed');
+      }
 
-function assertEquals(a, b, msg) {
-  if (a !== b) throw new Error((msg || 'Expected') + `: ${JSON.stringify(a)} === ${JSON.stringify(b)}`);
-}
+      function assertEquals(a, b, msg) {
+        if (a !== b)
+          throw new Error((msg || 'Expected') + `: ${JSON.stringify(a)} === ${JSON.stringify(b)}`);
+      }
 
-// ── SUITE 1: Gmail token storage ──
-suite('Gmail Token Storage', () => {
+      // ── SUITE 1: Gmail token storage ──
+      suite('Gmail Token Storage', () => {
+        test('saveToken stores token and expiry', () => {
+          const now = Date.now();
+          const expiry = now + (3600 - 60) * 1000;
+          ls.setItem('oaGmailToken', 'tok123');
+          ls.setItem('oaGmailExpiry', String(expiry));
+          assert(ls.getItem('oaGmailToken') === 'tok123', 'token stored');
+          assert(parseInt(ls.getItem('oaGmailExpiry')) > now, 'expiry in future');
+        });
 
-  test('saveToken stores token and expiry', () => {
-    const now = Date.now();
-    const expiry = now + (3600 - 60) * 1000;
-    ls.setItem('oaGmailToken', 'tok123');
-    ls.setItem('oaGmailExpiry', String(expiry));
-    assert(ls.getItem('oaGmailToken') === 'tok123', 'token stored');
-    assert(parseInt(ls.getItem('oaGmailExpiry')) > now, 'expiry in future');
-  });
+        test('getToken returns null when expired', () => {
+          ls.setItem('oaGmailToken', 'old_tok');
+          ls.setItem('oaGmailExpiry', String(Date.now() - 1000)); // expired
+          const t = ls.getItem('oaGmailToken');
+          const e = parseInt(ls.getItem('oaGmailExpiry') || '0');
+          const result = t && Date.now() < e ? t : null;
+          assertEquals(result, null, 'expired token should return null');
+        });
 
-  test('getToken returns null when expired', () => {
-    ls.setItem('oaGmailToken', 'old_tok');
-    ls.setItem('oaGmailExpiry', String(Date.now() - 1000)); // expired
-    const t = ls.getItem('oaGmailToken');
-    const e = parseInt(ls.getItem('oaGmailExpiry') || '0');
-    const result = (t && Date.now() < e) ? t : null;
-    assertEquals(result, null, 'expired token should return null');
-  });
+        test('getToken returns token when valid', () => {
+          ls.setItem('oaGmailToken', 'valid_tok');
+          ls.setItem('oaGmailExpiry', String(Date.now() + 3600000));
+          const t = ls.getItem('oaGmailToken');
+          const e = parseInt(ls.getItem('oaGmailExpiry') || '0');
+          const result = t && Date.now() < e ? t : null;
+          assertEquals(result, 'valid_tok', 'valid token should be returned');
+        });
 
-  test('getToken returns token when valid', () => {
-    ls.setItem('oaGmailToken', 'valid_tok');
-    ls.setItem('oaGmailExpiry', String(Date.now() + 3600000));
-    const t = ls.getItem('oaGmailToken');
-    const e = parseInt(ls.getItem('oaGmailExpiry') || '0');
-    const result = (t && Date.now() < e) ? t : null;
-    assertEquals(result, 'valid_tok', 'valid token should be returned');
-  });
+        test('clearToken removes all gmail keys', () => {
+          ls.setItem('oaGmailToken', 'x');
+          ls.setItem('oaGmailExpiry', '999');
+          ls.setItem('oaGmailEmail', 'test@test.com');
+          ls.setItem('oaGmailName', 'Test User');
+          ['oaGmailToken', 'oaGmailExpiry', 'oaGmailEmail', 'oaGmailName'].forEach((k) =>
+            ls.removeItem(k),
+          );
+          assert(!ls.getItem('oaGmailToken'), 'token cleared');
+          assert(!ls.getItem('oaGmailEmail'), 'email cleared');
+        });
 
-  test('clearToken removes all gmail keys', () => {
-    ls.setItem('oaGmailToken', 'x');
-    ls.setItem('oaGmailExpiry', '999');
-    ls.setItem('oaGmailEmail', 'test@test.com');
-    ls.setItem('oaGmailName', 'Test User');
-    ['oaGmailToken','oaGmailExpiry','oaGmailEmail','oaGmailName'].forEach(k => ls.removeItem(k));
-    assert(!ls.getItem('oaGmailToken'), 'token cleared');
-    assert(!ls.getItem('oaGmailEmail'), 'email cleared');
-  });
+        test('gmailGetStoredEmail returns empty string when not set', () => {
+          ls.removeItem('oaGmailEmail');
+          const email = ls.getItem('oaGmailEmail') || '';
+          assertEquals(email, '', 'should return empty string');
+        });
+      });
 
-  test('gmailGetStoredEmail returns empty string when not set', () => {
-    ls.removeItem('oaGmailEmail');
-    const email = ls.getItem('oaGmailEmail') || '';
-    assertEquals(email, '', 'should return empty string');
-  });
-});
+      // ── SUITE 2: Gmail search query builder ──
+      suite('Gmail Search Query Builder', () => {
+        function buildQuery(companyName, domain) {
+          let dc = '';
+          if (domain)
+            dc = domain
+              .replace(/^https?:\/\//i, '')
+              .replace(/\/.*$/, '')
+              .trim();
+          const parts = [];
+          if (dc) parts.push('(from:' + dc + ' OR to:' + dc + ')');
+          if (companyName) {
+            const q = companyName.replace(/['"]/g, '').trim();
+            if (!dc || q.toLowerCase() !== dc.split('.')[0].toLowerCase())
+              parts.push('"' + q + '"');
+          }
+          return parts.join(' OR ');
+        }
 
-// ── SUITE 2: Gmail search query builder ──
-suite('Gmail Search Query Builder', () => {
+        test('builds domain query when website provided', () => {
+          const q = buildQuery('Criteo', 'https://criteo.com');
+          assert(q.includes('from:criteo.com'), 'from domain included');
+          assert(q.includes('to:criteo.com'), 'to domain included');
+        });
 
-  function buildQuery(companyName, domain) {
-    let dc = '';
-    if (domain) dc = domain.replace(/^https?:\/\//i,'').replace(/\/.*$/,'').trim();
-    const parts = [];
-    if (dc) parts.push('(from:' + dc + ' OR to:' + dc + ')');
-    if (companyName) {
-      const q = companyName.replace(/['"]/g,'').trim();
-      if (!dc || q.toLowerCase() !== dc.split('.')[0].toLowerCase()) parts.push('"' + q + '"');
-    }
-    return parts.join(' OR ');
-  }
+        test('builds name query when no website', () => {
+          const q = buildQuery('Eyeota', '');
+          assertEquals(q, '"Eyeota"', 'name query only');
+        });
 
-  test('builds domain query when website provided', () => {
-    const q = buildQuery('Criteo', 'https://criteo.com');
-    assert(q.includes('from:criteo.com'), 'from domain included');
-    assert(q.includes('to:criteo.com'), 'to domain included');
-  });
+        test('strips https from domain', () => {
+          const q = buildQuery('Test Co', 'https://www.testco.com/about');
+          assert(q.includes('from:www.testco.com'), 'https stripped');
+          assert(!q.includes('https'), 'no https in query');
+        });
 
-  test('builds name query when no website', () => {
-    const q = buildQuery('Eyeota', '');
-    assertEquals(q, '"Eyeota"', 'name query only');
-  });
+        test('skips name if same as domain root', () => {
+          const q = buildQuery('criteo', 'criteo.com');
+          assert(!q.includes('"criteo"'), 'duplicate name not added');
+          assert(q.includes('from:criteo.com'), 'domain still included');
+        });
 
-  test('strips https from domain', () => {
-    const q = buildQuery('Test Co', 'https://www.testco.com/about');
-    assert(q.includes('from:www.testco.com'), 'https stripped');
-    assert(!q.includes('https'), 'no https in query');
-  });
+        test('returns empty string when no inputs', () => {
+          const q = buildQuery('', '');
+          assertEquals(q, '', 'empty query for empty inputs');
+        });
 
-  test('skips name if same as domain root', () => {
-    const q = buildQuery('criteo', 'criteo.com');
-    assert(!q.includes('"criteo"'), 'duplicate name not added');
-    assert(q.includes('from:criteo.com'), 'domain still included');
-  });
+        test('strips quotes from company name', () => {
+          const q = buildQuery("O'Reilly Media", '');
+          assert(!q.includes("'"), 'single quotes stripped');
+        });
+      });
 
-  test('returns empty string when no inputs', () => {
-    const q = buildQuery('', '');
-    assertEquals(q, '', 'empty query for empty inputs');
-  });
+      // ── SUITE 3: Tab isolation panel logic ──
+      suite('Tab Isolation — Panel Visibility', () => {
+        // Create minimal DOM for testing
+        function makeDom() {
+          const ids = [
+            'coPanel',
+            'emptyState',
+            'tcf-center',
+            'aud-detail-wrap',
+            'audiencesPanel',
+            'listScroll',
+            'leftSearch',
+            'listMeta',
+            'sortBar',
+            'tcf-sel-bar',
+            'tabAud',
+            'tab-tcf',
+          ];
+          const els = {};
+          ids.forEach((id) => {
+            const el = document.createElement('div');
+            el.id = id;
+            el.style.display = 'block';
+            el.className = id === 'tabAud' || id === 'tab-tcf' ? 'left-tab' : '';
+            document.body.appendChild(el);
+            els[id] = el;
+          });
+          return els;
+        }
 
-  test('strips quotes from company name', () => {
-    const q = buildQuery("O'Reilly Media", '');
-    assert(!q.includes("'"), 'single quotes stripped');
-  });
-});
+        function cleanup(els) {
+          Object.values(els).forEach((el) => el.remove());
+        }
 
-// ── SUITE 3: Tab isolation panel logic ──
-suite('Tab Isolation — Panel Visibility', () => {
+        // Simulate switchTab logic
+        function switchTabLogic(t, state) {
+          const get = (id) => document.getElementById(id);
+          const coPanel = get('coPanel');
+          const emptyState = get('emptyState');
+          const tcfCenter = get('tcf-center');
+          const audDetail = get('aud-detail-wrap');
+          const audPanel = get('audiencesPanel');
+          const listScroll = get('listScroll');
+          const leftSearch = get('leftSearch');
+          const listMeta = get('listMeta');
+          const sortBar = get('sortBar');
+          const selBar = get('tcf-sel-bar');
+          const tabAud = get('tabAud');
+          const tcfTab = get('tab-tcf');
 
-  // Create minimal DOM for testing
-  function makeDom() {
-    const ids = ['coPanel','emptyState','tcf-center','aud-detail-wrap','audiencesPanel','listScroll','leftSearch','listMeta','sortBar','tcf-sel-bar','tabAud','tab-tcf'];
-    const els = {};
-    ids.forEach(id => {
-      const el = document.createElement('div');
-      el.id = id;
-      el.style.display = 'block';
-      el.className = id === 'tabAud' || id === 'tab-tcf' ? 'left-tab' : '';
-      document.body.appendChild(el);
-      els[id] = el;
-    });
-    return els;
-  }
+          // Reset all
+          [coPanel, emptyState, tcfCenter, audDetail, audPanel].forEach((el) => {
+            if (el) el.style.display = 'none';
+          });
+          if (selBar) selBar.style.display = 'none';
+          if (tabAud) tabAud.classList.remove('active');
+          if (tcfTab) tcfTab.className = 'left-tab';
 
-  function cleanup(els) {
-    Object.values(els).forEach(el => el.remove());
-  }
+          if (t === 'companies') {
+            [listScroll, leftSearch, listMeta, sortBar].forEach((el) => {
+              if (el) el.style.display = '';
+            });
+            if (state.currentCompany && coPanel) coPanel.style.display = 'block';
+            else if (emptyState) emptyState.style.display = 'flex';
+          } else if (t === 'contacts') {
+            [listScroll, leftSearch, listMeta].forEach((el) => {
+              if (el) el.style.display = '';
+            });
+            if (sortBar) sortBar.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'flex';
+          } else if (t === 'audiences') {
+            [listScroll, leftSearch, listMeta, sortBar].forEach((el) => {
+              if (el) el.style.display = 'none';
+            });
+            if (audPanel) audPanel.style.display = 'flex';
+            if (tabAud) tabAud.classList.add('active');
+            if (state.activeAudience && audDetail) audDetail.style.display = '';
+          } else if (t === 'tcf') {
+            [listScroll, leftSearch, listMeta].forEach((el) => {
+              if (el) el.style.display = '';
+            });
+            if (sortBar) sortBar.style.display = 'none';
+            if (selBar) selBar.style.display = 'flex';
+            if (tcfCenter) tcfCenter.style.display = 'block';
+            if (tcfTab) tcfTab.className = 'left-tab active';
+          }
+        }
 
-  // Simulate switchTab logic
-  function switchTabLogic(t, state) {
-    const get = id => document.getElementById(id);
-    const coPanel    = get('coPanel');
-    const emptyState = get('emptyState');
-    const tcfCenter  = get('tcf-center');
-    const audDetail  = get('aud-detail-wrap');
-    const audPanel   = get('audiencesPanel');
-    const listScroll = get('listScroll');
-    const leftSearch = get('leftSearch');
-    const listMeta   = get('listMeta');
-    const sortBar    = get('sortBar');
-    const selBar     = get('tcf-sel-bar');
-    const tabAud     = get('tabAud');
-    const tcfTab     = get('tab-tcf');
+        test('companies tab: shows coPanel when company selected', () => {
+          const els = makeDom();
+          switchTabLogic('companies', { currentCompany: { name: 'Test' } });
+          assertEquals(els['coPanel'].style.display, 'block', 'coPanel visible');
+          assertEquals(els['emptyState'].style.display, 'none', 'emptyState hidden');
+          assertEquals(els['tcf-center'].style.display, 'none', 'tcf hidden');
+          assertEquals(els['audiencesPanel'].style.display, 'none', 'audiences hidden');
+          cleanup(els);
+        });
 
-    // Reset all
-    [coPanel,emptyState,tcfCenter,audDetail,audPanel].forEach(el => { if(el) el.style.display='none'; });
-    if(selBar) selBar.style.display='none';
-    if(tabAud) tabAud.classList.remove('active');
-    if(tcfTab) tcfTab.className='left-tab';
+        test('companies tab: shows emptyState when no company', () => {
+          const els = makeDom();
+          switchTabLogic('companies', { currentCompany: null });
+          assertEquals(els['emptyState'].style.display, 'flex', 'emptyState shown');
+          assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
+          cleanup(els);
+        });
 
-    if (t === 'companies') {
-      [listScroll,leftSearch,listMeta,sortBar].forEach(el=>{if(el)el.style.display='';});
-      if (state.currentCompany && coPanel) coPanel.style.display='block';
-      else if (emptyState) emptyState.style.display='flex';
-    } else if (t === 'contacts') {
-      [listScroll,leftSearch,listMeta].forEach(el=>{if(el)el.style.display='';});
-      if(sortBar) sortBar.style.display='none';
-      if(emptyState) emptyState.style.display='flex';
-    } else if (t === 'audiences') {
-      [listScroll,leftSearch,listMeta,sortBar].forEach(el=>{if(el)el.style.display='none';});
-      if(audPanel) audPanel.style.display='flex';
-      if(tabAud) tabAud.classList.add('active');
-      if(state.activeAudience && audDetail) audDetail.style.display='';
-    } else if (t === 'tcf') {
-      [listScroll,leftSearch,listMeta].forEach(el=>{if(el)el.style.display='';});
-      if(sortBar) sortBar.style.display='none';
-      if(selBar) selBar.style.display='flex';
-      if(tcfCenter) tcfCenter.style.display='block';
-      if(tcfTab) tcfTab.className='left-tab active';
-    }
-  }
+        test('contacts tab: shows emptyState, hides coPanel', () => {
+          const els = makeDom();
+          els['coPanel'].style.display = 'block'; // simulate previously open
+          switchTabLogic('contacts', {});
+          assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden on contacts');
+          assertEquals(els['emptyState'].style.display, 'flex', 'emptyState shown on contacts');
+          assertEquals(els['sortBar'].style.display, 'none', 'sortBar hidden on contacts');
+          cleanup(els);
+        });
 
-  test('companies tab: shows coPanel when company selected', () => {
-    const els = makeDom();
-    switchTabLogic('companies', { currentCompany: { name: 'Test' } });
-    assertEquals(els['coPanel'].style.display, 'block', 'coPanel visible');
-    assertEquals(els['emptyState'].style.display, 'none', 'emptyState hidden');
-    assertEquals(els['tcf-center'].style.display, 'none', 'tcf hidden');
-    assertEquals(els['audiencesPanel'].style.display, 'none', 'audiences hidden');
-    cleanup(els);
-  });
+        test('tcf tab: shows only tcfCenter, hides coPanel', () => {
+          const els = makeDom();
+          els['coPanel'].style.display = 'block';
+          switchTabLogic('tcf', {});
+          assertEquals(els['tcf-center'].style.display, 'block', 'tcfCenter shown');
+          assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
+          assertEquals(els['audiencesPanel'].style.display, 'none', 'audPanel hidden');
+          assertEquals(els['tcf-sel-bar'].style.display, 'flex', 'selBar shown');
+          assertEquals(els['tab-tcf'].className, 'left-tab active', 'tcf tab active');
+          cleanup(els);
+        });
 
-  test('companies tab: shows emptyState when no company', () => {
-    const els = makeDom();
-    switchTabLogic('companies', { currentCompany: null });
-    assertEquals(els['emptyState'].style.display, 'flex', 'emptyState shown');
-    assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
-    cleanup(els);
-  });
+        test('audiences tab: hides list, shows audPanel', () => {
+          const els = makeDom();
+          switchTabLogic('audiences', { activeAudience: null });
+          assertEquals(els['listScroll'].style.display, 'none', 'listScroll hidden');
+          assertEquals(els['audiencesPanel'].style.display, 'flex', 'audPanel shown');
+          assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
+          assertEquals(
+            els['aud-detail-wrap'].style.display,
+            'none',
+            'audDetail hidden when no selection',
+          );
+          cleanup(els);
+        });
 
-  test('contacts tab: shows emptyState, hides coPanel', () => {
-    const els = makeDom();
-    els['coPanel'].style.display = 'block'; // simulate previously open
-    switchTabLogic('contacts', {});
-    assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden on contacts');
-    assertEquals(els['emptyState'].style.display, 'flex', 'emptyState shown on contacts');
-    assertEquals(els['sortBar'].style.display, 'none', 'sortBar hidden on contacts');
-    cleanup(els);
-  });
+        test('switching tabs resets all panels first', () => {
+          const els = makeDom();
+          // Open everything first
+          els['coPanel'].style.display = 'block';
+          els['tcf-center'].style.display = 'block';
+          els['audiencesPanel'].style.display = 'flex';
+          // Switch to contacts — all should be reset then only contacts shown
+          switchTabLogic('contacts', {});
+          assertEquals(els['tcf-center'].style.display, 'none', 'tcf reset');
+          assertEquals(els['audiencesPanel'].style.display, 'none', 'audiences reset');
+          cleanup(els);
+        });
+      });
 
-  test('tcf tab: shows only tcfCenter, hides coPanel', () => {
-    const els = makeDom();
-    els['coPanel'].style.display = 'block';
-    switchTabLogic('tcf', {});
-    assertEquals(els['tcf-center'].style.display, 'block', 'tcfCenter shown');
-    assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
-    assertEquals(els['audiencesPanel'].style.display, 'none', 'audPanel hidden');
-    assertEquals(els['tcf-sel-bar'].style.display, 'flex', 'selBar shown');
-    assertEquals(els['tab-tcf'].className, 'left-tab active', 'tcf tab active');
-    cleanup(els);
-  });
+      // ── SUITE 4: Gmail section HTML ──
+      suite('Gmail Section HTML', () => {
+        const CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
 
-  test('audiences tab: hides list, shows audPanel', () => {
-    const els = makeDom();
-    switchTabLogic('audiences', { activeAudience: null });
-    assertEquals(els['listScroll'].style.display, 'none', 'listScroll hidden');
-    assertEquals(els['audiencesPanel'].style.display, 'flex', 'audPanel shown');
-    assertEquals(els['coPanel'].style.display, 'none', 'coPanel hidden');
-    assertEquals(els['aud-detail-wrap'].style.display, 'none', 'audDetail hidden when no selection');
-    cleanup(els);
-  });
+        function sectionHTML(slug, companyName, connected, email) {
+          const isConnected = connected;
+          const storedEmail = email || '';
+          const s = slug,
+            n = companyName;
+          if (isConnected)
+            return (
+              '<div style="padding:4px 0">' +
+              '<div>CONNECTED: ' +
+              storedEmail +
+              '</div>' +
+              '<button onclick="window.gmailScanCompany(\'' +
+              s +
+              "','" +
+              n +
+              '\')">Scan</button>' +
+              '</div>'
+            );
+          return (
+            '<div><button onclick="window.gmailConnectAndScan(\'' +
+            s +
+            "','" +
+            n +
+            '\')">Connect Gmail</button></div>'
+          );
+        }
 
-  test('switching tabs resets all panels first', () => {
-    const els = makeDom();
-    // Open everything first
-    els['coPanel'].style.display = 'block';
-    els['tcf-center'].style.display = 'block';
-    els['audiencesPanel'].style.display = 'flex';
-    // Switch to contacts — all should be reset then only contacts shown
-    switchTabLogic('contacts', {});
-    assertEquals(els['tcf-center'].style.display, 'none', 'tcf reset');
-    assertEquals(els['audiencesPanel'].style.display, 'none', 'audiences reset');
-    cleanup(els);
-  });
-});
+        test('shows Connect button when not connected', () => {
+          const html = sectionHTML('criteo', 'Criteo', false, '');
+          assert(html.includes('gmailConnectAndScan'), 'connect button present');
+          assert(html.includes("'criteo'"), 'slug passed correctly');
+          assert(html.includes("'Criteo'"), 'company name passed');
+        });
 
-// ── SUITE 4: Gmail section HTML ──
-suite('Gmail Section HTML', () => {
+        test('shows Scan button when connected', () => {
+          const html = sectionHTML('criteo', 'Criteo', true, 'user@company.com');
+          assert(html.includes('gmailScanCompany'), 'scan button present');
+          assert(html.includes('user@company.com'), 'email shown');
+        });
 
-  const CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
+        test('scan button passes correct slug and name', () => {
+          const html = sectionHTML('the-trade-desk', 'The Trade Desk', true, 'x@y.com');
+          assert(html.includes("'the-trade-desk'"), 'slug correct');
+          assert(html.includes("'The Trade Desk'"), 'name correct');
+        });
+      });
 
-  function sectionHTML(slug, companyName, connected, email) {
-    const isConnected = connected;
-    const storedEmail = email || '';
-    const s = slug, n = companyName;
-    if (isConnected)
-      return '<div style="padding:4px 0">'
-        + '<div>CONNECTED: ' + storedEmail + '</div>'
-        + '<button onclick="window.gmailScanCompany(\'' + s + '\',\'' + n + '\')">Scan</button>'
-        + '</div>';
-    return '<div><button onclick="window.gmailConnectAndScan(\'' + s + '\',\'' + n + '\')">Connect Gmail</button></div>';
-  }
+      // ── SUITE 5: Contact email extraction ──
+      suite('Gmail Contact Extraction', () => {
+        function extractContact(fromHeader) {
+          const cmap = {};
+          const m = fromHeader.match(/^(.+?)\s*<(.+?)>/) || fromHeader.match(/^(.+)$/);
+          if (m) {
+            const name = (m[1] || '').trim().replace(/^["']|["']$/g, '');
+            const email = (m[2] || m[1] || '').trim().toLowerCase();
+            if (email.indexOf('@') !== -1) cmap[email] = { name, email };
+          }
+          return Object.values(cmap)[0] || null;
+        }
 
-  test('shows Connect button when not connected', () => {
-    const html = sectionHTML('criteo', 'Criteo', false, '');
-    assert(html.includes('gmailConnectAndScan'), 'connect button present');
-    assert(html.includes("'criteo'"), 'slug passed correctly');
-    assert(html.includes("'Criteo'"), 'company name passed');
-  });
+        test('parses "Name <email>" format', () => {
+          const ct = extractContact('John Smith <john@criteo.com>');
+          assertEquals(ct.name, 'John Smith', 'name extracted');
+          assertEquals(ct.email, 'john@criteo.com', 'email extracted');
+        });
 
-  test('shows Scan button when connected', () => {
-    const html = sectionHTML('criteo', 'Criteo', true, 'user@company.com');
-    assert(html.includes('gmailScanCompany'), 'scan button present');
-    assert(html.includes('user@company.com'), 'email shown');
-  });
+        test('parses bare email address', () => {
+          const ct = extractContact('john@criteo.com');
+          assertEquals(ct.email, 'john@criteo.com', 'bare email extracted');
+        });
 
-  test('scan button passes correct slug and name', () => {
-    const html = sectionHTML('the-trade-desk', 'The Trade Desk', true, 'x@y.com');
-    assert(html.includes("'the-trade-desk'"), 'slug correct');
-    assert(html.includes("'The Trade Desk'"), 'name correct');
-  });
-});
+        test('strips quotes from name', () => {
+          const ct = extractContact('"John Smith" <john@criteo.com>');
+          assertEquals(ct.name, 'John Smith', 'quotes stripped from name');
+        });
 
-// ── SUITE 5: Contact email extraction ──
-suite('Gmail Contact Extraction', () => {
+        test('lowercases email', () => {
+          const ct = extractContact('John <JOHN@Criteo.COM>');
+          assertEquals(ct.email, 'john@criteo.com', 'email lowercased');
+        });
 
-  function extractContact(fromHeader) {
-    const cmap = {};
-    const m = fromHeader.match(/^(.+?)\s*<(.+?)>/) || fromHeader.match(/^(.+)$/);
-    if (m) {
-      const name = (m[1]||'').trim().replace(/^["']|["']$/g,'');
-      const email = (m[2]||m[1]||'').trim().toLowerCase();
-      if (email.indexOf('@') !== -1) cmap[email] = { name, email };
-    }
-    return Object.values(cmap)[0] || null;
-  }
+        test('returns null for invalid email', () => {
+          const ct = extractContact('no email here at all');
+          assert(ct === null, 'null for no email');
+        });
 
-  test('parses "Name <email>" format', () => {
-    const ct = extractContact('John Smith <john@criteo.com>');
-    assertEquals(ct.name, 'John Smith', 'name extracted');
-    assertEquals(ct.email, 'john@criteo.com', 'email extracted');
-  });
+        test('handles multiple formats correctly', () => {
+          const headers = [
+            'Adrian Kowalski <adrian@eyeota.com>',
+            'support@ttd.com',
+            '"Matt Johnson" <matt@epsilon.com>',
+          ];
+          const contacts = headers.map(extractContact).filter(Boolean);
+          assertEquals(contacts.length, 3, 'all 3 contacts extracted');
+          assert(contacts[0].name === 'Adrian Kowalski', 'first name correct');
+          assert(contacts[2].name === 'Matt Johnson', 'quoted name stripped');
+        });
+      });
 
-  test('parses bare email address', () => {
-    const ct = extractContact('john@criteo.com');
-    assertEquals(ct.email, 'john@criteo.com', 'bare email extracted');
-  });
-
-  test('strips quotes from name', () => {
-    const ct = extractContact('"John Smith" <john@criteo.com>');
-    assertEquals(ct.name, 'John Smith', 'quotes stripped from name');
-  });
-
-  test('lowercases email', () => {
-    const ct = extractContact('John <JOHN@Criteo.COM>');
-    assertEquals(ct.email, 'john@criteo.com', 'email lowercased');
-  });
-
-  test('returns null for invalid email', () => {
-    const ct = extractContact('no email here at all');
-    assert(ct === null, 'null for no email');
-  });
-
-  test('handles multiple formats correctly', () => {
-    const headers = [
-      'Adrian Kowalski <adrian@eyeota.com>',
-      'support@ttd.com',
-      '"Matt Johnson" <matt@epsilon.com>',
-    ];
-    const contacts = headers.map(extractContact).filter(Boolean);
-    assertEquals(contacts.length, 3, 'all 3 contacts extracted');
-    assert(contacts[0].name === 'Adrian Kowalski', 'first name correct');
-    assert(contacts[2].name === 'Matt Johnson', 'quoted name stripped');
-  });
-});
-
-// ── Render and run ──
-function renderSuites() {
-  const app = document.getElementById('app');
-  app.innerHTML = suites.map((s, si) => `
+      // ── Render and run ──
+      function renderSuites() {
+        const app = document.getElementById('app');
+        app.innerHTML = suites
+          .map(
+            (s, si) => `
     <div class="suite">
       <div class="suite-title">${s.name}</div>
-      ${s.tests.map((t, ti) => `
+      ${s.tests
+        .map(
+          (t, ti) => `
         <div class="test" id="t-${si}-${ti}">
           <div class="dot ${t.status}" id="dot-${si}-${ti}"></div>
           <div>
@@ -413,54 +612,60 @@ function renderSuites() {
             <div class="test-err" id="err-${si}-${ti}" style="display:none"></div>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `).join('');
-}
-
-window.runAll = async function() {
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = 'Running...';
-  _log.length = 0;
-
-  let pass = 0, fail = 0, skip = 0;
-
-  for (let si = 0; si < suites.length; si++) {
-    const s = suites[si];
-    for (let ti = 0; ti < s.tests.length; ti++) {
-      const t = s.tests[ti];
-      const dot = document.getElementById(`dot-${si}-${ti}`);
-      const errEl = document.getElementById(`err-${si}-${ti}`);
-      dot.className = 'dot run';
-      await new Promise(r => setTimeout(r, 10));
-      try {
-        await t.fn();
-        dot.className = 'dot pass';
-        pass++;
-        log(`PASS  ${s.name} > ${t.name}`);
-      } catch(e) {
-        dot.className = 'dot fail';
-        errEl.textContent = e.message;
-        errEl.style.display = 'block';
-        fail++;
-        log(`FAIL  ${s.name} > ${t.name}\n      ${e.message}`);
+  `,
+          )
+          .join('');
       }
-    }
-  }
 
-  document.getElementById('s-pass').textContent = pass;
-  document.getElementById('s-fail').textContent = fail;
-  document.getElementById('s-skip').textContent = skip;
-  document.getElementById('s-pass').style.color = pass > 0 ? '#1FA882' : '#555550';
-  document.getElementById('s-fail').style.color = fail > 0 ? '#F87171' : '#555550';
+      window.runAll = async function () {
+        const btn = document.getElementById('runBtn');
+        btn.disabled = true;
+        btn.textContent = 'Running...';
+        _log.length = 0;
 
-  btn.disabled = false;
-  btn.textContent = fail === 0 ? 'All Passed' : 'Run Again';
-  btn.style.background = fail === 0 ? '#1FA882' : '#F87171';
-};
+        let pass = 0,
+          fail = 0,
+          skip = 0;
 
-renderSuites();
-</script>
-</body>
+        for (let si = 0; si < suites.length; si++) {
+          const s = suites[si];
+          for (let ti = 0; ti < s.tests.length; ti++) {
+            const t = s.tests[ti];
+            const dot = document.getElementById(`dot-${si}-${ti}`);
+            const errEl = document.getElementById(`err-${si}-${ti}`);
+            dot.className = 'dot run';
+            await new Promise((r) => setTimeout(r, 10));
+            try {
+              await t.fn();
+              dot.className = 'dot pass';
+              pass++;
+              log(`PASS  ${s.name} > ${t.name}`);
+            } catch (e) {
+              dot.className = 'dot fail';
+              errEl.textContent = e.message;
+              errEl.style.display = 'block';
+              fail++;
+              log(`FAIL  ${s.name} > ${t.name}\n      ${e.message}`);
+            }
+          }
+        }
+
+        document.getElementById('s-pass').textContent = pass;
+        document.getElementById('s-fail').textContent = fail;
+        document.getElementById('s-skip').textContent = skip;
+        document.getElementById('s-pass').style.color = pass > 0 ? '#1FA882' : '#555550';
+        document.getElementById('s-fail').style.color = fail > 0 ? '#F87171' : '#555550';
+
+        btn.disabled = false;
+        btn.textContent = fail === 0 ? 'All Passed' : 'Run Again';
+        btn.style.background = fail === 0 ? '#1FA882' : '#F87171';
+      };
+
+      renderSuites();
+    </script>
+  </body>
 </html>

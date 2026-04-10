@@ -1,10 +1,35 @@
 {
   "name": "onaudience-hub",
   "version": "1.0.0",
+  "packageManager": "npm@11.12.1",
   "description": "",
   "main": "index.js",
+  "workspaces": [
+    "frontend",
+    "tooling"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "turbo run build",
+    "dev": "npm run dev --workspace frontend",
+    "check": "turbo run lint format:check typecheck",
+    "validate:hub": "node validate.js",
+    "format": "prettier --write .",
+    "format:check": "turbo run format:check",
+    "lint": "turbo run lint",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "turbo run typecheck",
+    "test": "playwright test",
+    "test:api": "playwright test --project=api-only",
+    "test:ui": "playwright test --ui",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx}": "eslint --fix",
+    "*.vue": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,mdx,json,yml,yaml,css,html}": "prettier --write"
   },
   "repository": {
     "type": "git",
@@ -19,7 +44,21 @@
   },
   "homepage": "https://github.com/lukaszkapusniak-sudo/onaudience-hub#readme",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
-    "dotenv": "^17.4.1"
+    "@types/node": "^25.6.0",
+    "dotenv": "^17.4.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-mdx": "^3.7.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.2",
+    "turbo": "^2.9.6",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1",
+    "vue-eslint-parser": "^10.4.0"
   }
 }

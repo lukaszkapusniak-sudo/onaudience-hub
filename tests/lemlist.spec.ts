@@ -30,11 +30,11 @@ import * as fs from 'fs';
 import { ENV } from './env';
 
 // ── Aliases (all values from ENV) ────────────────────────────────────────────
-const PROXY          = ENV.LEMLIST_PROXY;
-const SYNC_FN        = ENV.LEMLIST_SYNC;
-const LL_KEY         = ENV.LEMLIST_API_KEY;
-const SB_URL         = ENV.SB_URL;
-const SB_ANON        = ENV.SB_ANON_KEY;
+const PROXY = ENV.LEMLIST_PROXY;
+const SYNC_FN = ENV.LEMLIST_SYNC;
+const LL_KEY = ENV.LEMLIST_API_KEY;
+const SB_URL = ENV.SB_URL;
+const SB_ANON = ENV.SB_ANON_KEY;
 const ORACLE_CAMP_ID = ENV.CAMPAIGNS.ORACLE_B2B;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -66,7 +66,6 @@ function skipIfNoAuth() {
 // A. PROXY CONNECTIVITY
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('A. Proxy connectivity', () => {
-
   test('responds 200 with valid key', async ({ request }) => {
     const r = await proxyGet(request, '/campaigns?limit=1&offset=0');
     expect(r.status()).toBe(200);
@@ -101,14 +100,12 @@ test.describe('A. Proxy connectivity', () => {
     expect([200, 204]).toContain(r.status());
     expect(r.headers()['access-control-allow-origin']).toBe('*');
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // B. API RESPONSE SHAPES
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('B. API response shapes', () => {
-
   test('campaigns have _id / name / status', async ({ request }) => {
     const r = await proxyGet(request, '/campaigns?limit=5');
     const body = await r.json();
@@ -128,22 +125,25 @@ test.describe('B. API response shapes', () => {
     const leads: Record<string, unknown>[] = Array.isArray(body) ? body : Object.values(body);
     expect(leads.length).toBeGreaterThan(0);
     expect(leads[0]).toHaveProperty('_id');
-    expect(leads.some(l => l.contactId)).toBe(true);
+    expect(leads.some((l) => l.contactId)).toBe(true);
   });
 
   test('contact endpoint returns _id + name or email', async ({ request }) => {
     const lr = await proxyGet(request, `/campaigns/${ORACLE_CAMP_ID}/leads`);
-    const leads: Record<string, unknown>[] = await lr.json().then(b =>
-      Array.isArray(b) ? b : Object.values(b)
-    );
-    const withContact = leads.find(l => l.contactId);
-    if (!withContact) { test.skip(); return; }
+    const leads: Record<string, unknown>[] = await lr
+      .json()
+      .then((b) => (Array.isArray(b) ? b : Object.values(b)));
+    const withContact = leads.find((l) => l.contactId);
+    if (!withContact) {
+      test.skip();
+      return;
+    }
 
     const cr = await proxyGet(request, `/contacts/${withContact.contactId}`);
     expect(cr.status()).toBe(200);
     const ct = await cr.json();
     expect(ct).toHaveProperty('_id');
-    const hasName  = !!(ct.fullName || ct.firstName || ct.fields?.firstName);
+    const hasName = !!(ct.fullName || ct.firstName || ct.fields?.firstName);
     const hasEmail = !!(ct.email || ct.fields?.email);
     expect(hasName || hasEmail).toBe(true);
   });
@@ -176,20 +176,22 @@ test.describe('B. API response shapes', () => {
     ]);
     const p1 = await r1.json();
     const p2 = await r2.json();
-    const ids1: string[] = (Array.isArray(p1) ? p1 : p1.campaigns ?? []).map((c: Record<string, unknown>) => c._id as string);
-    const ids2: string[] = (Array.isArray(p2) ? p2 : p2.campaigns ?? []).map((c: Record<string, unknown>) => c._id as string);
+    const ids1: string[] = (Array.isArray(p1) ? p1 : (p1.campaigns ?? [])).map(
+      (c: Record<string, unknown>) => c._id as string,
+    );
+    const ids2: string[] = (Array.isArray(p2) ? p2 : (p2.campaigns ?? [])).map(
+      (c: Record<string, unknown>) => c._id as string,
+    );
     if (ids1.length > 0 && ids2.length > 0) {
-      expect(ids1.filter(id => ids2.includes(id))).toHaveLength(0);
+      expect(ids1.filter((id) => ids2.includes(id))).toHaveLength(0);
     }
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // C. LEMLIST-SYNC EDGE FUNCTION — basic contract
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('C. lemlist-sync edge function contract', () => {
-
   test('responds 200 with valid key + campIds', async ({ request }) => {
     const r = await request.post(SYNC_FN, {
       data: { apiKey: LL_KEY, campIds: [ORACLE_CAMP_ID] },
@@ -205,7 +207,7 @@ test.describe('C. lemlist-sync edge function contract', () => {
       timeout: 10_000,
     });
     expect(r.status()).toBe(400);
-    expect((await r.json())).toHaveProperty('error');
+    expect(await r.json()).toHaveProperty('error');
   });
 
   test('stats object has all required numeric fields', async ({ request }) => {
@@ -214,8 +216,13 @@ test.describe('C. lemlist-sync edge function contract', () => {
       timeout: 90_000,
     });
     const { stats } = await r.json();
-    const REQUIRED = ['campaigns_processed', 'leads_processed', 'contacts_new',
-                      'contacts_updated', 'companies_new'];
+    const REQUIRED = [
+      'campaigns_processed',
+      'leads_processed',
+      'contacts_new',
+      'contacts_updated',
+      'companies_new',
+    ];
     for (const f of REQUIRED) {
       expect(stats).toHaveProperty(f);
       expect(typeof stats[f]).toBe('number');
@@ -249,14 +256,12 @@ test.describe('C. lemlist-sync edge function contract', () => {
     expect([200, 204]).toContain(r.status());
     expect(r.headers()['access-control-allow-origin']).toBe('*');
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // D. SINGLE-CAMPAIGN SYNC → DB verification
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('D. Sync writes to Supabase', () => {
-
   test.beforeAll(async ({ request }) => {
     await request.post(SYNC_FN, {
       data: { apiKey: LL_KEY, campIds: [ORACLE_CAMP_ID] },
@@ -265,8 +270,7 @@ test.describe('D. Sync writes to Supabase', () => {
   });
 
   test('campaign_stats row written for Oracle campaign', async ({ request }) => {
-    const r = await sbGet(request, 'lemlist_campaign_stats',
-      `campaign_id=eq.${ORACLE_CAMP_ID}`);
+    const r = await sbGet(request, 'lemlist_campaign_stats', `campaign_id=eq.${ORACLE_CAMP_ID}`);
     expect(r.status()).toBe(200);
     const rows = await r.json();
     expect(rows.length).toBeGreaterThan(0);
@@ -278,8 +282,7 @@ test.describe('D. Sync writes to Supabase', () => {
   });
 
   test('campaign_name correctly stored in stats row', async ({ request }) => {
-    const r = await sbGet(request, 'lemlist_campaign_stats',
-      `campaign_id=eq.${ORACLE_CAMP_ID}`);
+    const r = await sbGet(request, 'lemlist_campaign_stats', `campaign_id=eq.${ORACLE_CAMP_ID}`);
     const rows = await r.json();
     if (rows.length > 0) {
       expect(rows[0].campaign_name).toBe('Oracle B2B data');
@@ -287,8 +290,7 @@ test.describe('D. Sync writes to Supabase', () => {
   });
 
   test('outreach_history rows exist for Oracle campaign', async ({ request }) => {
-    const r = await sbGet(request, 'outreach_history',
-      `campaign_id=eq.${ORACLE_CAMP_ID}&limit=5`);
+    const r = await sbGet(request, 'outreach_history', `campaign_id=eq.${ORACLE_CAMP_ID}&limit=5`);
     expect(r.status()).toBe(200);
     const rows = await r.json();
     expect(Array.isArray(rows)).toBe(true);
@@ -305,22 +307,20 @@ test.describe('D. Sync writes to Supabase', () => {
     expect(r.status()).toBe(200);
     expect(Array.isArray(await r.json())).toBe(true);
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // E. HUB UI — panel, key management  (browser, needs auth)
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('E. Hub UI', () => {
-
   test.beforeEach(async ({ page }) => {
     skipIfNoAuth();
     await page.goto('./');
     await expect(page.locator('.app')).toBeVisible({ timeout: 25_000 });
-    await page.waitForFunction(
-      () => (window as any)._oaState?.companies?.length > 0,
-      undefined, { timeout: 45_000, polling: 500 }
-    );
+    await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+      timeout: 45_000,
+      polling: 500,
+    });
   });
 
   test('Lemlist tab exists in hub nav', async ({ page }) => {
@@ -328,22 +328,35 @@ test.describe('E. Hub UI', () => {
   });
 
   test('Lemlist tab hidden in demo mode', async ({ page }) => {
-    await page.evaluate(() => { localStorage.setItem('oaDemoMode', '1'); });
+    await page.evaluate(() => {
+      localStorage.setItem('oaDemoMode', '1');
+    });
     await page.reload();
     await page.waitForTimeout(2_000);
-    expect(await page.locator('#tabLemlist').isVisible({ timeout: 3_000 }).catch(() => false)).toBe(false);
-    await page.evaluate(() => { localStorage.removeItem('oaDemoMode'); });
+    expect(
+      await page
+        .locator('#tabLemlist')
+        .isVisible({ timeout: 3_000 })
+        .catch(() => false),
+    ).toBe(false);
+    await page.evaluate(() => {
+      localStorage.removeItem('oaDemoMode');
+    });
   });
 
   test('panel renders after tab click with key set', async ({ page }) => {
-    await page.evaluate((k: string) => { localStorage.setItem('oaLemlistKey', k); }, LL_KEY);
+    await page.evaluate((k: string) => {
+      localStorage.setItem('oaLemlistKey', k);
+    }, LL_KEY);
     await page.locator('#tabLemlist').click();
     await page.waitForTimeout(500);
     await expect(page.locator('#lemlistPanel')).toBeVisible({ timeout: 5_000 });
   });
 
   test('panel shows connect prompt when key absent', async ({ page }) => {
-    await page.evaluate(() => { localStorage.removeItem('oaLemlistKey'); });
+    await page.evaluate(() => {
+      localStorage.removeItem('oaLemlistKey');
+    });
     await page.locator('#tabLemlist').click();
     await page.waitForTimeout(500);
     const text = await page.locator('#lemlistPanel').textContent({ timeout: 5_000 });
@@ -351,21 +364,27 @@ test.describe('E. Hub UI', () => {
   });
 
   test('llIsConnected() returns false with no key', async ({ page }) => {
-    expect(await page.evaluate(() => {
-      localStorage.removeItem('oaLemlistKey');
-      return (window as any).llIsConnected?.() ?? false;
-    })).toBe(false);
+    expect(
+      await page.evaluate(() => {
+        localStorage.removeItem('oaLemlistKey');
+        return (window as any).llIsConnected?.() ?? false;
+      }),
+    ).toBe(false);
   });
 
   test('llIsConnected() returns true with key set', async ({ page }) => {
-    expect(await page.evaluate((k: string) => {
-      localStorage.setItem('oaLemlistKey', k);
-      return (window as any).llIsConnected?.() ?? false;
-    }, LL_KEY)).toBe(true);
+    expect(
+      await page.evaluate((k: string) => {
+        localStorage.setItem('oaLemlistKey', k);
+        return (window as any).llIsConnected?.() ?? false;
+      }, LL_KEY),
+    ).toBe(true);
   });
 
   test('sync contacts + companies buttons visible when connected', async ({ page }) => {
-    await page.evaluate((k: string) => { localStorage.setItem('oaLemlistKey', k); }, LL_KEY);
+    await page.evaluate((k: string) => {
+      localStorage.setItem('oaLemlistKey', k);
+    }, LL_KEY);
     await page.locator('#tabLemlist').click();
     await page.waitForTimeout(500);
     await expect(page.locator('#llSyncCtBtn')).toBeVisible({ timeout: 8_000 });
@@ -374,14 +393,14 @@ test.describe('E. Hub UI', () => {
 
   test('hub does not crash when key cleared mid-session', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await page.evaluate(() => {
       localStorage.removeItem('oaLemlistKey');
       (window as any).llClearKey?.();
     });
     await page.waitForTimeout(500);
-    const fatal = errors.filter(e =>
-      !e.includes('No lemlist key') && !e.includes('Failed to fetch')
+    const fatal = errors.filter(
+      (e) => !e.includes('No lemlist key') && !e.includes('Failed to fetch'),
     );
     expect(fatal).toHaveLength(0);
   });
@@ -389,23 +408,23 @@ test.describe('E. Hub UI', () => {
   test('vibeEnrichLead is a function on window', async ({ page }) => {
     expect(await page.evaluate(() => typeof (window as any).vibeEnrichLead)).toBe('function');
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // F. CAMPAIGN DETAIL  (browser, needs auth)
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('F. Campaign detail rendering', () => {
-
   test.beforeEach(async ({ page }) => {
     skipIfNoAuth();
     await page.goto('./');
     await expect(page.locator('.app')).toBeVisible({ timeout: 25_000 });
-    await page.waitForFunction(
-      () => (window as any)._oaState?.companies?.length > 0,
-      undefined, { timeout: 45_000, polling: 500 }
-    );
-    await page.evaluate((k: string) => { localStorage.setItem('oaLemlistKey', k); }, LL_KEY);
+    await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+      timeout: 45_000,
+      polling: 500,
+    });
+    await page.evaluate((k: string) => {
+      localStorage.setItem('oaLemlistKey', k);
+    }, LL_KEY);
     await page.locator('#tabLemlist').click();
     await page.waitForTimeout(500);
   });
@@ -413,7 +432,8 @@ test.describe('F. Campaign detail rendering', () => {
   test('campaign list has at least one clickable row', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     expect(await page.locator('#llList [onclick]').count()).toBeGreaterThan(0);
   });
@@ -421,7 +441,8 @@ test.describe('F. Campaign detail rendering', () => {
   test('clicking campaign shows LEADS count in detail', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     await page.locator('#llList [onclick]').first().click();
     await page.waitForTimeout(2_000);
@@ -431,7 +452,8 @@ test.describe('F. Campaign detail rendering', () => {
   test('lead table shows NAME EMAIL STATUS columns', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     await page.locator('#llList [onclick]').first().click();
     await page.waitForTimeout(2_000);
@@ -444,16 +466,23 @@ test.describe('F. Campaign detail rendering', () => {
   test('search filter hides non-matching rows', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     await page.locator('#llList [onclick]').first().click();
     await page.waitForTimeout(2_000);
     const inp = page.locator('#llLeadSearch');
-    if (!await inp.isVisible({ timeout: 3_000 }).catch(() => false)) { test.skip(); return; }
+    if (!(await inp.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip();
+      return;
+    }
     await inp.fill('zzz_impossible_match_xyz');
     await page.waitForTimeout(400);
     const rows = await page.locator('.ll-table tbody tr').count();
-    const empty = await page.locator('.ll-empty').isVisible().catch(() => false);
+    const empty = await page
+      .locator('.ll-empty')
+      .isVisible()
+      .catch(() => false);
     expect(rows === 0 || empty).toBe(true);
     await inp.fill('');
   });
@@ -461,14 +490,15 @@ test.describe('F. Campaign detail rendering', () => {
   test('⚡ enrich button present on rows with email', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     await page.locator('#llList [onclick]').first().click();
     await page.waitForTimeout(3_000);
     const rows = page.locator('.ll-table tbody tr');
     for (let i = 0; i < Math.min(await rows.count(), 12); i++) {
       const cells = await rows.nth(i).locator('td').allTextContents();
-      if (cells.some(c => c.includes('@'))) {
+      if (cells.some((c) => c.includes('@'))) {
         const btn = rows.nth(i).locator('button[title*="Enrich"], button[title*="credit"]');
         if (await btn.isVisible().catch(() => false)) {
           expect(await btn.textContent()).toMatch(/⚡/);
@@ -482,35 +512,40 @@ test.describe('F. Campaign detail rendering', () => {
   test('⚡ enrich button absent on rows without email', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined, { timeout: 25_000, polling: 500 }
+      undefined,
+      { timeout: 25_000, polling: 500 },
     );
     await page.locator('#llList [onclick]').first().click();
     await page.waitForTimeout(3_000);
     const rows = page.locator('.ll-table tbody tr');
     for (let i = 0; i < Math.min(await rows.count(), 8); i++) {
       const cells = await rows.nth(i).locator('td').allTextContents();
-      if (cells.slice(0, 2).every(c => c.trim() === '—' || c.trim() === '')) {
-        expect(await rows.nth(i).locator('button[title*="Enrich"]').isVisible().catch(() => false)).toBe(false);
+      if (cells.slice(0, 2).every((c) => c.trim() === '—' || c.trim() === '')) {
+        expect(
+          await rows
+            .nth(i)
+            .locator('button[title*="Enrich"]')
+            .isVisible()
+            .catch(() => false),
+        ).toBe(false);
         return;
       }
     }
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // G. RATE-LIMIT RESILIENCE
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('G. Rate-limit resilience', () => {
-
   test('sync log contains no JS runtime crash patterns', async ({ request }) => {
     const r = await request.post(SYNC_FN, {
       data: { apiKey: LL_KEY, campIds: [ORACLE_CAMP_ID] },
       timeout: 90_000,
     });
     const { log } = await r.json();
-    const crashes = (log as string[]).filter(l =>
-      /Cannot read|undefined is not|Unhandled rejection|TypeError/.test(l)
+    const crashes = (log as string[]).filter((l) =>
+      /Cannot read|undefined is not|Unhandled rejection|TypeError/.test(l),
     );
     expect(crashes).toHaveLength(0);
   });
@@ -533,20 +568,18 @@ test.describe('G. Rate-limit resilience', () => {
       timeout: 90_000,
     });
     const { log } = await r.json();
-    const campErrors = (log as string[]).filter(l => l.toLowerCase().includes('camp err'));
+    const campErrors = (log as string[]).filter((l) => l.toLowerCase().includes('camp err'));
     for (const e of campErrors) {
       expect(typeof e).toBe('string');
       expect(e).not.toMatch(/at Object\.|at Module\.|\.js:\d+/); // no stack traces
     }
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // H. OUTREACH HISTORY & STATS TABLES
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('H. Outreach history tables', () => {
-
   test('outreach_history table exists and is queryable', async ({ request }) => {
     const r = await sbGet(request, 'outreach_history', 'limit=1');
     expect(r.status()).toBe(200);
@@ -554,8 +587,11 @@ test.describe('H. Outreach history tables', () => {
   });
 
   test('outreach_history select with all key columns returns 200', async ({ request }) => {
-    const r = await sbGet(request, 'outreach_history',
-      'select=id,contact_email,campaign_id,lead_state,opened_at,clicked_at,replied_at&limit=1');
+    const r = await sbGet(
+      request,
+      'outreach_history',
+      'select=id,contact_email,campaign_id,lead_state,opened_at,clicked_at,replied_at&limit=1',
+    );
     expect(r.status()).toBe(200);
   });
 
@@ -566,8 +602,7 @@ test.describe('H. Outreach history tables', () => {
   });
 
   test('campaign_stats open_rate is numeric 0–100', async ({ request }) => {
-    const r = await sbGet(request, 'lemlist_campaign_stats',
-      `campaign_id=eq.${ORACLE_CAMP_ID}`);
+    const r = await sbGet(request, 'lemlist_campaign_stats', `campaign_id=eq.${ORACLE_CAMP_ID}`);
     const rows = await r.json();
     for (const row of rows as Record<string, unknown>[]) {
       const rate = Number(row.open_rate);
@@ -577,8 +612,11 @@ test.describe('H. Outreach history tables', () => {
   });
 
   test('outreach_history id format is campaign::email composite', async ({ request }) => {
-    const r = await sbGet(request, 'outreach_history',
-      `campaign_id=eq.${ORACLE_CAMP_ID}&select=id,contact_email&limit=3`);
+    const r = await sbGet(
+      request,
+      'outreach_history',
+      `campaign_id=eq.${ORACLE_CAMP_ID}&select=id,contact_email&limit=3`,
+    );
     const rows = await r.json();
     for (const row of rows as Record<string, unknown>[]) {
       const id = row.id as string;
@@ -589,20 +627,18 @@ test.describe('H. Outreach history tables', () => {
       }
     }
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // I. STATS MATH — unit tests, no network needed
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('I. Stats rate computation', () => {
-
   function computeRates(sent: number, opened: number, replied: number, clicked: number) {
     if (sent === 0) return { open_rate: 0, reply_rate: 0, click_rate: 0 };
     return {
-      open_rate:  Math.round(opened  / sent * 10000) / 100,
-      reply_rate: Math.round(replied / sent * 10000) / 100,
-      click_rate: Math.round(clicked / sent * 10000) / 100,
+      open_rate: Math.round((opened / sent) * 10000) / 100,
+      reply_rate: Math.round((replied / sent) * 10000) / 100,
+      click_rate: Math.round((clicked / sent) * 10000) / 100,
     };
   }
 
@@ -633,29 +669,27 @@ test.describe('I. Stats rate computation', () => {
   test('draft leads excluded from sent count', () => {
     // The sync logic: sent = leads where state !== 'draft'
     const leads = ['emailsSent', 'draft', 'emailsSent', 'replied', 'draft'];
-    const sent = leads.filter(s => s !== 'draft').length; // 3
+    const sent = leads.filter((s) => s !== 'draft').length; // 3
     expect(sent).toBe(3);
     expect(computeRates(sent, 1, 1, 0).reply_rate).toBe(33.33);
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // J. PAGINATION
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('J. Campaign pagination', () => {
-
   test('offset=0 and offset=3 return non-overlapping results', async ({ request }) => {
     const [r1, r2] = await Promise.all([
       proxyGet(request, '/campaigns?limit=3&offset=0'),
       proxyGet(request, '/campaigns?limit=3&offset=3'),
     ]);
-    const ids1 = (await r1.json()).campaigns ?? await r1.json();
-    const ids2 = (await r2.json()).campaigns ?? await r2.json();
-    const p1 = (Array.isArray(ids1) ? ids1 : []).map((c: Record<string, unknown>) => c._id);
-    const p2 = (Array.isArray(ids2) ? ids2 : []).map((c: Record<string, unknown>) => c._id);
+    const ids1 = (await r1.json()).campaigns ?? (await r1.json());
+    const ids2 = (await r2.json()).campaigns ?? (await r2.json());
+    const p1 = (Array.isArray(ids1) ? ids1 : []).map((c: Record<string, unknown>) => String(c._id));
+    const p2 = (Array.isArray(ids2) ? ids2 : []).map((c: Record<string, unknown>) => String(c._id));
     if (p1.length > 0 && p2.length > 0) {
-      expect(p1.filter((id: string) => p2.includes(id))).toHaveLength(0);
+      expect(p1.filter((id) => p2.includes(id))).toHaveLength(0);
     }
   });
 
@@ -666,28 +700,31 @@ test.describe('J. Campaign pagination', () => {
     ]);
     const b1 = await r1.json();
     const b2 = await r2.json();
-    const p1 = (Array.isArray(b1) ? b1 : b1.campaigns ?? []) as Record<string, unknown>[];
-    const p2 = (Array.isArray(b2) ? b2 : b2.campaigns ?? []) as Record<string, unknown>[];
+    const p1 = (Array.isArray(b1) ? b1 : (b1.campaigns ?? [])) as Record<string, unknown>[];
+    const p2 = (Array.isArray(b2) ? b2 : (b2.campaigns ?? [])) as Record<string, unknown>[];
     if (p1.length === 100 && p2.length > 0) {
-      const ids1 = p1.map(c => c._id);
-      const ids2 = p2.map(c => c._id);
-      expect(ids1.filter(id => ids2.includes(id))).toHaveLength(0);
+      const ids1 = p1.map((c) => c._id);
+      const ids2 = p2.map((c) => c._id);
+      expect(ids1.filter((id) => ids2.includes(id))).toHaveLength(0);
     }
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // K. DOMAIN EXTRACTION — unit tests
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('K. Domain extraction logic', () => {
-
   function domainFromEmail(email: string) {
     return email ? (email.split('@')[1] || '').toLowerCase() : '';
   }
 
   function slugify(s: string) {
-    return (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+    return (s || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 80);
   }
 
   test('extracts domain from standard email', () => {
@@ -722,17 +759,33 @@ test.describe('K. Domain extraction logic', () => {
     const long = 'a'.repeat(100);
     expect(slugify(long).length).toBeLessThanOrEqual(80);
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // L. PERSONAL DOMAIN FILTER — unit tests
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('L. Personal domain filter', () => {
-
-  const FREE = new Set(['gmail.com','yahoo.com','hotmail.com','outlook.com','icloud.com',
-    'protonmail.com','aol.com','live.com','msn.com','me.com','mac.com','yandex.com',
-    'yandex.ru','mail.ru','inbox.com','zoho.com','gmx.com','web.de','t-online.de']);
+  const FREE = new Set([
+    'gmail.com',
+    'yahoo.com',
+    'hotmail.com',
+    'outlook.com',
+    'icloud.com',
+    'protonmail.com',
+    'aol.com',
+    'live.com',
+    'msn.com',
+    'me.com',
+    'mac.com',
+    'yandex.com',
+    'yandex.ru',
+    'mail.ru',
+    'inbox.com',
+    'zoho.com',
+    'gmx.com',
+    'web.de',
+    't-online.de',
+  ]);
 
   function isPersonalDomain(d: string) {
     if (!d) return true;
@@ -743,35 +796,38 @@ test.describe('L. Personal domain filter', () => {
   test('gmail.com is personal', () => expect(isPersonalDomain('gmail.com')).toBe(true));
   test('yahoo.com is personal', () => expect(isPersonalDomain('yahoo.com')).toBe(true));
   test('empty string is personal', () => expect(isPersonalDomain('')).toBe(true));
-  test('.edu TLD is personal',    () => expect(isPersonalDomain('mit.edu')).toBe(true));
+  test('.edu TLD is personal', () => expect(isPersonalDomain('mit.edu')).toBe(true));
   test('smail. prefix is personal', () => {
     expect(isPersonalDomain('smail.swufe.edu.cn')).toBe(true);
   });
-  test('adxc.ai is NOT personal',  () => expect(isPersonalDomain('adxc.ai')).toBe(false));
+  test('adxc.ai is NOT personal', () => expect(isPersonalDomain('adxc.ai')).toBe(false));
   test('ibmix.com is NOT personal', () => expect(isPersonalDomain('ibmix.com')).toBe(false));
   test('wmglobal.com is NOT personal', () => expect(isPersonalDomain('wmglobal.com')).toBe(false));
 
   test('no gmail company created in Supabase', async ({ request }) => {
     // Network test — verifies the domain filter was enforced by the sync function
     // Skipped in sandboxed CI environments without outbound DNS (EAI_AGAIN is expected)
-    const r = await request.get(
-      `${SB_URL}/rest/v1/companies?website=eq.https://gmail.com&limit=5`,
-      { headers: sbHeaders(), timeout: 15_000 }
-    ).catch(() => null);
-    if (!r) { test.skip(); return; } // no network — skip gracefully
+    const r = await request
+      .get(`${SB_URL}/rest/v1/companies?website=eq.https://gmail.com&limit=5`, {
+        headers: sbHeaders(),
+        timeout: 15_000,
+      })
+      .catch(() => null);
+    if (!r) {
+      test.skip();
+      return;
+    } // no network — skip gracefully
     expect(r.status()).toBe(200);
     const rows = await r.json();
     expect(Array.isArray(rows)).toBe(true);
     expect(rows.length).toBe(0);
   });
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // M. ERROR HANDLING
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('M. Error handling', () => {
-
   test('proxy returns JSON for invalid endpoint (not network crash)', async ({ request }) => {
     const r = await request.post(PROXY, {
       data: { path: '/invalid_endpoint_xyz_404', method: 'GET', apiKey: LL_KEY },
@@ -799,7 +855,9 @@ test.describe('M. Error handling', () => {
     expect(Array.isArray(rows)).toBe(true);
   });
 
-  test('duplicate sync of same campaign does not double-write campaign_stats', async ({ request }) => {
+  test('duplicate sync of same campaign does not double-write campaign_stats', async ({
+    request,
+  }) => {
     // Run sync twice
     await request.post(SYNC_FN, {
       data: { apiKey: LL_KEY, campIds: [ORACLE_CAMP_ID] },
@@ -810,10 +868,8 @@ test.describe('M. Error handling', () => {
       timeout: 90_000,
     });
     // Should still have exactly 1 row for this campaign
-    const r = await sbGet(request, 'lemlist_campaign_stats',
-      `campaign_id=eq.${ORACLE_CAMP_ID}`);
+    const r = await sbGet(request, 'lemlist_campaign_stats', `campaign_id=eq.${ORACLE_CAMP_ID}`);
     const rows = await r.json();
     expect(rows.length).toBe(1);
   });
-
 });

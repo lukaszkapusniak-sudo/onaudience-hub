@@ -14,19 +14,23 @@ test.beforeEach(async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
   // Robust boot check — wait for companies to load (avoids nav-status text race)
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    undefined,
-    { timeout: 45000, polling: 500 }
-  );
+  await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+    timeout: 45000,
+    polling: 500,
+  });
 });
 
 test('no SyntaxError in any hub JS module', async ({ page }) => {
   const errors: string[] = [];
-  page.on('pageerror', e => errors.push(e.message));
+  page.on('pageerror', (e) => errors.push(e.message));
   await page.reload();
   await expect(page.locator('.app')).toBeVisible({ timeout: 20000 });
-  const syntaxErrors = errors.filter(e => e.includes('SyntaxError') || e.includes('Unexpected identifier') || e.includes('Unexpected token'));
+  const syntaxErrors = errors.filter(
+    (e) =>
+      e.includes('SyntaxError') ||
+      e.includes('Unexpected identifier') ||
+      e.includes('Unexpected token'),
+  );
   expect(syntaxErrors, `SyntaxErrors found: ${syntaxErrors.join(', ')}`).toHaveLength(0);
 });
 
@@ -57,10 +61,16 @@ test('audience detail EDIT and B2B buttons have valid onclick', async ({ page })
   // Open first non-system audience
   const audId = await page.evaluate(() => {
     const aud = window._oaState?.audiences?.find((a: any) => !a.is_system);
-    if (aud) { window.audOpen(aud.id); return aud.id; }
+    if (aud) {
+      window.audOpen(String(aud.id));
+      return aud.id;
+    }
     return null;
   });
-  if (!audId) { test.skip(); return; }
+  if (!audId) {
+    test.skip();
+    return;
+  }
 
   await expect(page.locator('.aud-detail-title')).toBeVisible({ timeout: 8000 });
 
@@ -78,18 +88,26 @@ test('audience detail EDIT and B2B buttons have valid onclick', async ({ page })
     expect(onclick, `Button ${i} onclick contains JSON.stringify`).not.toContain('JSON.stringify');
     // Verify onclick ends with ')' — not truncated mid-function
     const trimmed = onclick.trim();
-    expect(trimmed.endsWith(')') || trimmed.endsWith(';'), 
-      `Button ${i} onclick truncated: ${onclick}`).toBe(true);
+    expect(
+      trimmed.endsWith(')') || trimmed.endsWith(';'),
+      `Button ${i} onclick truncated: ${onclick}`,
+    ).toBe(true);
   }
 });
 
 test('clicking EDIT button opens scout modal', async ({ page }) => {
   const audId = await page.evaluate(() => {
     const aud = window._oaState?.audiences?.find((a: any) => !a.is_system);
-    if (aud) { window.audOpen(aud.id); return aud.id; }
+    if (aud) {
+      window.audOpen(String(aud.id));
+      return aud.id;
+    }
     return null;
   });
-  if (!audId) { test.skip(); return; }
+  if (!audId) {
+    test.skip();
+    return;
+  }
 
   await expect(page.locator('.aud-detail-title')).toBeVisible({ timeout: 8000 });
 
@@ -107,18 +125,17 @@ test('clicking EDIT button opens scout modal', async ({ page }) => {
 test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => {
   // Boot and load some data
   // Robust boot check — wait for companies to load (avoids nav-status text race)
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    undefined,
-    { timeout: 45000, polling: 500 }
-  );
+  await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+    timeout: 45000,
+    polling: 500,
+  });
   await page.waitForTimeout(2000); // let pagination finish
 
   // Collect all onclick attrs across the whole page
   const badOnclicks = await page.evaluate(() => {
     const all = document.querySelectorAll('[onclick]');
     const bad: string[] = [];
-    all.forEach(el => {
+    all.forEach((el) => {
       const v = el.getAttribute('onclick') || '';
       if (v.includes('JSON.stringify')) bad.push(v.slice(0, 80));
     });
@@ -131,38 +148,107 @@ test('no JSON.stringify in any rendered onclick attribute', async ({ page }) => 
 
 test('all onclick functions are defined on window', async ({ page }) => {
   // Robust boot check — wait for companies to load (avoids nav-status text race)
-  await page.waitForFunction(
-    () => (window as any)._oaState?.companies?.length > 0,
-    undefined,
-    { timeout: 45000, polling: 500 }
-  );
+  await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
+    timeout: 45000,
+    polling: 500,
+  });
   await page.waitForTimeout(2000);
 
   const missing = await page.evaluate(() => {
     // Collect all onclick attribute values from DOM
     const fns = new Set<string>();
-    document.querySelectorAll('[onclick]').forEach(el => {
+    document.querySelectorAll('[onclick]').forEach((el) => {
       const v = el.getAttribute('onclick') || '';
       // Extract function names: word before (
       const matches = v.matchAll(/\b([a-zA-Z_]\w*)\s*\(/g);
       for (const m of matches) {
         const name = m[1];
-        if (!['event','window','document','this','encodeURIComponent','parseInt','String'].includes(name))
+        if (
+          ![
+            'event',
+            'window',
+            'document',
+            'this',
+            'encodeURIComponent',
+            'parseInt',
+            'String',
+          ].includes(name)
+        )
           fns.add(name);
       }
     });
     // Exclude JS builtins and event/DOM methods that aren't on window
-    const BUILTINS = new Set(['event','window','document','this','localStorage',
-      'sessionStorage','encodeURIComponent','decodeURIComponent','parseInt',
-      'parseFloat','String','Number','Boolean','JSON','Math','Date','Array',
-      'Object','Promise','Error','console','setTimeout','clearTimeout',
-      'setInterval','clearInterval','fetch','location','history','navigator',
-      'stopPropagation','preventDefault','target','removeItem','setItem',
-      'getItem','classList','style','dataset','if','for','return','const',
-      'let','var','new','true','false','null','undefined','typeof','instanceof',
-      'of','in','switch','case','break','continue','try','catch','finally',
-      'throw','delete','void','yield','async','await','import','export']);
-    return [...fns].filter(fn => !BUILTINS.has(fn) && typeof (window as any)[fn] !== 'function');
+    const BUILTINS = new Set([
+      'event',
+      'window',
+      'document',
+      'this',
+      'localStorage',
+      'sessionStorage',
+      'encodeURIComponent',
+      'decodeURIComponent',
+      'parseInt',
+      'parseFloat',
+      'String',
+      'Number',
+      'Boolean',
+      'JSON',
+      'Math',
+      'Date',
+      'Array',
+      'Object',
+      'Promise',
+      'Error',
+      'console',
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'fetch',
+      'location',
+      'history',
+      'navigator',
+      'stopPropagation',
+      'preventDefault',
+      'target',
+      'removeItem',
+      'setItem',
+      'getItem',
+      'classList',
+      'style',
+      'dataset',
+      'if',
+      'for',
+      'return',
+      'const',
+      'let',
+      'var',
+      'new',
+      'true',
+      'false',
+      'null',
+      'undefined',
+      'typeof',
+      'instanceof',
+      'of',
+      'in',
+      'switch',
+      'case',
+      'break',
+      'continue',
+      'try',
+      'catch',
+      'finally',
+      'throw',
+      'delete',
+      'void',
+      'yield',
+      'async',
+      'await',
+      'import',
+      'export',
+    ]);
+    return [...fns].filter((fn) => !BUILTINS.has(fn) && typeof (window as any)[fn] !== 'function');
   });
 
   expect(missing, `onclick functions not on window: ${missing.join(', ')}`).toHaveLength(0);

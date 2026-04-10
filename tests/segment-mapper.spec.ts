@@ -14,7 +14,9 @@ async function openFirstCompany(page: Page) {
 async function expandSection(page: Page, labelText: string) {
   const hdr = page.locator('.ib-sh', { hasText: new RegExp(labelText, 'i') }).first();
   await expect(hdr).toBeVisible({ timeout: 5000 });
-  const bodyId = labelText.toLowerCase().includes('segment') ? '#ib-segments-body' : '#ib-email-body';
+  const bodyId = labelText.toLowerCase().includes('segment')
+    ? '#ib-segments-body'
+    : '#ib-email-body';
   const body = page.locator(bodyId);
   const isOpen = await body.isVisible();
   if (!isOpen) await hdr.click();
@@ -23,14 +25,15 @@ async function expandSection(page: Page, labelText: string) {
 }
 
 test.describe('Segment Mapper', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await openFirstCompany(page);
   });
 
   test('Segment Mapper section exists in company panel', async ({ page }) => {
-    await expect(page.locator('.ib-sh', { hasText: /segment mapper/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.ib-sh', { hasText: /segment mapper/i })).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test('Segment Mapper section can be expanded', async ({ page }) => {
@@ -38,9 +41,11 @@ test.describe('Segment Mapper', () => {
     await expect(body).toBeVisible();
   });
 
-  test('taxonomy.json loads without JS errors (regression: _taxData ReferenceError)', async ({ page }) => {
+  test('taxonomy.json loads without JS errors (regression: _taxData ReferenceError)', async ({
+    page,
+  }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => {
+    page.on('pageerror', (e) => {
       if (e.message.includes('_taxData') || e.message.includes('ReferenceError')) {
         errors.push(e.message);
       }
@@ -74,11 +79,11 @@ test.describe('Segment Mapper', () => {
 
   test('mapSegments does not crash (no _taxData ReferenceError)', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     // Call mapSegments directly
     await page.evaluate(() => window.mapSegments?.());
     await page.waitForTimeout(2000);
-    const taxErrors = errors.filter(e => e.includes('_taxData') || e.includes('ReferenceError'));
+    const taxErrors = errors.filter((e) => e.includes('_taxData') || e.includes('ReferenceError'));
     expect(taxErrors).toHaveLength(0);
   });
 
@@ -88,7 +93,7 @@ test.describe('Segment Mapper', () => {
     await expect(remapBtn).toBeVisible({ timeout: 5000 });
     // Click remap — should not throw
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     await remapBtn.click();
     await page.waitForTimeout(1000);
     expect(errors).toHaveLength(0);

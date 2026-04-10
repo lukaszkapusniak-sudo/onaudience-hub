@@ -5,12 +5,13 @@
  * Covers edge cases not addressed in companies/list.spec.ts.
  */
 import { test, expect, Page } from '@playwright/test';
-import { waitForHub } from './helpers';
+import { waitForHub, waitForHubWithRows } from './helpers';
 
 // ── SUITE: Search box ─────────────────────────────────────────────
 test.describe('Company search', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHubWithRows(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHubWithRows(page);
+  });
 
   test('search input is visible on companies tab', async ({ page }) => {
     await expect(page.locator('input[placeholder*=Search]').first()).toBeVisible();
@@ -74,7 +75,7 @@ test.describe('Company search', () => {
 
   test('no-results state does not crash hub', async ({ page }) => {
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     const input = page.locator('input[placeholder*=Search]').first();
     await input.fill('xyzzy_no_match_999');
     await page.waitForTimeout(500);
@@ -96,8 +97,9 @@ test.describe('Company search', () => {
 
 // ── SUITE: Filter chips ───────────────────────────────────────────
 test.describe('Company filter chips', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHubWithRows(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHubWithRows(page);
+  });
 
   test('all filter chips are rendered', async ({ page }) => {
     await expect(page.locator('#sbAll')).toBeVisible();
@@ -154,7 +156,7 @@ test.describe('Company filter chips', () => {
     await input.fill('a');
     await page.waitForTimeout(400);
     const errors: string[] = [];
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', (e) => errors.push(e.message));
     expect(errors).toHaveLength(0);
     await expect(page.locator('nav.nav')).toBeVisible();
   });
@@ -162,8 +164,9 @@ test.describe('Company filter chips', () => {
 
 // ── SUITE: Stats bar ──────────────────────────────────────────────
 test.describe('Stats bar counts', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHubWithRows(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHubWithRows(page);
+  });
 
   test('stats bar is visible', async ({ page }) => {
     await expect(page.locator('.stats-bar')).toBeVisible();

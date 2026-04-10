@@ -1,21 +1,31 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260410d22';
+import {
+  SB_URL,
+  HDR,
+  NOMINATIM_URL,
+  MODEL_RESEARCH,
+  LEMLIST_PROXY,
+} from './config.js?v=20260410d22';
 import S from './state.js?v=20260410d22';
 import { classify, _slug, authHdr } from './utils.js?v=20260410d22';
-import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
-  intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260410d22';
-
-
+import {
+  companies as dbCo,
+  contacts as dbContacts,
+  relations as dbRelations,
+  intelligence as dbIntel,
+  enrichCache as dbEnrich,
+  mergeSuggestions as dbMerge,
+  userProfiles,
+} from './db.js?v=20260410d22';
 
 /* ── clog — console logger proxy ─────────────────────────────
    clog lives in hub.js but other modules (audiences.js, prospect.js)
    import it from here. We proxy through window.clog which hub.js
    sets up via app.js. Falls back to console.log if not yet available.
    ─────────────────────────────────────────────────────────── */
-export function clog(type, msg){
-  if(typeof window.clog === 'function'){
+export function clog(type, msg) {
+  if (typeof window.clog === 'function') {
     window.clog(type, msg);
   } else {
     console.log(`[${type}]`, msg);
@@ -27,32 +37,41 @@ export function clog(type, msg){
    UI: clicking the 🔑 nav button toggles an inline panel —
    no browser prompt(), no page disruption.
    ─────────────────────────────────────────────────────────── */
-export function getApiKey(){ return localStorage.getItem('oaAnthropicKey')||''; }
-export function setApiKey(k){ if(k)localStorage.setItem('oaAnthropicKey',k); else localStorage.removeItem('oaAnthropicKey'); }
-export function hasApiKey(){ return !!getApiKey(); }
-
-export function updateKeyBtn(){
-  const btn=document.getElementById('apiKeyBtn');
-  if(!btn)return;
-  const has=hasApiKey();
-  // Proxy always available — green either way.
-  btn.style.color='var(--cc)';
-  btn.style.opacity=has?'1':'0.55';
-  btn.title=has?'Using your API key — click to change or remove':'AI via shared proxy · click to use your own key';
+export function getApiKey() {
+  return localStorage.getItem('oaAnthropicKey') || '';
+}
+export function setApiKey(k) {
+  if (k) localStorage.setItem('oaAnthropicKey', k);
+  else localStorage.removeItem('oaAnthropicKey');
+}
+export function hasApiKey() {
+  return !!getApiKey();
 }
 
-export function promptApiKey(){
+export function updateKeyBtn() {
+  const btn = document.getElementById('apiKeyBtn');
+  if (!btn) return;
+  const has = hasApiKey();
+  // Proxy always available — green either way.
+  btn.style.color = 'var(--cc)';
+  btn.style.opacity = has ? '1' : '0.55';
+  btn.title = has
+    ? 'Using your API key — click to change or remove'
+    : 'AI via shared proxy · click to use your own key';
+}
+
+export function promptApiKey() {
   // Open the inline panel instead of browser prompt
   toggleKeyPanel(true);
   return false; // caller should await panel, not prompt
 }
 
-export function toggleKeyPanel(forceOpen){
-  let panel=document.getElementById('keyPanel');
-  if(!panel){
-    panel=document.createElement('div');
-    panel.id='keyPanel';
-    panel.innerHTML=`
+export function toggleKeyPanel(forceOpen) {
+  let panel = document.getElementById('keyPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'keyPanel';
+    panel.innerHTML = `
 <div id="keyPanelInner">
   <div class="kp-head">
     <span class="kp-title">🔑 API Key Override</span>
@@ -72,40 +91,60 @@ export function toggleKeyPanel(forceOpen){
   </div>
 </div>`;
     document.body.appendChild(panel);
-    panel.addEventListener('click', e => { if(e.target===panel) toggleKeyPanel(false); });
-    document.getElementById('keyPanelInp').addEventListener('keydown', e => {
-      if(e.key==='Enter') saveKeyPanel();
-      if(e.key==='Escape') toggleKeyPanel(false);
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) toggleKeyPanel(false);
+    });
+    document.getElementById('keyPanelInp').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveKeyPanel();
+      if (e.key === 'Escape') toggleKeyPanel(false);
     });
   }
-  const inp=document.getElementById('keyPanelInp');
-  const current=getApiKey();
-  if(current) inp.placeholder='sk-ant-•••••••'+current.slice(-6);
-  inp.value='';
-  document.getElementById('keyPanelStatus').textContent='';
-  const open=forceOpen===true||(forceOpen===undefined&&panel.style.display==='none');
-  panel.style.display=open?'flex':'none';
-  if(open) setTimeout(()=>inp.focus(),60);
+  const inp = document.getElementById('keyPanelInp');
+  const current = getApiKey();
+  if (current) inp.placeholder = 'sk-ant-•••••••' + current.slice(-6);
+  inp.value = '';
+  document.getElementById('keyPanelStatus').textContent = '';
+  const open = forceOpen === true || (forceOpen === undefined && panel.style.display === 'none');
+  panel.style.display = open ? 'flex' : 'none';
+  if (open) setTimeout(() => inp.focus(), 60);
 }
 
-export function saveKeyPanel(){
-  const v=(document.getElementById('keyPanelInp')?.value||'').trim();
-  const st=document.getElementById('keyPanelStatus');
-  if(!v){if(st)st.textContent='Enter a key first.';return;}
-  if(!v.startsWith('sk-ant-')){if(st){st.textContent='Key should start with sk-ant-';st.style.color='var(--prc)';}return;}
+export function saveKeyPanel() {
+  const v = (document.getElementById('keyPanelInp')?.value || '').trim();
+  const st = document.getElementById('keyPanelStatus');
+  if (!v) {
+    if (st) st.textContent = 'Enter a key first.';
+    return;
+  }
+  if (!v.startsWith('sk-ant-')) {
+    if (st) {
+      st.textContent = 'Key should start with sk-ant-';
+      st.style.color = 'var(--prc)';
+    }
+    return;
+  }
   setApiKey(v);
   updateKeyBtn();
-  if(st){st.textContent='✓ Key saved';st.style.color='var(--cc)';}
-  setTimeout(()=>toggleKeyPanel(false),800);
+  if (st) {
+    st.textContent = '✓ Key saved';
+    st.style.color = 'var(--cc)';
+  }
+  setTimeout(() => toggleKeyPanel(false), 800);
 }
 
-export function clearKeyPanel(){
+export function clearKeyPanel() {
   setApiKey('');
   updateKeyBtn();
-  const inp=document.getElementById('keyPanelInp');
-  if(inp){inp.value='';inp.placeholder='sk-ant-api03-…';}
-  const st=document.getElementById('keyPanelStatus');
-  if(st){st.textContent='Key removed';st.style.color='var(--t3)';}
+  const inp = document.getElementById('keyPanelInp');
+  if (inp) {
+    inp.value = '';
+    inp.placeholder = 'sk-ant-api03-…';
+  }
+  const st = document.getElementById('keyPanelStatus');
+  if (st) {
+    st.textContent = 'Key removed';
+    st.style.color = 'var(--t3)';
+  }
 }
 
 /* ── Anthropic proxy URL ───────────────────────────────────────
@@ -117,65 +156,77 @@ export function clearKeyPanel(){
 const CLAUDE_PROXY = `${SB_URL}/functions/v1/claude-proxy`;
 
 /* Core fetch — proxy-first, direct fallback if personal key set */
-async function _anthropicCall(body, beta){
+async function _anthropicCall(body, beta) {
   const key = getApiKey();
   const maxRetries = 3;
 
   /* ── Personal key path (direct to Anthropic) ── */
-  if(key){
+  if (key) {
     const headers = {
-      'Content-Type':'application/json',
-      'x-api-key':key,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true',
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     };
-    if(beta) headers['anthropic-beta'] = beta;
-    for(let attempt=0;attempt<maxRetries;attempt++){
-      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)});
-      if(res.status===529||res.status===429){
-        const wait=Math.min(2000*Math.pow(2,attempt),10000);
-        console.warn(`[API] direct ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
-        await new Promise(r=>setTimeout(r,wait));
+    if (beta) headers['anthropic-beta'] = beta;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (res.status === 529 || res.status === 429) {
+        const wait = Math.min(2000 * Math.pow(2, attempt), 10000);
+        console.warn(
+          `[API] direct ${res.status} — retry ${attempt + 1}/${maxRetries} in ${wait}ms`,
+        );
+        await new Promise((r) => setTimeout(r, wait));
         continue;
       }
-      if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`API ${res.status}: ${txt.slice(0,200)}`);}
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`API ${res.status}: ${txt.slice(0, 200)}`);
+      }
       return res.json();
     }
     throw new Error('API overloaded after 3 retries — try again in a minute');
   }
 
   /* ── Proxy path (no key needed) ── */
-  const sbHdr = authHdr();  // Supabase anon JWT for edge function auth
-  for(let attempt=0;attempt<maxRetries;attempt++){
-    const res=await fetch(CLAUDE_PROXY,{
-      method:'POST',
-      headers:{'Content-Type':'application/json',...sbHdr},
-      body:JSON.stringify({body, ...(beta ? {beta} : {})}),
+  const sbHdr = authHdr(); // Supabase anon JWT for edge function auth
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await fetch(CLAUDE_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...sbHdr },
+      body: JSON.stringify({ body, ...(beta ? { beta } : {}) }),
     });
-    if(res.status===529||res.status===429){
-      const wait=Math.min(2000*Math.pow(2,attempt),10000);
-      console.warn(`[API] proxy ${res.status} — retry ${attempt+1}/${maxRetries} in ${wait}ms`);
-      await new Promise(r=>setTimeout(r,wait));
+    if (res.status === 529 || res.status === 429) {
+      const wait = Math.min(2000 * Math.pow(2, attempt), 10000);
+      console.warn(`[API] proxy ${res.status} — retry ${attempt + 1}/${maxRetries} in ${wait}ms`);
+      await new Promise((r) => setTimeout(r, wait));
       continue;
     }
-    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error(`Proxy ${res.status}: ${txt.slice(0,200)}`);}
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Proxy ${res.status}: ${txt.slice(0, 200)}`);
+    }
     return res.json();
   }
   throw new Error('API overloaded after 3 retries — try again in a minute');
 }
 
 /* ── Anthropic fetch helper (retries on 429/529) ──────────── */
-export async function anthropicFetch(body){
+export async function anthropicFetch(body) {
   return _anthropicCall(body, null);
 }
 
 /* ── Anthropic MCP fetch — adds mcp-client beta header ──────── */
-export async function anthropicMcpFetch(body){
+export async function anthropicMcpFetch(body) {
   return _anthropicCall(body, 'mcp-client-2025-04-04');
 }
 
 /* ── Research fetch — Opus + web_search, extracts text from multi-block responses ── */
-export async function researchFetch(system, userPrompt){
+export async function researchFetch(system, userPrompt) {
   const data = await anthropicFetch({
     model: MODEL_RESEARCH,
     max_tokens: 1600,
@@ -183,7 +234,7 @@ export async function researchFetch(system, userPrompt){
     tools: [{ type: 'web_search_20250305', name: 'web_search' }],
     messages: [{ role: 'user', content: userPrompt }],
   });
-  const textParts = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+  const textParts = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text);
   return { raw: data, text: textParts.join('\n').trim(), content: data.content };
 }
 
@@ -205,12 +256,13 @@ export async function researchFetch(system, userPrompt){
  * @param {string} source     — cache key, e.g. 'contact_report'
  * @returns {object|null}
  */
-export async function cacheGet(companyId, source){
+export async function cacheGet(companyId, source) {
   try {
-    const url = `${SB_URL}/rest/v1/enrich_cache`
-      + `?company_id=eq.${encodeURIComponent(companyId)}`
-      + `&source=eq.${encodeURIComponent(source)}`
-      + `&order=fetched_at.desc&limit=1`;
+    const url =
+      `${SB_URL}/rest/v1/enrich_cache` +
+      `?company_id=eq.${encodeURIComponent(companyId)}` +
+      `&source=eq.${encodeURIComponent(source)}` +
+      `&order=fetched_at.desc&limit=1`;
     const res = await fetch(url, { headers: authHdr() });
     if (!res.ok) return null;
     const rows = await res.json();
@@ -225,7 +277,7 @@ export async function cacheGet(companyId, source){
     }
     if (window.clog) window.clog('db', `Cache HIT ✅ — ${companyId}:${source} (saved ~tokens)`);
     return row.data;
-  } catch(e) {
+  } catch (e) {
     console.warn('cacheGet error', e);
     return null;
   }
@@ -238,18 +290,24 @@ export async function cacheGet(companyId, source){
  * @param {object} data       — any JSON-serialisable payload
  * @param {number} ttlHours   — default 168 (7 days)
  */
-export async function cacheSet(companyId, source, data, ttlHours = 168){
+export async function cacheSet(companyId, source, data, ttlHours = 168) {
   try {
     /* Delete existing entry for same company+source first (clean upsert) */
     await fetch(
       `${SB_URL}/rest/v1/enrich_cache?company_id=eq.${encodeURIComponent(companyId)}&source=eq.${encodeURIComponent(source)}`,
-      { method: 'DELETE', headers: authHdr() }
+      { method: 'DELETE', headers: authHdr() },
     );
-    await dbEnrich.upsert({ company_id: companyId, source, data, ttl_hours: ttlHours, fetched_at: new Date().toISOString() });
+    await dbEnrich.upsert({
+      company_id: companyId,
+      source,
+      data,
+      ttl_hours: ttlHours,
+      fetched_at: new Date().toISOString(),
+    });
     // _req throws on error, so reaching here means success
     if (window.clog) window.clog('db', `Cache SET — ${companyId}:${source} TTL=${ttlHours}h`);
     return true;
-  } catch(e) {
+  } catch (e) {
     console.warn('cacheSet error', e);
     return false;
   }
@@ -261,13 +319,14 @@ export async function cacheSet(companyId, source, data, ttlHours = 168){
  * @param {string} companyId
  * @param {string|null} source
  */
-export async function cacheInvalidate(companyId, source = null){
+export async function cacheInvalidate(companyId, source = null) {
   try {
     let url = `${SB_URL}/rest/v1/enrich_cache?company_id=eq.${encodeURIComponent(companyId)}`;
     if (source) url += `&source=eq.${encodeURIComponent(source)}`;
     await fetch(url, { method: 'DELETE', headers: authHdr() });
-    if (window.clog) window.clog('db', `Cache INVALIDATED — ${companyId}${source ? ':'+source : ' (all)'}`);
-  } catch(e) {
+    if (window.clog)
+      window.clog('db', `Cache INVALIDATED — ${companyId}${source ? ':' + source : ' (all)'}`);
+  } catch (e) {
     console.warn('cacheInvalidate error', e);
   }
 }
@@ -285,7 +344,7 @@ export async function cacheInvalidate(companyId, source = null){
  * @param {Function} fn        — async function that returns the data to cache
  * @returns {object}
  */
-export async function withCache(companyId, source, ttlHours, fn){
+export async function withCache(companyId, source, ttlHours, fn) {
   const hit = await cacheGet(companyId, source);
   if (hit !== null) return hit;
   const result = await fn();
@@ -296,14 +355,19 @@ export async function withCache(companyId, source, ttlHours, fn){
 }
 
 /* ── Status ───────────────────────────────────────────────── */
-export function setStatus(live){
-  const el=document.getElementById('dbStatus');
-  if(!el) return;
-  const loaded=S.companies.length;
-  const total=S.totalCompaniesInDb||0;
-  const countStr = total && total>loaded ? `${loaded} / ${total}` : `${loaded}`;
-  if(live){ el.textContent=`● Live · ${countStr}`; el.className='nav-status live'; }
-  else     { el.textContent=`○ ${countStr}`;         el.className='nav-status'; }
+export function setStatus(live) {
+  const el = document.getElementById('dbStatus');
+  if (!el) return;
+  const loaded = S.companies.length;
+  const total = S.totalCompaniesInDb || 0;
+  const countStr = total && total > loaded ? `${loaded} / ${total}` : `${loaded}`;
+  if (live) {
+    el.textContent = `● Live · ${countStr}`;
+    el.className = 'nav-status live';
+  } else {
+    el.textContent = `○ ${countStr}`;
+    el.className = 'nav-status';
+  }
 }
 
 /* ── Load from Supabase (companies + contacts + relations in parallel) ── */
@@ -314,138 +378,217 @@ export function setStatus(live){
    ─────────────────────────────────────────────────────────── */
 const _PAGE = 200;
 
-export async function loadFromSupabase(renderStats,renderList,renderTagPanel){
-  try{
-    const[cr,ct,rl] = await Promise.all([
+export async function loadFromSupabase(renderStats, renderList, renderTagPanel) {
+  try {
+    const [cr, ct, rl] = await Promise.all([
       dbCo.list('0-199'),
-      dbContacts.listAll(),   // first 1000 (SB row limit)
+      dbContacts.listAll(), // first 1000 (SB row limit)
       dbRelations.listAll(),
     ]);
-    if(!Array.isArray(cr)) throw new Error('companies load failed');
-    const dbc=cr, dbt=Array.isArray(ct)?ct:[], dbr=Array.isArray(rl)?rl:[];
+    if (!Array.isArray(cr)) throw new Error('companies load failed');
+    const dbc = cr,
+      dbt = Array.isArray(ct) ? ct : [],
+      dbr = Array.isArray(rl) ? rl : [];
     // Paginate contacts beyond the first 1000 (SB limit per request)
     const _loadAllContacts = async (initial) => {
-      let all=[...initial], page=1000;
-      while(true){
-        try{
-          const r=await fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`,
-            {headers:authHdr({'Range':`${page}-${page+999}`})});
-          if(!r.ok || r.status===416) break;
-          const rows=await r.json();
-          if(!Array.isArray(rows)||!rows.length) break;
-          all=[...all,...rows];
-          page+=1000;
-          if(r.status!==206) break;  // 200 = got all
-        }catch(e){break;}
+      let all = [...initial],
+        page = 1000;
+      while (true) {
+        try {
+          const r = await fetch(`${SB_URL}/rest/v1/contacts?select=*&order=full_name.asc`, {
+            headers: authHdr({ Range: `${page}-${page + 999}` }),
+          });
+          if (!r.ok || r.status === 416) break;
+          const rows = await r.json();
+          if (!Array.isArray(rows) || !rows.length) break;
+          all = [...all, ...rows];
+          page += 1000;
+          if (r.status !== 206) break; // 200 = got all
+        } catch (e) {
+          break;
+        }
       }
       return all;
     };
     // Start bg contacts pagination immediately (don't block first render)
-    _loadAllContacts(dbt).then(all=>{ S.contacts=all; });
+    _loadAllContacts(dbt).then((all) => {
+      S.contacts = all;
+    });
     // cr is a plain array from db.js — get total from SB separately
-    const totalRes = await fetch(`${SB_URL}/rest/v1/companies?select=id`,
-      {headers:authHdr({'Prefer':'count=exact','Range':'0-0'})});
-    const total = parseInt(totalRes.headers.get('content-range')?.split('/')[1]||'0');
-    S.totalCompaniesInDb=total;
-    if(Array.isArray(dbc)&&dbc.length){ const fresh=dbc.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''})); S.companies=fresh; _loadingPages=false; /* reset flag so bg load can proceed */ }
-    if(Array.isArray(dbt)) S.contacts=dbt;
-    if(Array.isArray(dbr)) S.allRelations=dbr;
+    const totalRes = await fetch(`${SB_URL}/rest/v1/companies?select=id`, {
+      headers: authHdr({ Prefer: 'count=exact', Range: '0-0' }),
+    });
+    const total = parseInt(totalRes.headers.get('content-range')?.split('/')[1] || '0');
+    S.totalCompaniesInDb = total;
+    if (Array.isArray(dbc) && dbc.length) {
+      const fresh = dbc.map((r) => ({
+        ...r,
+        type: r.type || classify(r.note || ''),
+        note: r.note || '',
+      }));
+      S.companies = fresh;
+      _loadingPages = false; /* reset flag so bg load can proceed */
+    }
+    if (Array.isArray(dbt)) S.contacts = dbt;
+    if (Array.isArray(dbr)) S.allRelations = dbr;
     setStatus(true);
-    renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
-    if(window.clog) window.clog('db',`<b>${S.companies.length}</b> / ${total} companies · <b>${S.contacts.length}</b> contacts — loading remaining…`);
-    if(total>_PAGE) _loadRemainingPages(total,renderStats,renderList,renderTagPanel);
-  }catch(e){
-    console.warn('[load]',e.message);
+    renderStats();
+    renderList();
+    if (S.tagPanelOpen) renderTagPanel();
+    if (window.clog)
+      window.clog(
+        'db',
+        `<b>${S.companies.length}</b> / ${total} companies · <b>${S.contacts.length}</b> contacts — loading remaining…`,
+      );
+    if (total > _PAGE) _loadRemainingPages(total, renderStats, renderList, renderTagPanel);
+  } catch (e) {
+    console.warn('[load]', e.message);
     setStatus(false);
     // 522 = Cloudflare/Supabase transient timeout — auto-retry once after 3s
-    if(e.message&&(e.message.includes('522')||e.message.includes('failed to fetch')||e.message.includes('NetworkError')||e.message.includes('Load failed')||e.message.includes('companies load failed'))){
-      if(window.clog) window.clog('db','⟳ Connection dropped (522) — retrying in 3s…');
-      setTimeout(()=>loadFromSupabase(renderStats,renderList,renderTagPanel),3000);
+    if (
+      e.message &&
+      (e.message.includes('522') ||
+        e.message.includes('failed to fetch') ||
+        e.message.includes('NetworkError') ||
+        e.message.includes('Load failed') ||
+        e.message.includes('companies load failed'))
+    ) {
+      if (window.clog) window.clog('db', '⟳ Connection dropped (522) — retrying in 3s…');
+      setTimeout(() => loadFromSupabase(renderStats, renderList, renderTagPanel), 3000);
       return;
     }
-    if(window.clog) window.clog('db',`Load failed — ${e.message}`);
-    renderStats();renderList();
+    if (window.clog) window.clog('db', `Load failed — ${e.message}`);
+    renderStats();
+    renderList();
   }
 }
 
-let _loadingPages=false;
-async function _loadRemainingPages(total,renderStats,renderList,renderTagPanel){
-  if(_loadingPages) return; // already loading — don't run twice
-  _loadingPages=true;
-  let offset=_PAGE;
-  while(offset<total){
-    const end=Math.min(offset+_PAGE-1,total-1);
-    try{
-      const r=await fetch(
+let _loadingPages = false;
+async function _loadRemainingPages(total, renderStats, renderList, renderTagPanel) {
+  if (_loadingPages) return; // already loading — don't run twice
+  _loadingPages = true;
+  let offset = _PAGE;
+  while (offset < total) {
+    const end = Math.min(offset + _PAGE - 1, total - 1);
+    try {
+      const r = await fetch(
         `${SB_URL}/rest/v1/companies?select=*&order=icp.desc.nullslast,data_richness.desc,updated_at.desc.nullslast`,
-        {headers:authHdr({'Range':`${offset}-${end}`})}
+        { headers: authHdr({ Range: `${offset}-${end}` }) },
       );
-      if(!r.ok) break;
-      const page=await r.json();
-      if(!Array.isArray(page)||!page.length) break;
+      if (!r.ok) break;
+      const page = await r.json();
+      if (!Array.isArray(page) || !page.length) break;
       // Deduplicate by id to prevent doubles when loadFromSupabase is called multiple times
-      const incoming=page.map(r=>({...r,type:r.type||classify(r.note||''),note:r.note||''}));
-      const existingIds=new Set(S.companies.map(c=>c.id));
-      const newOnly=incoming.filter(c=>!existingIds.has(c.id));
-      if(!newOnly.length) break; // already have this page — stop
-      S.companies=[...S.companies,...newOnly];
+      const incoming = page.map((r) => ({
+        ...r,
+        type: r.type || classify(r.note || ''),
+        note: r.note || '',
+      }));
+      const existingIds = new Set(S.companies.map((c) => c.id));
+      const newOnly = incoming.filter((c) => !existingIds.has(c.id));
+      if (!newOnly.length) break; // already have this page — stop
+      S.companies = [...S.companies, ...newOnly];
       setStatus(true);
-      renderStats();renderList();if(S.tagPanelOpen)renderTagPanel();
-    }catch(e){ break; }
-    offset+=_PAGE;
+      renderStats();
+      renderList();
+      if (S.tagPanelOpen) renderTagPanel();
+    } catch (e) {
+      break;
+    }
+    offset += _PAGE;
   }
-  _loadingPages=false;
-  if(window.clog) window.clog('db',`✓ All loaded: <b>${S.companies.length}</b> / ${total} companies`);
+  _loadingPages = false;
+  if (window.clog)
+    window.clog('db', `✓ All loaded: <b>${S.companies.length}</b> / ${total} companies`);
 }
 
 /* ── Refresh relations cache only ─────────────────────────── */
-export async function refreshRelationsCache(){
-  try{
-    const r=await dbRelations.listAll();
-    const data=r;
-    if(Array.isArray(data)){S.allRelations=data;if(window.clog)window.clog('db',`Relations refreshed: <b>${data.length}</b> rows`);}
+export async function refreshRelationsCache() {
+  try {
+    const r = await dbRelations.listAll();
+    const data = r;
+    if (Array.isArray(data)) {
+      S.allRelations = data;
+      if (window.clog) window.clog('db', `Relations refreshed: <b>${data.length}</b> rows`);
+    }
     return data;
-  }catch(e){console.warn('relations refresh',e);return S.allRelations;}
+  } catch (e) {
+    console.warn('relations refresh', e);
+    return S.allRelations;
+  }
 }
 
 /* ── Save ─────────────────────────────────────────────────── */
-export async function saveCompany(r){return dbCo.upsert(r);}
-export async function saveContact(r){return dbContacts.upsert(r);}
+export async function saveCompany(r) {
+  return dbCo.upsert(r);
+}
+export async function saveContact(r) {
+  return dbContacts.upsert(r);
+}
 
 /* ── Stats ────────────────────────────────────────────────── */
-export function renderStats(){
-  const t30=Date.now()-30*24*60*60*1000,cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));
-  const fresh=S.companies.filter(c=>c.type==='prospect'&&(!c.updated_at||new Date(c.updated_at).getTime()<t30)&&!cids.has(_slug(c.name))).length;
-  document.getElementById('stAll').textContent=S.totalCompaniesInDb||S.companies.length;
-  document.getElementById('stClient').textContent=S.companies.filter(c=>c.type==='client').length;
-  document.getElementById('stPoc').textContent=S.companies.filter(c=>c.type==='poc').length;
-  document.getElementById('stPartner').textContent=S.companies.filter(c=>c.type==='partner').length;
-  document.getElementById('stProspect').textContent=S.companies.filter(c=>c.type==='prospect').length;
-  document.getElementById('stNogo').textContent=S.companies.filter(c=>c.type==='nogo').length;
-  document.getElementById('stFresh').textContent=fresh;
+export function renderStats() {
+  const t30 = Date.now() - 30 * 24 * 60 * 60 * 1000,
+    cids = new Set(S.contacts.map((c) => _slug(c.company_name || '')));
+  const fresh = S.companies.filter(
+    (c) =>
+      c.type === 'prospect' &&
+      (!c.updated_at || new Date(c.updated_at).getTime() < t30) &&
+      !cids.has(_slug(c.name)),
+  ).length;
+  document.getElementById('stAll').textContent = S.totalCompaniesInDb || S.companies.length;
+  document.getElementById('stClient').textContent = S.companies.filter(
+    (c) => c.type === 'client',
+  ).length;
+  document.getElementById('stPoc').textContent = S.companies.filter((c) => c.type === 'poc').length;
+  document.getElementById('stPartner').textContent = S.companies.filter(
+    (c) => c.type === 'partner',
+  ).length;
+  document.getElementById('stProspect').textContent = S.companies.filter(
+    (c) => c.type === 'prospect',
+  ).length;
+  document.getElementById('stNogo').textContent = S.companies.filter(
+    (c) => c.type === 'nogo',
+  ).length;
+  document.getElementById('stFresh').textContent = fresh;
 }
 
 /* ── Google News ──────────────────────────────────────────── */
-export async function fetchGoogleNews(name){
-  const q=encodeURIComponent(`"${name}" programmatic OR "data partnership" OR adtech`);
-  const proxy=`https://corsproxy.io/?url=${encodeURIComponent('https://news.google.com/rss/search?q='+q+'&hl=en-US&gl=US&ceid=US:en')}`;
-  try{
-    const res=await fetch(proxy,{signal:AbortSignal.timeout(7000)});
-    if(!res.ok)throw new Error('proxy '+res.status);
-    const xml=await res.text();
-    const doc=new DOMParser().parseFromString(xml,'application/xml');
-    if(doc.querySelector('parseerror'))throw new Error('parse error');
-    return[...doc.querySelectorAll('item')].slice(0,10).map(item=>{
-      const linkNode=item.querySelector('link');
-      const url=linkNode?.nextSibling?.nodeValue?.trim()||item.querySelector('link')?.textContent?.trim()||'';
-      const rawTitle=item.querySelector('title')?.textContent||'';
-      const title=rawTitle.replace(/ - [^-]+$/,'').trim();
-      const src=item.querySelector('source')?.textContent||'Google News';
-      const dateRaw=item.querySelector('pubDate')?.textContent;
-      const date=dateRaw?new Date(dateRaw).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'';
-      return{title,url,source:src,date,link_type:'press',summary:''};
-    }).filter(i=>i.title&&i.url);
-  }catch(e){console.warn('Google News error',e.message);return[];}
+export async function fetchGoogleNews(name) {
+  const q = encodeURIComponent(`"${name}" programmatic OR "data partnership" OR adtech`);
+  const proxy = `https://corsproxy.io/?url=${encodeURIComponent('https://news.google.com/rss/search?q=' + q + '&hl=en-US&gl=US&ceid=US:en')}`;
+  try {
+    const res = await fetch(proxy, { signal: AbortSignal.timeout(7000) });
+    if (!res.ok) throw new Error('proxy ' + res.status);
+    const xml = await res.text();
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (doc.querySelector('parseerror')) throw new Error('parse error');
+    return [...doc.querySelectorAll('item')]
+      .slice(0, 10)
+      .map((item) => {
+        const linkNode = item.querySelector('link');
+        const url =
+          linkNode?.nextSibling?.nodeValue?.trim() ||
+          item.querySelector('link')?.textContent?.trim() ||
+          '';
+        const rawTitle = item.querySelector('title')?.textContent || '';
+        const title = rawTitle.replace(/ - [^-]+$/, '').trim();
+        const src = item.querySelector('source')?.textContent || 'Google News';
+        const dateRaw = item.querySelector('pubDate')?.textContent;
+        const date = dateRaw
+          ? new Date(dateRaw).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: '2-digit',
+            })
+          : '';
+        return { title, url, source: src, date, link_type: 'press', summary: '' };
+      })
+      .filter((i) => i.title && i.url);
+  } catch (e) {
+    console.warn('Google News error', e.message);
+    return [];
+  }
 }
 
 /* ── Geocoding ────────────────────────────────────────────── */
@@ -471,19 +614,31 @@ export async function saveGeocode(companyId, lat, lng) {
 }
 
 /* ── Intelligence save ────────────────────────────────────── */
-export async function saveIntelligence(slug,items){
-  if(!items.length)return;
-  try{
-    const ex=await dbIntel.get(slug,'press_links');
-    const existing=Array.isArray(ex)&&ex[0]?.content||[];
-    const seen=new Set(existing.map(l=>l.url));
-    const merged=[...existing,...items.filter(i=>!seen.has(i.url))];
-    if(ex&&ex[0]){
-      await dbIntel.upsert({company_id:slug,type:'press_links',content:merged,updated_at:new Date().toISOString()});
-    }else{
-      await dbIntel.upsert({company_id:slug,type:'press_links',content:merged,updated_at:new Date().toISOString()});
+export async function saveIntelligence(slug, items) {
+  if (!items.length) return;
+  try {
+    const ex = await dbIntel.get(slug, 'press_links');
+    const existing = (Array.isArray(ex) && ex[0]?.content) || [];
+    const seen = new Set(existing.map((l) => l.url));
+    const merged = [...existing, ...items.filter((i) => !seen.has(i.url))];
+    if (ex && ex[0]) {
+      await dbIntel.upsert({
+        company_id: slug,
+        type: 'press_links',
+        content: merged,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      await dbIntel.upsert({
+        company_id: slug,
+        type: 'press_links',
+        content: merged,
+        updated_at: new Date().toISOString(),
+      });
     }
-  }catch(e){console.warn('Intel save',e);}
+  } catch (e) {
+    console.warn('Intel save', e);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -491,41 +646,49 @@ export async function saveIntelligence(slug,items){
    Key stored in localStorage under 'oaLemlistKey'.
    All calls go via Supabase Edge Function (avoids CORS + exposes no key).
    ══════════════════════════════════════════════════════════════ */
-export function lemlistKey(){
-  let k=localStorage.getItem('oaLemlistKey');
-  if(!k){k=prompt('lemlist API key:');if(k)localStorage.setItem('oaLemlistKey',k.trim());}
-  return k?.trim()||null;
+export function lemlistKey() {
+  let k = localStorage.getItem('oaLemlistKey');
+  if (!k) {
+    k = prompt('lemlist API key:');
+    if (k) localStorage.setItem('oaLemlistKey', k.trim());
+  }
+  return k?.trim() || null;
 }
 
-export async function lemlistFetch(path,method='GET',body=null,_retry=0){
-  const apiKey=lemlistKey();
-  if(!apiKey)throw new Error('Lemlist not connected — click ⚙ Connect Lemlist to add your API key');
-  const r=await fetch(LEMLIST_PROXY,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({path,method,body,apiKey}),
+export async function lemlistFetch(path, method = 'GET', body = null, _retry = 0) {
+  const apiKey = lemlistKey();
+  if (!apiKey)
+    throw new Error('Lemlist not connected — click ⚙ Connect Lemlist to add your API key');
+  const r = await fetch(LEMLIST_PROXY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, method, body, apiKey }),
   });
-  if(r.status===429){
-    if(_retry<3){
-      const wait=(_retry+1)*2000; // 2s, 4s, 6s backoff
-      clog&&clog('info',`Lemlist rate limited — retrying in ${wait/1000}s…`);
-      await new Promise(res=>setTimeout(res,wait));
-      return lemlistFetch(path,method,body,_retry+1);
+  if (r.status === 429) {
+    if (_retry < 3) {
+      const wait = (_retry + 1) * 2000; // 2s, 4s, 6s backoff
+      clog && clog('info', `Lemlist rate limited — retrying in ${wait / 1000}s…`);
+      await new Promise((res) => setTimeout(res, wait));
+      return lemlistFetch(path, method, body, _retry + 1);
     }
     throw new Error('Lemlist rate limit reached — wait a minute and try again');
   }
-  if(r.status===401)throw new Error('Lemlist API key is invalid — click Change to update it');
-  if(r.status===403)throw new Error('Lemlist access denied — check your API key permissions');
-  if(r.status===404)throw new Error('Lemlist resource not found: '+path);
-  if(!r.ok){
-    let detail='';
-    try{const t=await r.text();const j=JSON.parse(t);detail=j.error||j.message||t;}catch{}
-    throw new Error(`Lemlist error ${r.status}${detail?' — '+detail:''}`);
+  if (r.status === 401) throw new Error('Lemlist API key is invalid — click Change to update it');
+  if (r.status === 403) throw new Error('Lemlist access denied — check your API key permissions');
+  if (r.status === 404) throw new Error('Lemlist resource not found: ' + path);
+  if (!r.ok) {
+    let detail = '';
+    try {
+      const t = await r.text();
+      const j = JSON.parse(t);
+      detail = j.error || j.message || t;
+    } catch {}
+    throw new Error(`Lemlist error ${r.status}${detail ? ' — ' + detail : ''}`);
   }
   return r.json();
 }
 
-export async function lemlistCampaigns(){
+export async function lemlistCampaigns() {
   // Paginate through all campaigns (API max 100 per page)
   const all = [];
   let offset = 0;
@@ -541,26 +704,32 @@ export async function lemlistCampaigns(){
   return all;
 }
 
-export async function lemlistAddLead(campaignId,contact){
-  const name=contact.full_name||contact.name||'';
-  const parts=name.split(' ');
-  return lemlistFetch('/campaigns/'+campaignId+'/leads/','POST',{
-    email:      contact.email||'',
-    firstName:  parts[0]||'',
-    lastName:   parts.slice(1).join(' ')||'',
-    companyName:contact.company_name||'',
-    jobTitle:   contact.title||'',
-    linkedinUrl:contact.linkedin_url||contact.linkedin||'',
+export async function lemlistAddLead(campaignId, contact) {
+  const name = contact.full_name || contact.name || '';
+  const parts = name.split(' ');
+  return lemlistFetch('/campaigns/' + campaignId + '/leads/', 'POST', {
+    email: contact.email || '',
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ') || '',
+    companyName: contact.company_name || '',
+    jobTitle: contact.title || '',
+    linkedinUrl: contact.linkedin_url || contact.linkedin || '',
   });
 }
 
-export async function lemlistWriteBack(contactIds,campaignId,campaignName){
-  const now=new Date().toISOString();
-  await Promise.all(contactIds.map(id=>
-    fetch(SB_URL+'/rest/v1/contacts?id=eq.'+id,{
-      method:'PATCH',
-      headers:{...HDR,'Prefer':'return=minimal'},
-      body:JSON.stringify({lemlist_campaign_id:campaignId,lemlist_campaign_name:campaignName,lemlist_pushed_at:now}),
-    })
-  ));
+export async function lemlistWriteBack(contactIds, campaignId, campaignName) {
+  const now = new Date().toISOString();
+  await Promise.all(
+    contactIds.map((id) =>
+      fetch(SB_URL + '/rest/v1/contacts?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { ...HDR, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          lemlist_campaign_id: campaignId,
+          lemlist_campaign_name: campaignName,
+          lemlist_pushed_at: now,
+        }),
+      }),
+    ),
+  );
 }

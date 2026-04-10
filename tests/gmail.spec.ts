@@ -1,7 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { waitForHub } from './helpers';
 
-
 // ── helpers ──────────────────────────────────────────────────────
 async function openFirstCompanyWithWebsite(page: Page) {
   // Find a company that has a website (needed for domain-based contact filtering)
@@ -25,8 +24,9 @@ async function expandEmailHistory(page: Page) {
 
 // ── SUITE: Gmail nav button ───────────────────────────────────────
 test.describe('Gmail nav button', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('Gmail button visible in nav', async ({ page }) => {
     await expect(page.locator('#gmailNavBtn')).toBeVisible();
@@ -44,7 +44,7 @@ test.describe('Gmail nav button', () => {
     const btn = page.locator('#gmailNavBtn');
     await expect(btn).toHaveText('Gmail');
     // Should not have green color styling
-    const color = await btn.evaluate(el => (el as HTMLElement).style.color);
+    const color = await btn.evaluate((el) => (el as HTMLElement).style.color);
     expect(color).toBeFalsy();
   });
 
@@ -60,7 +60,7 @@ test.describe('Gmail nav button', () => {
     const btn = page.locator('#gmailNavBtn');
     await expect(btn).toContainText('Gmail:');
     await expect(btn).toContainText('test');
-    const color = await btn.evaluate(el => (el as HTMLElement).style.color);
+    const color = await btn.evaluate((el) => (el as HTMLElement).style.color);
     expect(color).toBeTruthy(); // green styling applied
     // Cleanup
     await page.evaluate(() => {
@@ -79,7 +79,7 @@ test.describe('Gmail nav button', () => {
     });
     await page.waitForTimeout(200);
 
-    page.once('dialog', dialog => dialog.dismiss()); // cancel the confirm
+    page.once('dialog', (dialog) => dialog.dismiss()); // cancel the confirm
     await page.locator('#gmailNavBtn').click();
     // Button should still show connected (we dismissed)
     await expect(page.locator('#gmailNavBtn')).toContainText('Gmail:');
@@ -94,7 +94,6 @@ test.describe('Gmail nav button', () => {
 
 // ── SUITE: Email History section ──────────────────────────────────
 test.describe('Email History section', () => {
-
   test.beforeEach(async ({ page }) => {
     await waitForHub(page);
     await openFirstCompanyWithWebsite(page);
@@ -143,7 +142,10 @@ test.describe('Email History section', () => {
     await page.waitForTimeout(300);
     await expandEmailHistory(page);
     await expect(page.locator('#ib-email-body button', { hasText: /scan gmail/i })).toBeVisible();
-    await page.evaluate(() => { localStorage.removeItem('oaGmailToken'); localStorage.removeItem('oaGmailExpiry'); });
+    await page.evaluate(() => {
+      localStorage.removeItem('oaGmailToken');
+      localStorage.removeItem('oaGmailExpiry');
+    });
   });
 
   test('Update Contacts button present when connected', async ({ page }) => {
@@ -155,8 +157,13 @@ test.describe('Email History section', () => {
     await page.evaluate(() => window.openCompany(window.currentCompany));
     await page.waitForTimeout(300);
     await expandEmailHistory(page);
-    await expect(page.locator('#ib-email-body button', { hasText: /update contacts/i })).toBeVisible();
-    await page.evaluate(() => { localStorage.removeItem('oaGmailToken'); localStorage.removeItem('oaGmailExpiry'); });
+    await expect(
+      page.locator('#ib-email-body button', { hasText: /update contacts/i }),
+    ).toBeVisible();
+    await page.evaluate(() => {
+      localStorage.removeItem('oaGmailToken');
+      localStorage.removeItem('oaGmailExpiry');
+    });
   });
 
   test('Summarize button present when connected', async ({ page }) => {
@@ -169,7 +176,10 @@ test.describe('Email History section', () => {
     await page.waitForTimeout(300);
     await expandEmailHistory(page);
     await expect(page.locator('#ib-email-body button', { hasText: /summarize/i })).toBeVisible();
-    await page.evaluate(() => { localStorage.removeItem('oaGmailToken'); localStorage.removeItem('oaGmailExpiry'); });
+    await page.evaluate(() => {
+      localStorage.removeItem('oaGmailToken');
+      localStorage.removeItem('oaGmailExpiry');
+    });
   });
 
   test('Summarize without scan shows error message', async ({ page }) => {
@@ -183,15 +193,21 @@ test.describe('Email History section', () => {
     await page.waitForTimeout(300);
     await expandEmailHistory(page);
     await page.locator('#ib-email-body button', { hasText: /summarize/i }).click();
-    await expect(page.locator('#ib-email-results')).toContainText('Scan Gmail first', { timeout: 3000 });
-    await page.evaluate(() => { localStorage.removeItem('oaGmailToken'); localStorage.removeItem('oaGmailExpiry'); });
+    await expect(page.locator('#ib-email-results')).toContainText('Scan Gmail first', {
+      timeout: 3000,
+    });
+    await page.evaluate(() => {
+      localStorage.removeItem('oaGmailToken');
+      localStorage.removeItem('oaGmailExpiry');
+    });
   });
 });
 
 // ── SUITE: Gmail summarize token estimate ─────────────────────────
 test.describe('Gmail summarize - token estimate', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('token estimate is shown in confirm box', async ({ page }) => {
     await page.evaluate(() => {
@@ -200,9 +216,27 @@ test.describe('Gmail summarize - token estimate', () => {
       localStorage.setItem('oaGmailEmail', 'test@test.com');
       // Inject mock threads
       window._gmailLastThreads = [
-        { from: 'john@criteo.com', subject: 'Partnership discussion', date: '1 Jan 25', id: 'msg1', threadId: 'thread1' },
-        { from: 'jane@criteo.com', subject: 'Follow up', date: '5 Jan 25', id: 'msg2', threadId: 'thread2' },
-        { from: 'john@criteo.com', subject: 'Re: Proposal', date: '10 Jan 25', id: 'msg3', threadId: 'thread3' },
+        {
+          from: 'john@criteo.com',
+          subject: 'Partnership discussion',
+          date: '1 Jan 25',
+          id: 'msg1',
+          threadId: 'thread1',
+        },
+        {
+          from: 'jane@criteo.com',
+          subject: 'Follow up',
+          date: '5 Jan 25',
+          id: 'msg2',
+          threadId: 'thread2',
+        },
+        {
+          from: 'john@criteo.com',
+          subject: 'Re: Proposal',
+          date: '10 Jan 25',
+          id: 'msg3',
+          threadId: 'thread3',
+        },
       ];
       window._gmailLastSlug = 'criteo';
       window._gmailLastName = 'Criteo';
@@ -245,20 +279,21 @@ test.describe('Gmail summarize - token estimate', () => {
       function estimateTokens(threads: any[]) {
         return { input: 300 + threads.length * 80, output: 450 };
       }
-      const t3 = estimateTokens([{},{},{}]);
-      const t10 = estimateTokens([{},{},{},{},{},{},{},{},{},{}]);
+      const t3 = estimateTokens([{}, {}, {}]);
+      const t10 = estimateTokens([{}, {}, {}, {}, {}, {}, {}, {}, {}, {}]);
       return { t3: t3.input + t3.output, t10: t10.input + t10.output };
     });
     expect(result.t10).toBeGreaterThan(result.t3);
-    expect(result.t3).toBe(1050);   // 300 + 3*80 + 450
-    expect(result.t10).toBe(1550);  // 300 + 10*80 + 450
+    expect(result.t3).toBe(1050); // 300 + 3*80 + 450
+    expect(result.t10).toBe(1550); // 300 + 10*80 + 450
   });
 });
 
 // ── SUITE: Gmail contact filtering ───────────────────────────────
 test.describe('Gmail contact domain filtering', () => {
-
-  test.beforeEach(async ({ page }) => { await waitForHub(page); });
+  test.beforeEach(async ({ page }) => {
+    await waitForHub(page);
+  });
 
   test('only contacts from company domain are suggested', async ({ page }) => {
     const result = await page.evaluate(() => {
@@ -266,16 +301,16 @@ test.describe('Gmail contact domain filtering', () => {
       const dc = 'criteo.com';
       const cmap: Record<string, any> = {};
       const fromHeaders = [
-        'John Smith <john@criteo.com>',      // ✓ company domain
-        'Lukasz <lukasz@onaudience.com>',    // ✗ our domain - should be excluded
-        'Jane Doe <jane@criteo.com>',        // ✓ company domain
-        'noreply@mailchimp.com',             // ✗ third party
+        'John Smith <john@criteo.com>', // ✓ company domain
+        'Lukasz <lukasz@onaudience.com>', // ✗ our domain - should be excluded
+        'Jane Doe <jane@criteo.com>', // ✓ company domain
+        'noreply@mailchimp.com', // ✗ third party
       ];
-      fromHeaders.forEach(from => {
+      fromHeaders.forEach((from) => {
         const m = from.match(/^(.+?)\s*<(.+?)>/) || from.match(/^(.+)$/);
         if (m) {
-          const name = (m[1]||'').trim().replace(/^["']|["']$/g, '');
-          const email = (m[2]||m[1]||'').trim().toLowerCase();
+          const name = (m[1] || '').trim().replace(/^["']|["']$/g, '');
+          const email = (m[2] || m[1] || '').trim().toLowerCase();
           if (email.indexOf('@') !== -1 && dc && email.indexOf('@' + dc) !== -1 && !cmap[email]) {
             cmap[email] = { name, email };
           }
@@ -296,10 +331,10 @@ test.describe('Gmail contact domain filtering', () => {
       const dc = ''; // no website stored
       const cmap: Record<string, any> = {};
       const fromHeaders = ['John <john@criteo.com>'];
-      fromHeaders.forEach(from => {
+      fromHeaders.forEach((from) => {
         const m = from.match(/^(.+?)\s*<(.+?)>/) || from.match(/^(.+)$/);
         if (m) {
-          const email = (m[2]||m[1]||'').trim().toLowerCase();
+          const email = (m[2] || m[1] || '').trim().toLowerCase();
           if (email.indexOf('@') !== -1 && dc && email.indexOf('@' + dc) !== -1 && !cmap[email]) {
             cmap[email] = { email };
           }
