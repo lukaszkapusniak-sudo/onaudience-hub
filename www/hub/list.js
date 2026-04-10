@@ -1,10 +1,10 @@
 /* ═══ list.js — Company list rendering, filters, tags, sort ═══ */
 
-import { SB_URL, TAG_RULES } from './config.js?v=20260410d7';
-import S from './state.js?v=20260410d7';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d7';
-import { anthropicFetch } from './api.js?v=20260410d7';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260410d7';
+import { SB_URL, TAG_RULES } from './config.js?v=20260410d9';
+import S from './state.js?v=20260410d9';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d9';
+import { anthropicFetch } from './api.js?v=20260410d9';
+import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260410d9';
 
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
 export function countPool(){const t30=Date.now()-30*24*60*60*1000;const cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));return S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ))return false;return true;});}
@@ -46,15 +46,15 @@ export function renderList(){
 
     const ctCount=S.contacts.filter(ct=>ct.company_id===(c.id||slug)||_slug(ct.company_name||'')===slug).length;
     const details=[];
-    if(c.hq_city||c.region)details.push(`<span class="c-detail-item">📍 <b>${esc(c.hq_city||c.region)}</b></span>`);
-    if(c.size)details.push(`<span class="c-detail-item">👥 <b>${esc(c.size)}</b></span>`);
-    if(c.category)details.push(`<span class="c-detail-item">${esc(c.category)}</span>`);
+    if(c.hq_city||c.region)details.push(`<span class="c-detail-item c-di-loc">📍 <b>${esc(c.hq_city||c.region)}</b></span>`);
+    if(c.size)details.push(`<span class="c-detail-item c-di-size">👥 ${esc(c.size)}</span>`);
+    if(c.category)details.push(`<span class="c-detail-item c-di-cat">${esc(c.category)}</span>`);
     if(c.icp){const icpCol=c.icp>=8?'var(--g)':c.icp>=6?'#f59e0b':'var(--t3)';const icpBg=c.icp>=8?'var(--gb)':c.icp>=6?'rgba(245,158,11,.1)':'var(--surf3)';details.push(`<span class="c-detail-item" style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:${icpCol};background:${icpBg};border-radius:2px;padding:0 5px">ICP ${c.icp}</span>`);}
-    if(ctCount)details.push(`<span class="c-detail-item">🧑‍💼 ${ctCount} contact${ctCount>1?'s':''}</span>`);
+    if(ctCount)details.push(`<span class="c-detail-item">🧑‍💼 ${ctCount}</span>`);
     if(c.relationship_status)details.push(`<span class="c-detail-item" style="color:var(--g);font-weight:600">${esc(c.relationship_status)}</span>`);
-    if(c.website)details.push(`<a class="c-detail-item" href="${safeUrl(c.website)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--g);text-decoration:none">${esc(c.website.replace(/^https?:\/\//i,''))}</a>`);
-    if(c.updated_at)details.push(`<span class="c-detail-item" style="opacity:.55">${relTime(c.updated_at)}</span>`);
-    const detailHtml=details.length?`<div class="c-detail">${details.join('<span class="c-detail-sep"></span>')}</div>`:'';
+    if(c.website)details.push(`<a class="c-detail-item" href="${safeUrl(c.website)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--pc);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:9px">${esc(c.website.replace(/^https?:\/\//i,'').replace(/\/$/,''))}</a>`);
+    if(c.updated_at)details.push(`<span class="c-detail-item c-di-time">${relTime(c.updated_at)}</span>`);
+    const detailHtml=details.length?`<div class="c-detail">${details.join('')}</div>`:'';
 
     const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'…':(c.note||''));
     const tagRow=coTags.length?`<div class="c-tags-row">${coTags.slice(0,6).map(t=>`<span class="c-tag-micro${S.activeTags.has(t)?' hit':''}" onclick="event.stopPropagation();toggleTag('${t}')">${t}</span>`).join('')}</div>`:'';
