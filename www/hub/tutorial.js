@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409d1';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409d2';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -806,6 +806,11 @@ function _injectStyles() {
 .oa-tut-lang-btn:hover{background:var(--surf);color:var(--t1);border-color:var(--g);}
 .oa-tut-lang-btn.active{background:var(--g);color:#fff;border-color:var(--g);}
 
+/* ── JRPG bouncing arrow ── */
+#oa-tut-arrow{position:fixed;z-index:9998;pointer-events:none;display:none;font-size:clamp(18px,3vw,24px);line-height:1;color:var(--g);animation:oa-arrow-bounce .55s ease-in-out infinite alternate;filter:drop-shadow(0 0 6px rgba(23,128,102,.9));}
+#oa-tut-arrow.vis{display:block;}
+@keyframes oa-arrow-bounce{0%{transform:translateY(0);}100%{transform:translateY(9px);}}
+
 /* ── Mobile: card snaps to bottom, spotlight hidden ── */
 @media (max-width:600px){
   #oa-tut-card{
@@ -864,6 +869,7 @@ function _ensureDom() {
 function _spotlight(selector, label) {
   const sp = _getEl('oa-tut-spotlight');
   const lb = document.getElementById('oa-tut-sp-label');
+  { const _arC=document.getElementById('oa-tut-arrow'); if(_arC)_arC.classList.remove('vis'); }
   if (!selector) {
     sp.style.display = 'none';
     if (lb) lb.classList.remove('vis');
@@ -894,6 +900,7 @@ function _spotlight(selector, label) {
   sp.style.left   = (r.left - pad) + 'px';
   sp.style.width  = (r.width + pad * 2) + 'px';
   sp.style.height = spotH + 'px';
+  sp._targetLeft = r.left + r.width / 2;
 
   // FOCUS label — positioned below spotlight, or above if too low
   if (lb && label) {
