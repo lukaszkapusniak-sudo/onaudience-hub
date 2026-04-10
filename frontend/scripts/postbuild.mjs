@@ -15,4 +15,6 @@ if (!existsSync(indexHtml)) {
 }
 
 writeFileSync(path.join(dist, '404.html'), readFileSync(indexHtml));
-console.log('postbuild: wrote 404.html for GitHub Pages SPA routing');
+// Disable Jekyll so GitHub Pages serves _plugin-vue_* and other _-prefixed Vite chunks
+writeFileSync(path.join(dist, '.nojekyll'), '');
+console.log('postbuild: wrote 404.html and .nojekyll for GitHub Pages');
