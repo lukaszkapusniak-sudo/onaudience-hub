@@ -234,6 +234,13 @@ export function patchNavForDemo() {
     const nb = document.getElementById('userBadge');
     if(nb){
       nb.innerHTML=`<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;color:#7A4200;background:#FEF2E0;border:1px solid rgba(122,66,0,.35);border-radius:2px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase;">DEMO</span>`;
+      // Hide live-only nav buttons
+      const composeBtn = document.getElementById('navComposeBtn');
+      if(composeBtn) composeBtn.style.display='none';
+      // Hide Lemlist and Audiences tabs (require live DB)
+      document.querySelectorAll('.tab-btn').forEach(t=>{
+        if(t.textContent.includes('Lemlist')) t.style.display='none';
+      });
       clearInterval(check);
     }
   },300);
