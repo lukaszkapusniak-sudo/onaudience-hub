@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d3';
-import S from './state.js?v=20260410d3';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d3';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d3';
-import { resolveAlias } from './merge.js?v=20260410d3';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d3';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d4';
+import S from './state.js?v=20260410d4';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d4';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d4';
+import { resolveAlias } from './merge.js?v=20260410d4';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d4';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -425,56 +425,119 @@ async function _loadLemlistSection(slug, name) {
   const body = document.getElementById('ib-lemlist-body');
   if (!body) return;
   try {
-    // Get company contacts from DB
-    const contacts = await dbContacts.byCompany(slug, name);
-    const inLL = contacts.filter(c => c.lemlist_campaign_id && c.lemlist_pushed_at);
-    const notInLL = contacts.filter(c => !c.lemlist_campaign_id);
-    const cnt = document.getElementById('ib-ll-cnt');
-    if (cnt) cnt.textContent = inLL.length || '';
+    // Fetch contacts + outreach history + campaign stats in parallel
+    const [contacts, ohRows, statsRows] = await Promise.all([
+      dbContacts.byCompany(slug, name),
+      // outreach_history for all emails of this company
+      fetch(`${SB_URL}/rest/v1/outreach_history?company_id=eq.${encodeURIComponent(slug)}&select=*&limit=200`, {
+        headers: authHdr()
+      }).then(r => r.ok ? r.json() : []),
+      // campaign stats for campaigns this company appears in
+      fetch(`${SB_URL}/rest/v1/lemlist_campaign_stats?select=*&limit=50`, {
+        headers: authHdr()
+      }).then(r => r.ok ? r.json() : []),
+    ]);
 
-    if (!contacts.length) {
-      body.innerHTML = `<div style="font-size:11px;color:var(--t3)">No contacts for this company yet.</div>`;
+    const inLL   = contacts.filter(c => c.lemlist_campaign_id && c.lemlist_pushed_at);
+    const notInLL = contacts.filter(c => !c.lemlist_campaign_id);
+    const emailContacts = contacts.filter(c => c.email);
+    const pushableCount = notInLL.filter(c => c.email).length;
+
+    const cnt = document.getElementById('ib-ll-cnt');
+    if (cnt) cnt.textContent = ohRows.length || inLL.length || '';
+
+    if (!contacts.length && !ohRows.length) {
+      body.innerHTML = `<div style="font-size:11px;color:var(--t3)">No contacts for this company yet.
+        <br><button class="btn sm" style="margin-top:6px" onclick="_llPushCompany('${esc(slug)}','${esc(name)}')">📤 Push to Lemlist</button></div>`;
       return;
     }
 
-    const pushedHtml = inLL.map(ct => {
-      const av = getAv(ct.full_name||''), n2 = ini(ct.full_name||'');
-      return `<div class="ib-ct" style="cursor:default">
+    // Build stats row from outreach_history
+    const totalSent    = ohRows.length;
+    const totalOpened  = ohRows.filter((r) => r.opened_at).length;
+    const totalReplied = ohRows.filter((r) => r.replied_at).length;
+    const totalClicked = ohRows.filter((r) => r.clicked_at).length;
+    const openRate     = totalSent ? Math.round(totalOpened  / totalSent * 1000) / 10 : 0;
+    const replyRate    = totalSent ? Math.round(totalReplied / totalSent * 1000) / 10 : 0;
+
+    const statsBar = totalSent ? `
+      <div style="display:flex;gap:12px;padding:7px 0 9px;border-bottom:1px solid var(--rule2);margin-bottom:8px;flex-wrap:wrap">
+        <span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--t2)">📤 ${totalSent} sent</span>
+        <span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--g)">👁 ${openRate}% open</span>
+        <span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--pc)">💬 ${replyRate}% reply</span>
+        ${totalClicked ? `<span style="font:600 9px 'IBM Plex Mono',monospace;color:var(--poc)">🖱 ${totalClicked} clicked</span>` : ''}
+      </div>` : '';
+
+    // Build per-contact rows with activity from outreach_history
+    const ohByEmail = new new Map();
+    (ohRows).forEach(r => { if(r.contact_email) ohByEmail.set(r.contact_email, r); });
+
+    const mkCtRow = (ct, faded = false) => {
+      const av = getAv(ct.full_name || ''), n2 = ini(ct.full_name || '');
+      const oh = ohByEmail.get(ct.email || '');
+      const campName = esc(oh?.campaign_name || ct.lemlist_campaign_name || '');
+      const indicators = oh ? [
+        oh.replied_at ? '<span title="Replied" style="color:var(--pc)">💬</span>' : '',
+        oh.opened_at  ? '<span title="Opened"  style="color:var(--g)">👁</span>'  : '',
+        oh.clicked_at ? '<span title="Clicked" style="color:var(--poc)">🖱</span>' : '',
+        oh.bounced_at ? '<span title="Bounced" style="color:var(--cr)">⚠</span>'  : '',
+      ].filter(Boolean).join(' ') : '';
+      const sentDate = oh?.sent_at ? relTime(oh.sent_at) : (ct.lemlist_pushed_at ? relTime(ct.lemlist_pushed_at) : '');
+      return `<div class="ib-ct" style="cursor:default${faded?';opacity:.55':''}">
         <div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${n2}</div>
-        <div class="ib-ct-info">
-          <div class="ib-ct-name">${esc(ct.full_name||'—')}</div>
-          <div class="ib-ct-title" style="color:var(--g)">
-            ✓ ${esc(ct.lemlist_campaign_name||ct.lemlist_campaign_id||'Lemlist')}
-            <span style="color:var(--t4)"> · ${ct.lemlist_pushed_at?relTime(ct.lemlist_pushed_at):''}</span>
+        <div class="ib-ct-info" style="flex:1;min-width:0">
+          <div class="ib-ct-name">${esc(ct.full_name || '—')}
+            ${indicators ? `<span style="margin-left:5px;font-size:10px">${indicators}</span>` : ''}
+          </div>
+          <div class="ib-ct-title" style="${oh?'color:var(--g)':''}">
+            ${campName ? `✓ ${campName}` : esc(ct.title || '')}
+            ${sentDate ? `<span style="color:var(--t4)"> · ${sentDate}</span>` : ''}
           </div>
         </div>
       </div>`;
-    }).join('');
+    };
 
-    const pendingHtml = notInLL.filter(c=>c.email).map(ct => {
-      const av = getAv(ct.full_name||''), n2 = ini(ct.full_name||'');
-      return `<div class="ib-ct" style="opacity:.55;cursor:default">
-        <div class="ib-ct-av" style="background:${av.bg};color:${av.fg}">${n2}</div>
-        <div class="ib-ct-info">
-          <div class="ib-ct-name">${esc(ct.full_name||'—')}</div>
-          <div class="ib-ct-title">${esc(ct.title||'')}${ct.email?' · '+esc(ct.email):''}</div>
-        </div>
-      </div>`;
-    }).join('');
+    // Contacts not in DB outreach_history but in contacts table
+    const inLLHtml  = inLL.map(ct  => mkCtRow(ct,  false)).join('');
+    const notLLHtml = notInLL.filter((c) => c.email).map(ct => mkCtRow(ct, true)).join('');
 
-    const emailContacts = contacts.filter(c=>c.email);
-    const pushableCount = notInLL.filter(c=>c.email).length;
+    // Outreach contacts not in our contacts DB (from webhook/sync)
+    const dbEmails = new Set(contacts.map((c) => c.email));
+    const webhookOnlyHtml = (ohRows)
+      .filter(r => r.contact_email && !dbEmails.has(r.contact_email))
+      .slice(0, 10)
+      .map(r => {
+        const name2 = (r.contact_email).split('@')[0];
+        const oh = r;
+        const indicators = [
+          oh.replied_at ? '💬' : '', oh.opened_at ? '👁' : '',
+          oh.clicked_at ? '🖱' : '', oh.bounced_at ? '⚠' : '',
+        ].filter(Boolean).join(' ');
+        return `<div class="ib-ct" style="cursor:default;opacity:.7">
+          <div class="ib-ct-av" style="background:var(--surf3);color:var(--t2)">${name2[0]?.toUpperCase()}</div>
+          <div class="ib-ct-info" style="flex:1;min-width:0">
+            <div class="ib-ct-name">${esc(r.contact_email)}
+              ${indicators ? `<span style="margin-left:5px;font-size:10px">${indicators}</span>` : ''}
+            </div>
+            <div class="ib-ct-title" style="color:var(--t3)">${esc(r.campaign_name || '')}
+              ${r.sent_at ? `<span style="color:var(--t4)"> · ${relTime(r.sent_at)}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
 
     body.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-        ${inLL.length?`<span style="font:500 9px 'IBM Plex Mono',monospace;color:var(--g)">✓ ${inLL.length} in Lemlist</span>`:''}
-        ${pushableCount?`<span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${pushableCount} not pushed</span>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        ${inLL.length ? `<span style="font:500 9px 'IBM Plex Mono',monospace;color:var(--g)">✓ ${inLL.length} in Lemlist</span>` : ''}
+        ${pushableCount ? `<span style="font:400 9px 'IBM Plex Mono',monospace;color:var(--t3)">${pushableCount} not pushed</span>` : ''}
         <span style="flex:1"></span>
-        ${emailContacts.length?`<button class="btn sm p" onclick="_llPushCompany('${esc(slug)}','${esc(name)}')">📤 Push ${pushableCount||emailContacts.length}</button>`:''}
+        ${emailContacts.length ? `<button class="btn sm p" onclick="_llPushCompany('${esc(slug)}','${esc(name)}')">📤 Push ${pushableCount || emailContacts.length}</button>` : ''}
       </div>
-      ${pushedHtml?`<div class="ib-cts-grid" style="margin-bottom:6px">${pushedHtml}</div>`:''}
-      ${pendingHtml?`<div class="ib-cts-grid" style="opacity:.7">${pendingHtml}</div>`:''}
-      ${!emailContacts.length?`<div style="font-size:11px;color:var(--t3)">No contacts with email addresses.</div>`:''}`;
+      ${statsBar}
+      ${inLLHtml  ? `<div class="ib-cts-grid" style="margin-bottom:4px">${inLLHtml}</div>`  : ''}
+      ${webhookOnlyHtml ? `<div class="ib-cts-grid" style="margin-bottom:4px">${webhookOnlyHtml}</div>` : ''}
+      ${notLLHtml ? `<div class="ib-cts-grid">${notLLHtml}</div>` : ''}
+      ${!emailContacts.length && !ohRows.length ? `<div style="font-size:11px;color:var(--t3)">No contacts with email addresses.</div>` : ''}`;
   } catch(e) {
     const body2 = document.getElementById('ib-lemlist-body');
     if(body2) body2.innerHTML = `<div style="font-size:11px;color:var(--cr)">Error: ${esc(e.message)}</div>`;
@@ -1864,12 +1927,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d3';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d4';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d3';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d4';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d3';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d4';

@@ -3,8 +3,8 @@
    Consistent auth headers, error handling, Prefer headers.
    ══════════════════════════════════════════════════════════════ */
 
-import { SB_URL } from './config.js?v=20260410d3';
-import { authHdr } from './utils.js?v=20260410d3';
+import { SB_URL } from './config.js?v=20260410d4';
+import { authHdr } from './utils.js?v=20260410d4';
 
 const UPSERT = { 'Prefer': 'resolution=merge-duplicates,return=minimal' };
 const REPR   = { 'Prefer': 'resolution=merge-duplicates,return=representation' };
