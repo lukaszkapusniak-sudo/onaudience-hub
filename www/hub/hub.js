@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409d7';
-import S from './state.js?v=20260409d7';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409d7';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d7';
-import { resolveAlias } from './merge.js?v=20260409d7';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409d7';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260409d8';
+import S from './state.js?v=20260409d8';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409d8';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d8';
+import { resolveAlias } from './merge.js?v=20260409d8';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260409d8';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -67,11 +67,137 @@ export function boldKw(text){
 }
 
 /* ═══ One-click enrich ═══════════════════════════════════════ */
-export async function quickEnrich(slug){
+/* ══════════════════════════════════════════════════════════════════
+   ENRICHMENT / SEARCH METHOD PICKER
+   showEnrichPicker(event, options)
+   options: [{icon, name, desc, badge, badgeType, disabled, fn}]
+   ══════════════════════════════════════════════════════════════════ */
+export function showEnrichPicker(e, title, options) {
+  e.stopPropagation();
+  // Remove any existing picker
+  document.getElementById('enrichPicker')?.remove();
+
+  const picker = document.createElement('div');
+  picker.id = 'enrichPicker';
+  picker.className = 'enrich-picker';
+  picker.innerHTML = `
+    <div class="enrich-picker-title">${title}</div>
+    ${options.map((o, i) => `
+      <div class="enrich-picker-opt${o.disabled?' disabled':''}" data-i="${i}">
+        <div class="ep-icon">${o.icon}</div>
+        <div class="ep-body">
+          <div class="ep-name">${o.name}${o.badge?`<span class="ep-badge ${o.badgeType||'free'}">${o.badge}</span>`:''}</div>
+          <div class="ep-desc">${o.desc}</div>
+        </div>
+      </div>`).join('')}`;
+
+  // Position near click
+  document.body.appendChild(picker);
+  const pw = picker.offsetWidth, ph = picker.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX, y = e.clientY + 8;
+  if (x + pw > vw - 8) x = vw - pw - 8;
+  if (y + ph > vh - 8) y = e.clientY - ph - 8;
+  picker.style.left = x + 'px';
+  picker.style.top  = y + 'px';
+
+  // Wire clicks
+  picker.querySelectorAll('.enrich-picker-opt').forEach((el, i) => {
+    el.addEventListener('click', () => {
+      picker.remove();
+      if (!options[i].disabled) options[i].fn();
+    });
+  });
+
+  // Dismiss on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function _dismiss(ev) {
+      if (!picker.contains(ev.target)) { picker.remove(); }
+      document.removeEventListener('click', _dismiss);
+    });
+  }, 10);
+}
+
+export async function quickEnrich(slug, event){
   const c=S.companies.find(x=>(x.id||_slug(x.name))===slug);if(!c)return;
+  if (event) {
+    // Show enrichment method picker
+    showEnrichPicker(event, 'Enrich · ' + c.name, _enrichOptions(c));
+    return;
+  }
+  // No event = fallback to research panel
   clog('enrich',`Opening research panel for <b>${c.name}</b>…`);
   openCompany(c);
   setTimeout(promptResearch,60);
+}
+
+function _enrichOptions(c) {
+  const hasKey = !!localStorage.getItem('oaAnthropicKey');
+  const domain = (c.website||'').replace(/^https?:\/\//,'').split('/')[0];
+  return [
+    {
+      icon: '🔍',
+      name: 'Full Research Report',
+      desc: 'AI web search + contact finder + signals. Most comprehensive.',
+      badge: 'Opus',
+      badgeType: 'key',
+      disabled: !hasKey,
+      fn: () => { openCompany(c); setTimeout(promptResearch, 60); }
+    },
+    {
+      icon: '⚡',
+      name: 'Vibe Prospecting',
+      desc: 'Firmographics, revenue, funding, tech stack. 1 credit.',
+      badge: '1 credit',
+      badgeType: 'paid',
+      disabled: !hasKey,
+      fn: () => window.vibeEnrichCompany?.(c)
+    },
+    {
+      icon: '🔗',
+      name: 'b2b MCP — Company Details',
+      desc: 'Description, industry, keywords from 17.5M+ company DB. Free.',
+      badge: 'free',
+      badgeType: 'free',
+      disabled: !hasKey || !domain,
+      fn: () => {
+        clog('ai', `🔗 b2b: fetching details for <b>${esc(c.name)}</b>…`);
+        anthropicMcpFetch({
+          model: 'claude-sonnet-4-20250514', max_tokens: 600,
+          mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
+          messages: [{ role: 'user', content: 'Use get_company_details for domain: ' + domain + '. Return JSON only.' }]
+        }).then(r => {
+          const t = (r.content||[]).filter(b=>b.type==='mcp_tool_result').map(b=>b.content?.[0]?.text||'').join('');
+          try {
+            const d = JSON.parse(t.match(/\{[\s\S]*\}/)?.[0]||'{}');
+            if (d.description && c) {
+              c.description = c.description || d.description;
+              c.category = c.category || d.industry || '';
+            }
+            clog('ai', '✓ b2b details fetched for <b>' + esc(c.name) + '</b>');
+          } catch { clog('info', 'b2b parse error'); }
+        });
+      }
+    },
+    {
+      icon: '🔗',
+      name: 'b2b MCP — Find Similar',
+      desc: 'Discover lookalike companies by domain similarity. Free.',
+      badge: 'free',
+      badgeType: 'free',
+      disabled: !hasKey || !domain,
+      fn: () => { promptSimilar(); setTimeout(() => { const inp = document.getElementById('modalInput'); if(inp) inp.value = c.name; submitModal(); }, 80); }
+    },
+    {
+      icon: '👤',
+      name: 'Find Decision Makers',
+      desc: 'Opus + web search. Verified contacts + outreach signals.',
+      badge: 'Opus',
+      badgeType: 'key',
+      disabled: !hasKey,
+      fn: () => { openCompany(c); setTimeout(bgFindDMs, 200); }
+    },
+  ];
 }
 
 /* ═══ Completeness indicator ═════════════════════════════════ */
@@ -196,7 +322,7 @@ export function openCompany(c){
 
   panel.innerHTML=`<div class="ib">
 <div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
-${window.isDemoMode&&window.isDemoMode()?`<div class="ib-cta"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;padding:0 4px">DEMO — Sign in to activate AI features</span><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button></div>`:`<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 News</button><button class="ib-cta-btn" onclick="coAction('similar')">🔗 Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button></div>`}
+${window.isDemoMode&&window.isDemoMode()?`<div class="ib-cta"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;padding:0 4px">DEMO — Sign in to activate AI features</span><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button></div>`:`<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 News</button><button class="ib-cta-btn" onclick="showSimilarPicker(event,'${esc(c.name)}','${esc(c.website||'')}')">🔗 Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button></div>`}
 <div class="ib-status-bar"><span class="ib-status-lbl">&#127991; Mark as:</span>${_statusBtns}</div>
 <div class="ib-top">
   ${sec('ib-company','🏢','Company',
@@ -1597,6 +1723,36 @@ export function showCtx(e,slugOrName){
 
 /* ═══ Contact Drawer ═════════════════════════════════════════ */
 export function promptResearch(){S._modalMode='research';document.getElementById('modalTitle').textContent='Research a Company';document.getElementById('modalDesc').textContent='Enter company name to generate a full contact report.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
+
+export function showSimilarPicker(e, companyName, website) {
+  const hasKey = !!localStorage.getItem('oaAnthropicKey');
+  const domain = (website||'').replace(/^https?:\/\//,'').split('/')[0]
+    || companyName.toLowerCase().replace(/\s+/g,'') + '.com';
+  showEnrichPicker(e, 'Find Similar · ' + companyName, [
+    {
+      icon: '🔗',
+      name: 'b2b MCP — Find Similar',
+      desc: 'Vector similarity across 17.5M+ companies by domain. Free.',
+      badge: 'free', badgeType: 'free',
+      disabled: !hasKey,
+      fn: () => _findSimilarViaB2B(companyName)
+    },
+    {
+      icon: '⚡',
+      name: 'Vibe — Search by Description',
+      desc: 'Semantic company search using natural language query.',
+      badge: '~free', badgeType: 'free',
+      disabled: !hasKey,
+      fn: () => {
+        openProspectFinder('');
+        setTimeout(() => {
+          const inp = document.getElementById('vibeSearchInp');
+          if (inp) { inp.value = 'similar to ' + companyName; window.vibeDoSearch?.(); }
+        }, 300);
+      }
+    },
+  ]);
+}
 export function promptSimilar(){S._modalMode='similar';document.getElementById('modalTitle').textContent='Find Similar Companies';document.getElementById('modalDesc').textContent='Enter a reference company to find lookalikes.';document.getElementById('modalInput').value='';document.getElementById('overlay').classList.add('vis');setTimeout(()=>document.getElementById('modalInput').focus(),60);}
 export function closeModal(){document.getElementById('overlay').classList.remove('vis');}
 export function submitModal(){
@@ -1708,12 +1864,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409d7';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260409d8';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409d7';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260409d8';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409d7';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260409d8';

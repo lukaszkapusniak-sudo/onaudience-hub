@@ -474,3 +474,39 @@ textarea.mc-tf{width:100%;padding:8px 10px;border:1px solid var(--rule);border-r
   outline-offset: -1px;
   background: var(--surf2);
 }
+
+/* ── Enrichment / Search method picker popover ─────────────────── */
+.enrich-picker{
+  position:fixed;z-index:9990;
+  background:var(--surf);border:1px solid var(--rule);
+  border-radius:4px;box-shadow:var(--sh);
+  font-family:'IBM Plex Mono',monospace;
+  min-width:220px;max-width:280px;
+  padding:6px 0;
+  animation:ep-in .1s ease;
+}
+@keyframes ep-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.enrich-picker-title{
+  font-size:7px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--t4);padding:2px 12px 5px;border-bottom:1px solid var(--rule2);
+  margin-bottom:4px;
+}
+.enrich-picker-opt{
+  display:flex;align-items:flex-start;gap:8px;padding:6px 12px;cursor:pointer;
+  transition:background .1s;
+}
+.enrich-picker-opt:hover{background:var(--surf2);}
+.enrich-picker-opt.disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.ep-icon{font-size:14px;flex-shrink:0;line-height:1.2;}
+.ep-body{flex:1;min-width:0;}
+.ep-name{font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.04em;}
+.ep-desc{font-size:7.5px;color:var(--t3);margin-top:1px;line-height:1.4;}
+.ep-badge{
+  font-size:6.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  padding:1px 4px;border-radius:2px;margin-left:4px;
+  vertical-align:middle;
+}
+.ep-badge.free{background:var(--gb);color:var(--g);border:1px solid var(--gr);}
+.ep-badge.paid{background:var(--prb);color:var(--prc);border:1px solid var(--prr);}
+.ep-badge.key {background:var(--pob);color:var(--poc);border:1px solid var(--por);}
+

@@ -1,10 +1,10 @@
 /* ═══ list.js — Company list rendering, filters, tags, sort ═══ */
 
-import { SB_URL, TAG_RULES } from './config.js?v=20260409d7';
-import S from './state.js?v=20260409d7';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409d7';
-import { anthropicFetch } from './api.js?v=20260409d7';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409d7';
+import { SB_URL, TAG_RULES } from './config.js?v=20260409d8';
+import S from './state.js?v=20260409d8';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260409d8';
+import { anthropicFetch } from './api.js?v=20260409d8';
+import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260409d8';
 
 export function tagCountsFor(pool){const m={};TAG_RULES.forEach(r=>{m[r.tag]=0;});pool.forEach(c=>getCoTags(c).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
 export function countPool(){const t30=Date.now()-30*24*60*60*1000;const cids=new Set(S.contacts.map(c=>_slug(c.company_name||'')));return S.companies.filter(c=>{if(S.activeFilter==='fresh'){if(c.type!=='prospect')return false;if(c.updated_at&&new Date(c.updated_at).getTime()>=t30)return false;if(cids.has(_slug(c.name)))return false;}else if(S.activeFilter!=='all'&&c.type!==S.activeFilter)return false;if(S.searchQ&&!(c.name||'').toLowerCase().includes(S.searchQ)&&!(c.note||'').toLowerCase().includes(S.searchQ))return false;return true;});}
@@ -58,7 +58,7 @@ export function renderList(){
 
     const noteHtml=boldKw((c.note||'').length>60?(c.note||'').slice(0,58)+'…':(c.note||''));
     const tagRow=coTags.length?`<div class="c-tags-row">${coTags.slice(0,6).map(t=>`<span class="c-tag-micro${S.activeTags.has(t)?' hit':''}" onclick="event.stopPropagation();toggleTag('${t}')">${t}</span>`).join('')}</div>`:'';
-    const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}')" title="${pct}% complete — click to research">✦ enrich</span>`:'';
+    const enrichBtn=pct<50?`<span class="c-enrich" onclick="event.stopPropagation();quickEnrich('${slug}',event)" title="${pct}% complete — click to enrich">✦ enrich</span>`:'';
 
     return`<div class="c-row${sel}" data-slug="${slug}" onclick="openBySlug(this.dataset.slug)" oncontextmenu="showCtxSlug(event,this);return false;">
       <div class="c-av" style="background:${av.bg};color:${av.fg};border:1px solid ${av.fg}33">${n}</div>

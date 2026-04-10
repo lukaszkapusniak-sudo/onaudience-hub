@@ -1,17 +1,17 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409d7';
-import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260409d7';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260409d7';
-import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409d7';
-import { _slug, esc } from './utils.js?v=20260409d7';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d7';
-import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409d7';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409d7';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409d7';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409d7';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409d7';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409d7';
+import S from './state.js?v=20260409d8';
+import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260409d8';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260409d8';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409d8';
+import { _slug, esc } from './utils.js?v=20260409d8';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d8';
+import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead, showEnrichPicker, showSimilarPicker,
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409d8';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409d8';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409d8';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409d8';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409d8';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409d8';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -21,7 +21,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409d7';
+} from './auth.js?v=20260409d8';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -143,12 +143,41 @@ function switchTab(t) {
 }
 
 /* ── Prospect finder shim ───────────────────────────────────── */
-async function openProspectFinder(q) {
+async function openProspectFinder(q, event) {
   // Show the company finder modal
   const hasKey = !!localStorage.getItem('oaAnthropicKey');
   if (q) {
     const inp = document.getElementById('aiInp');
     if (inp) { inp.value = q; window.runAI?.(); }
+    return;
+  }
+  // If triggered from nav button (has event), show a picker first
+  if (event) {
+    showEnrichPicker(event, 'Find Companies', [
+      {
+        icon: '🔍',
+        name: 'Hub AI Search',
+        desc: 'Search companies in your hub by criteria, category, or signal.',
+        badge: 'free', badgeType: 'free',
+        fn: () => { const inp = document.getElementById('aiInp'); if(inp){inp.focus();inp.select();} }
+      },
+      {
+        icon: '🔗',
+        name: 'b2b MCP — Search 17.5M+',
+        desc: 'Semantic company search by industry, tech, or description.',
+        badge: 'free', badgeType: 'free',
+        disabled: !hasKey,
+        fn: () => _openVibeFinder()
+      },
+      {
+        icon: '⚡',
+        name: 'Vibe Prospecting',
+        desc: 'Same 17.5M+ DB with richer firmographic enrichment. Free search.',
+        badge: 'free', badgeType: 'free',
+        disabled: !hasKey,
+        fn: () => _openVibeFinder()
+      },
+    ]);
     return;
   }
   // Show inline finder UI in center panel
@@ -185,6 +214,11 @@ async function openProspectFinder(q) {
   setTimeout(() => document.getElementById('vibeSearchInp')?.focus(), 80);
 }
 
+function _openVibeFinder() {
+  // Open the Vibe/b2b Company Finder panel in center
+  openProspectFinder('');
+}
+
 window.vibeDoSearch = async function() {
   const q = document.getElementById('vibeSearchInp')?.value?.trim();
   if (!q) return;
@@ -218,9 +252,9 @@ window.vibeDoSearch = async function() {
 };
 
 window.vibeAddToHub = async function(company) {
-  const { _slug, esc } = await import('./utils.js?v=20260409d7');
-  const { SB_URL } = await import('./config.js?v=20260409d7');
-  const { authHdr } = await import('./api.js?v=20260409d7');
+  const { _slug, esc } = await import('./utils.js?v=20260409d8');
+  const { SB_URL } = await import('./config.js?v=20260409d8');
+  const { authHdr } = await import('./api.js?v=20260409d8');
   const S = window._oaState || {companies:[]};
   const id = _slug(company.name || '');
   if (!id) return;
@@ -337,7 +371,7 @@ Object.assign(window, {
   runAI, clearAI, aiQuick,
 
   /* sort / utils */
-  setSort, quickEnrich, clog, toggleConsole, clearConsole, mapSegments, _slug,
+  setSort, quickEnrich, clog, toggleConsole, clearConsole, mapSegments, _slug, showEnrichPicker, showSimilarPicker,
 
   /* company detail */
   openCompany, closePanel, coAction, ctAction,
