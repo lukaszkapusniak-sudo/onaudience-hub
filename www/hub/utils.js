@@ -1,6 +1,6 @@
 /* ═══ utils.js — pure utility functions ═══ */
 
-import { TAG_RULES, PAL, SB_KEY } from './config.js?v=20260410d4';
+import { TAG_RULES, PAL, SB_KEY } from './config.js?v=20260410d5';
 
 export function classify(n){const s=(n||'').toLowerCase();if(s.includes('no outreach')||s.includes('no fit')||s.includes('no business')||s.includes('internal')||s.includes('closed')||s.includes('unwanted'))return'nogo';if(s.includes('poc client'))return'poc';if(s.includes('client'))return'client';if(s.includes('partner'))return'partner';if(s.includes('prospect')||s.includes('to check')||s.includes('to continue'))return'prospect';return'partner';}
 
