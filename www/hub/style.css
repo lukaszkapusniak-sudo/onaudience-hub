@@ -336,6 +336,10 @@ textarea.mc-tf:focus{border-color:var(--g)}
   .mc-pgrid{grid-template-columns:repeat(5,1fr)}
 }
 
+/* Console hidden in demo mode */
+[data-demo] .console-panel,
+body.demo-mode .console-panel{display:none!important;}
+
 /* ── Console — fixed bottom panel ──────────────────────────────────────── */
 .console-panel{
   position:fixed;

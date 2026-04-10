@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d9';
-import S from './state.js?v=20260410d9';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d9';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d9';
-import { resolveAlias } from './merge.js?v=20260410d9';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d9';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d10';
+import S from './state.js?v=20260410d10';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d10';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d10';
+import { resolveAlias } from './merge.js?v=20260410d10';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d10';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -52,11 +52,7 @@ function renderConsole(){
   if(!el)return;
   if(cnt)cnt.textContent=S.consoleLog.length;
   el.innerHTML=S.consoleLog.map(l=>`<div class="console-line"><span class="console-ts">${l.ts}</span><span class="console-type ${l.type}">${l.type}</span><span class="console-msg">${l.msg}</span></div>`).join('');
-  // Auto-open on first log; keep visible
-  if(S.consoleLog.length>0&&!_consoleAutoOpened){
-    _consoleAutoOpened=true;
-    document.getElementById('consolePanel')?.classList.add('open');
-  }
+
 }
 export function toggleConsole(){
   const p=document.getElementById('consolePanel');
@@ -64,8 +60,6 @@ export function toggleConsole(){
 }
 export function clearConsole(){S.consoleLog=[];renderConsole();}
 
-// Auto-open console on first log of a session, keep open while active
-let _consoleAutoOpened=false;
 
 /* ═══ Sort ═══════════════════════════════════════════════════ */
 export function sortCompanies(arr){
@@ -1954,12 +1948,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d9';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d10';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d9';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d10';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d9';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d10';

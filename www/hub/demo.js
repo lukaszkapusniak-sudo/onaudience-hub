@@ -192,6 +192,7 @@ function _showDemoToast(label) {
 /* ── Demo banner (amber, fixed bottom) ──────────────────────── */
 export function showDemoBanner() {
   if(document.getElementById('oa-demo-bar')) return;
+  document.body.setAttribute('data-demo','1'); // hides console, used by CSS
   const bar = document.createElement('div');
   bar.id = 'oa-demo-bar';
   bar.innerHTML = `
