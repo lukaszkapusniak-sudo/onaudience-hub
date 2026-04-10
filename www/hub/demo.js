@@ -237,10 +237,11 @@ export function patchNavForDemo() {
       // Hide live-only nav buttons
       const composeBtn = document.getElementById('navComposeBtn');
       if(composeBtn) composeBtn.style.display='none';
-      // Hide Lemlist and Audiences tabs (require live DB)
-      document.querySelectorAll('.tab-btn').forEach(t=>{
-        if(t.textContent.includes('Lemlist')) t.style.display='none';
-      });
+      const llKeyBtn = document.getElementById('llKeyBtn');
+      if(llKeyBtn) llKeyBtn.style.display='none';
+      // Hide Lemlist tab (requires live DB + API key)
+      const llTab = document.getElementById('tabLemlist');
+      if(llTab) llTab.style.display='none';
       clearInterval(check);
     }
   },300);
