@@ -1,7 +1,7 @@
 /**
  * GitHub Pages: SPA fallback (copy index.html → 404.html).
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,4 +17,19 @@ if (!existsSync(indexHtml)) {
 writeFileSync(path.join(dist, '404.html'), readFileSync(indexHtml));
 // Disable Jekyll so GitHub Pages serves _plugin-vue_* and other _-prefixed Vite chunks
 writeFileSync(path.join(dist, '.nojekyll'), '');
-console.log('postbuild: wrote 404.html and .nojekyll for GitHub Pages');
+
+// Redirect legacy /hub/ bookmarks to the Vue app root
+const hubDir = path.join(dist, 'hub');
+mkdirSync(hubDir, { recursive: true });
+writeFileSync(
+  path.join(hubDir, 'index.html'),
+  `<!doctype html><html><head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=/onaudience-hub/">
+<title>Redirecting…</title>
+</head><body>
+<script>location.replace('/onaudience-hub/' + location.hash);</script>
+</body></html>`,
+);
+
+console.log('postbuild: wrote 404.html, .nojekyll, and hub/index.html redirect');
