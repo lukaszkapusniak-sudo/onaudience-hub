@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router';
+
 const year = new Date().getFullYear();
-const hubEntry = `${import.meta.env.BASE_URL}hub/index.html`;
+const hubRoot = `${import.meta.env.BASE_URL}`;
 </script>
 
 <template>
@@ -9,12 +11,21 @@ const hubEntry = `${import.meta.env.BASE_URL}hub/index.html`;
       <p class="eyebrow">onAudience</p>
       <h1>Sales Intelligence Hub</h1>
       <p class="lead">
-        Vue + Vite + TypeScript shell. The legacy hub remains available under
-        <code>/hub/</code> until modules are ported here.
+        Production shell is <strong>Vue + Vite + TypeScript</strong>. The product UI still loads the
+        legacy hub module bundle inside a same-origin frame while we port features into
+        <code>frontend/src/</code>.
       </p>
       <nav class="actions">
-        <a class="btn primary" :href="hubEntry"> Open legacy hub </a>
+        <RouterLink class="btn primary" to="/"> Open hub (Vue shell) </RouterLink>
+        <RouterLink class="btn ghost" to="/data"> Companies (Vue data) </RouterLink>
+        <RouterLink class="btn ghost" to="/lemlist"> Lemlist (Vue) </RouterLink>
+        <RouterLink class="btn ghost" to="/migrate"> Migration roadmap </RouterLink>
+        <RouterLink class="btn ghost" to="/demo/contact-drawer"> Contact drawer (Vue) </RouterLink>
       </nav>
+      <p class="hint">
+        Root <code>{{ hubRoot }}</code> embeds <code>hub/index.html</code> — OAuth returns here
+        first; session storage matches the legacy app.
+      </p>
     </header>
     <footer class="foot">© {{ year }} · built with Vite</footer>
   </div>
@@ -55,11 +66,24 @@ h1 {
   color: #b8bcc4;
   font-size: 0.95rem;
 }
+.lead strong {
+  color: #e8eaed;
+  font-weight: 600;
+}
 .lead code {
   font-size: 0.85em;
   padding: 0.1em 0.35em;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
+}
+.hint {
+  margin: 1.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #6b7280;
+}
+.hint code {
+  font-size: 0.85em;
 }
 .actions {
   display: flex;
@@ -88,6 +112,14 @@ h1 {
 }
 .btn.primary:hover {
   background: #1d4ed8;
+}
+.btn.ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.btn.ghost:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
 }
 .foot {
   margin-top: auto;
