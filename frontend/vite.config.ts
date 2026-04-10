@@ -2,11 +2,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import vue from '@vitejs/plugin-vue';
-import sirv from 'sirv';
 import { defineConfig, loadEnv } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const legacyHubRoot = path.resolve(__dirname, '../www/hub');
 const repoRoot = path.resolve(__dirname, '..');
 
 const DEFAULT_SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
@@ -28,14 +26,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_OA_SB_ANON_KEY': JSON.stringify(sbAnon),
       'import.meta.env.VITE_LEMLIST_PROXY': JSON.stringify(lemlistProxy),
     },
-    plugins: [
-      vue(),
-      {
-        name: 'legacy-hub-dev',
-        configureServer(server) {
-          server.middlewares.use('/hub', sirv(legacyHubRoot, { dev: true, etag: true }));
-        },
-      },
-    ],
+    plugins: [vue()],
   };
 });

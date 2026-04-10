@@ -1,15 +1,12 @@
 /**
  * GitHub Pages: SPA fallback (copy index.html → 404.html).
- * Also copy legacy vanilla hub into dist so /onaudience-hub/hub/* keeps working during migration.
  */
-import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(__dirname, '../dist');
-const legacyHub = path.resolve(__dirname, '../../www/hub');
 
 const indexHtml = path.join(dist, 'index.html');
 if (!existsSync(indexHtml)) {
@@ -18,18 +15,4 @@ if (!existsSync(indexHtml)) {
 }
 
 writeFileSync(path.join(dist, '404.html'), readFileSync(indexHtml));
-
-if (existsSync(legacyHub)) {
-  const dest = path.join(dist, 'hub');
-  mkdirSync(dest, { recursive: true });
-  cpSync(legacyHub, dest, { recursive: true });
-  console.log('postbuild: copied legacy www/hub → dist/hub');
-  const stamp = path.resolve(__dirname, '../../scripts/stamp-hub-asset-version.mjs');
-  if (existsSync(stamp)) {
-    execFileSync(process.execPath, [stamp, dest], { stdio: 'inherit' });
-  }
-} else {
-  console.warn('postbuild: ../www/hub not found — skipping legacy copy');
-}
-
 console.log('postbuild: wrote 404.html for GitHub Pages SPA routing');

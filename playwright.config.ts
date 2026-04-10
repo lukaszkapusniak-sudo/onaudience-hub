@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
-import { HUB_URL } from './tests/env';
+import { VUE_URL } from './tests/env';
 
 dotenv.config();
 
@@ -36,7 +36,7 @@ export default defineConfig({
   workers: IS_CI ? 1 : undefined,
 
   use: {
-    baseURL: HUB_URL,
+    baseURL: VUE_URL,
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

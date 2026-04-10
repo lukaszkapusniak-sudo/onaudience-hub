@@ -7,7 +7,6 @@ on:
       - setup-ia
     paths:
       - 'frontend/**'
-      - 'www/**'
       - 'package-lock.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:

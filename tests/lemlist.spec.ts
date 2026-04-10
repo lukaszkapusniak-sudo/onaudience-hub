@@ -5,17 +5,14 @@
  * To rotate a key: update .env locally + GitHub Secret in CI.
  *
  * Architecture:
- *   Sections A–D, G–M: pure `request` fixture (no browser, no auth)
+ *   All sections: pure `request` fixture (no browser, no auth)
  *     → run under "api-only" project, always runnable in CI without credentials
- *   Sections E–F: browser tests — skipped in project api-only; need chromium + .auth.json
  *
  * Coverage:
  *  A. Proxy connectivity       — lemlist-proxy edge fn responds correctly
  *  B. API response shapes      — campaigns / leads / contacts / activities
  *  C. lemlist-sync edge fn     — contract: 200, stats shape, CORS
  *  D. Single-campaign sync     — Oracle B2B seed, verify DB writes
- *  E. Hub UI (browser)         — panel, key mgmt, tab behavior
- *  F. Campaign detail (browser) — lead table, stats bar, search, enrich btns
  *  G. Rate-limit resilience    — no crash on 429, clean error in log
  *  H. Outreach history tables  — outreach_history & campaign_stats exist
  *  I. Stats math               — open/reply/click rate formulas correct
@@ -26,7 +23,6 @@
  */
 
 import { test, expect, APIRequestContext } from '@playwright/test';
-import * as fs from 'fs';
 import { ENV } from './env';
 
 // ── Aliases (all values from ENV) ────────────────────────────────────────────
@@ -79,12 +75,6 @@ async function postOracleSync(request: APIRequestContext) {
       test.skip(true, `lemlist-sync unreachable: ${msg}`);
     }
     throw e;
-  }
-}
-
-function skipIfNoAuth() {
-  if (!fs.existsSync('tests/fixtures/.auth.json')) {
-    test.skip(true, 'No .auth.json — browser tests require OA_EMAIL/OA_PASSWORD in .env');
   }
 }
 
@@ -342,239 +332,6 @@ test.describe('D. Sync writes to Supabase', () => {
     const r = await sbGet(request, 'contacts', 'source=eq.lemlist&limit=1');
     expect(r.status()).toBe(200);
     expect(Array.isArray(await r.json())).toBe(true);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// E. HUB UI — panel, key management  (browser, needs auth)
-// ═══════════════════════════════════════════════════════════════════════════════
-test.describe('E. Hub UI', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name === 'api-only',
-      'Hub UI tests run in the chromium project (needs browser + storageState)',
-    );
-    skipIfNoAuth();
-    await page.goto('./');
-    await expect(page.locator('.app')).toBeVisible({ timeout: 25_000 });
-    await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
-      timeout: 45_000,
-      polling: 500,
-    });
-  });
-
-  test('Lemlist tab exists in hub nav', async ({ page }) => {
-    await expect(page.locator('#tabLemlist')).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('Lemlist tab hidden in demo mode', async ({ page }) => {
-    await page.evaluate(() => {
-      localStorage.setItem('oaDemoMode', '1');
-    });
-    await page.reload();
-    await page.waitForTimeout(2_000);
-    expect(
-      await page
-        .locator('#tabLemlist')
-        .isVisible({ timeout: 3_000 })
-        .catch(() => false),
-    ).toBe(false);
-    await page.evaluate(() => {
-      localStorage.removeItem('oaDemoMode');
-    });
-  });
-
-  test('panel renders after tab click with key set', async ({ page }) => {
-    await page.evaluate((k: string) => {
-      localStorage.setItem('oaLemlistKey', k);
-    }, LL_KEY);
-    await page.locator('#tabLemlist').click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('#lemlistPanel')).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('panel shows connect prompt when key absent', async ({ page }) => {
-    await page.evaluate(() => {
-      localStorage.removeItem('oaLemlistKey');
-    });
-    await page.locator('#tabLemlist').click();
-    await page.waitForTimeout(500);
-    const text = await page.locator('#lemlistPanel').textContent({ timeout: 5_000 });
-    expect(text).toMatch(/connect|key|sign in|not connected/i);
-  });
-
-  test('llIsConnected() returns false with no key', async ({ page }) => {
-    expect(
-      await page.evaluate(() => {
-        localStorage.removeItem('oaLemlistKey');
-        return (window as any).llIsConnected?.() ?? false;
-      }),
-    ).toBe(false);
-  });
-
-  test('llIsConnected() returns true with key set', async ({ page }) => {
-    expect(
-      await page.evaluate((k: string) => {
-        localStorage.setItem('oaLemlistKey', k);
-        return (window as any).llIsConnected?.() ?? false;
-      }, LL_KEY),
-    ).toBe(true);
-  });
-
-  test('sync contacts + companies buttons visible when connected', async ({ page }) => {
-    await page.evaluate((k: string) => {
-      localStorage.setItem('oaLemlistKey', k);
-    }, LL_KEY);
-    await page.locator('#tabLemlist').click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('#llSyncCtBtn')).toBeVisible({ timeout: 8_000 });
-    await expect(page.locator('#llSyncCoBtn')).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('hub does not crash when key cleared mid-session', async ({ page }) => {
-    const errors: string[] = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.evaluate(() => {
-      localStorage.removeItem('oaLemlistKey');
-      (window as any).llClearKey?.();
-    });
-    await page.waitForTimeout(500);
-    const fatal = errors.filter(
-      (e) => !e.includes('No lemlist key') && !e.includes('Failed to fetch'),
-    );
-    expect(fatal).toHaveLength(0);
-  });
-
-  test('vibeEnrichLead is a function on window', async ({ page }) => {
-    expect(await page.evaluate(() => typeof (window as any).vibeEnrichLead)).toBe('function');
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// F. CAMPAIGN DETAIL  (browser, needs auth)
-// ═══════════════════════════════════════════════════════════════════════════════
-test.describe('F. Campaign detail rendering', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name === 'api-only',
-      'Campaign detail tests run in the chromium project (needs browser + storageState)',
-    );
-    skipIfNoAuth();
-    await page.goto('./');
-    await expect(page.locator('.app')).toBeVisible({ timeout: 25_000 });
-    await page.waitForFunction(() => (window as any)._oaState?.companies?.length > 0, undefined, {
-      timeout: 45_000,
-      polling: 500,
-    });
-    await page.evaluate((k: string) => {
-      localStorage.setItem('oaLemlistKey', k);
-    }, LL_KEY);
-    await page.locator('#tabLemlist').click();
-    await page.waitForTimeout(500);
-  });
-
-  test('campaign list has at least one clickable row', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    expect(await page.locator('#llList [onclick]').count()).toBeGreaterThan(0);
-  });
-
-  test('clicking campaign shows LEADS count in detail', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    await page.locator('#llList [onclick]').first().click();
-    await page.waitForTimeout(2_000);
-    expect(await page.locator('#coPanel').textContent({ timeout: 5_000 })).toMatch(/\d+\s*LEAD/i);
-  });
-
-  test('lead table shows NAME EMAIL STATUS columns', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    await page.locator('#llList [onclick]').first().click();
-    await page.waitForTimeout(2_000);
-    const text = await page.locator('#coPanel').textContent({ timeout: 5_000 });
-    expect(text).toMatch(/NAME/i);
-    expect(text).toMatch(/EMAIL/i);
-    expect(text).toMatch(/STATUS/i);
-  });
-
-  test('search filter hides non-matching rows', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    await page.locator('#llList [onclick]').first().click();
-    await page.waitForTimeout(2_000);
-    const inp = page.locator('#llLeadSearch');
-    if (!(await inp.isVisible({ timeout: 3_000 }).catch(() => false))) {
-      test.skip();
-      return;
-    }
-    await inp.fill('zzz_impossible_match_xyz');
-    await page.waitForTimeout(400);
-    const rows = await page.locator('.ll-table tbody tr').count();
-    const empty = await page
-      .locator('.ll-empty')
-      .isVisible()
-      .catch(() => false);
-    expect(rows === 0 || empty).toBe(true);
-    await inp.fill('');
-  });
-
-  test('⚡ enrich button present on rows with email', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    await page.locator('#llList [onclick]').first().click();
-    await page.waitForTimeout(3_000);
-    const rows = page.locator('.ll-table tbody tr');
-    for (let i = 0; i < Math.min(await rows.count(), 12); i++) {
-      const cells = await rows.nth(i).locator('td').allTextContents();
-      if (cells.some((c) => c.includes('@'))) {
-        const btn = rows.nth(i).locator('button[title*="Enrich"], button[title*="credit"]');
-        if (await btn.isVisible().catch(() => false)) {
-          expect(await btn.textContent()).toMatch(/⚡/);
-          return;
-        }
-      }
-    }
-    // Acceptable if no email-bearing rows in this campaign
-  });
-
-  test('⚡ enrich button absent on rows without email', async ({ page }) => {
-    await page.waitForFunction(
-      () => document.querySelectorAll('#llList [onclick]').length > 0,
-      undefined,
-      { timeout: 25_000, polling: 500 },
-    );
-    await page.locator('#llList [onclick]').first().click();
-    await page.waitForTimeout(3_000);
-    const rows = page.locator('.ll-table tbody tr');
-    for (let i = 0; i < Math.min(await rows.count(), 8); i++) {
-      const cells = await rows.nth(i).locator('td').allTextContents();
-      if (cells.slice(0, 2).every((c) => c.trim() === '—' || c.trim() === '')) {
-        expect(
-          await rows
-            .nth(i)
-            .locator('button[title*="Enrich"]')
-            .isVisible()
-            .catch(() => false),
-        ).toBe(false);
-        return;
-      }
-    }
   });
 });
 
