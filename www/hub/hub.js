@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d6';
-import S from './state.js?v=20260410d6';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d6';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d6';
-import { resolveAlias } from './merge.js?v=20260410d6';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d6';
+import { SB_URL, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d7';
+import S from './state.js?v=20260410d7';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d7';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d7';
+import { resolveAlias } from './merge.js?v=20260410d7';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d7';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -253,7 +253,17 @@ export function openCompany(c){
     c.tcf_vendor_id&&['GVL/TCF',`<span style="color:var(--g)">${c.tcf_vendor_id}</span>`],
     c.dsps&&c.dsps.length&&['DSPs',esc((Array.isArray(c.dsps)?c.dsps:c.dsps.split(',')).join(', '))],
     c.company_number&&['#',`<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--t2)">#${c.company_number}</span>`],
-    c.data_richness!=null&&['Richness',`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px">${'█'.repeat(Math.min(c.data_richness,11))}${'░'.repeat(Math.max(0,11-c.data_richness))}</span> <span style="color:var(--t3)">${c.data_richness}/11</span>`],
+    c.icp!=null&&(()=>{
+      const score=c.icp;
+      const col=score>=8?'var(--g)':score>=6?'#f59e0b':'var(--t3)';
+      const bg=score>=8?'var(--gb)':score>=6?'rgba(245,158,11,.1)':'var(--surf3)';
+      const filled=Math.round(score/2), empty=5-filled;
+      const stars2='★'.repeat(filled)+'☆'.repeat(empty);
+      // Short segment label from category
+      const cat=(c.category||'').toLowerCase();
+      const seg=cat.includes('dsp')?'DSP':cat.includes('ssp')?'SSP':cat.includes('data provider')||cat.includes('data broker')?'Data Provider':cat.includes('marketplace')?'Data Marketplace':cat.includes('cdp')||cat.includes('martech')||cat.includes('adtech')?'Tech Partner':cat.includes('agency')||cat.includes('trading')?'Agency':cat.includes('research')?'Research':'';
+      return ['ICP',`<span style="display:inline-flex;align-items:center;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${col};background:${bg};border-radius:2px;padding:1px 6px">${score}/10</span><span style="font-size:11px;color:${col};letter-spacing:.05em">${stars2}</span>${seg?`<span style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">${seg}</span>`:''}</span>`];
+    })(),
     c.updated_at&&['Updated',new Date(c.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})],
     c.updated_by_name&&['Edited by',`<span style="color:var(--g)">${esc(c.updated_by_name)}</span>`],
     c.relationship_owner&&['Owner',`<span style="color:var(--poc)">${esc(c.relationship_owner)}</span>`]
@@ -338,7 +348,7 @@ export function openCompany(c){
   window._currentEmailSlug=slug;
 
   panel.innerHTML=`<div class="ib">
-<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${st?`<span class="ib-icp">${st}</span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
+<div class="ib-head"><div class="ib-av${c.type==='nogo'?' nogo':''}">${n}</div><div class="ib-meta"><div class="ib-name">${c.name}</div><div class="ib-row2"><span class="tag ${tc}">${tl}</span>${c.icp!=null?`<span class="ib-icp">${stars(c.icp)}<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;color:var(--g);margin-left:3px">${c.icp}</span></span>`:''}</div>${c.note?`<div class="ib-note">${c.note}</div>`:''}${sysSection}</div><div class="ib-close" onclick="closePanel()">✕</div></div>
 ${window.isDemoMode&&window.isDemoMode()?`<div class="ib-cta"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;padding:0 4px">DEMO — Sign in to activate AI features</span><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button></div>`:`<div class="ib-cta"><button class="ib-cta-btn primary" onclick="coAction('email')">✉ Draft Email</button><button class="ib-cta-btn" onclick="bgFindDMs()">👤 Find DMs</button><button class="ib-cta-btn" onclick="bgGenerateAngle()">💡 Gen Angle</button><button class="ib-cta-btn" onclick="bgRefreshIntel()">📰 News</button><button class="ib-cta-btn" onclick="showSimilarPicker(event,'${esc(c.name)}','${esc(c.website||'')}')">🔗 Similar</button><button class="ib-cta-btn" onclick="coAction('linkedin')" style="margin-left:auto">LinkedIn ↗</button><button class="btn sm" onclick="openMergeModal('${esc(c.id)}')">⚙ Merge</button></div>`}
 <div class="ib-status-bar"><span class="ib-status-lbl">&#127991; Mark as:</span>${_statusBtns}</div>
 <div class="ib-top">
@@ -1944,12 +1954,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d6';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d7';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d6';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d7';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d6';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d7';
