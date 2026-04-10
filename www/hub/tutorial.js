@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c7';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c8';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -891,8 +891,14 @@ function _renderCard() {
   let inner = '';
 
   if (s.isFinale) {
+    const _allAchvDefs = [
+      ...STEPS.flatMap(st => st.achievement ? [st.achievement] : []),
+      ...Object.values(typeof LANG_ACHIEVEMENTS !== 'undefined' ? LANG_ACHIEVEMENTS : {}),
+      ...( typeof LANG_MILESTONE_ACHVS !== 'undefined' ? LANG_MILESTONE_ACHVS : []),
+      {id:'hacker', icon:'🎩', name:'HACKER'},
+    ];
     const achvGrid = _achievements.map(id => {
-      const found = STEPS.flatMap(st => st.achievement ? [st.achievement] : []).find(a => a.id === id);
+      const found = _allAchvDefs.find(a => a.id === id);
       return found ? `<div class="oa-tut-achv-chip unlocked">${found.icon} ${found.name}</div>` : '';
     }).join('');
     inner = `
