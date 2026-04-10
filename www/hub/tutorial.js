@@ -957,8 +957,16 @@ function _positionCard(card, position, target) {
     card.style.top  = Math.min(r.bottom + gap, vh - ch - 8) + 'px';
     card.style.left = Math.max(8, Math.min(r.left, vw - cw - 8)) + 'px';
   } else if (position === 'above') {
-    card.style.top  = Math.max(8, r.top - ch - gap) + 'px';
+    const cardBtm = r.top - gap;
+    card.style.top  = Math.max(52, cardBtm - ch) + 'px';
     card.style.left = Math.max(8, Math.min(r.left, vw - cw - 8)) + 'px';
+    const arEl = document.getElementById('oa-tut-arrow');
+    const spEl = document.getElementById('oa-tut-spotlight');
+    if (arEl) {
+      arEl.style.top  = (cardBtm + 4) + 'px';
+      arEl.style.left = ((spEl && spEl._targetLeft) || (r.left + r.width/2)) - 12 + 'px';
+      arEl.classList.add('vis');
+    }
   }
 }
 
