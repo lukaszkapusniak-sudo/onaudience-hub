@@ -7,11 +7,11 @@
 ## Learned Workspace Facts
 
 - **npm workspaces:** `frontend/` (Vue 3 + Vite + TypeScript), `tooling/` (shared ESLint / Prettier / root `tsc` used by Turborepo).
-- The **legacy vanilla hub** is under `www/hub/`; the production build copies it into the Vite output. **Route `/`** (Vue) embeds `hub/index.html` in an iframe; direct `/hub/` URLs still work until features are ported into Vue. Full **step-by-step plan:** `docs/VUE_MIGRATION.md`; in-app **`/migrate`** lists the same phases.
+- The app is **Vue-only** at `/` (`HubShellLayout`); default route redirects to `/data`. Legacy static `www/hub/` has been **removed** from the tree; behavior notes remain in **`docs/`** and **`docs/VUE_MIGRATION.md`**.
 - **`npm run check`** runs Turborepo: `lint`, `format:check`, and `typecheck` across workspaces.
-- **Playwright** specs and `playwright.config.ts` live at the repo root; **`tests/env.ts`** is the single place for test env keys and derived URLs (do not scatter secrets across specs).
+- **Playwright** specs and `playwright.config.ts` live at the repo root; **`tests/env.ts`** is the single place for test env keys and URLs (`VUE_URL` for browser tests — do not scatter secrets across specs).
 - Vite **`base`** in production is **`/onaudience-hub/`** (GitHub Pages project URL).
 - **Husky** + **lint-staged** run ESLint (and Prettier where configured) on staged files in **pre-commit**.
 - **`supabase/`** edge code is **Deno** and is not typechecked by the root TypeScript project.
-- **`npm run validate:hub`** runs `validate.js`; the CSS audit step uses **`uv run python scripts/audit_css.py`** — install [uv](https://docs.astral.sh/uv/) so that step works locally.
 - For **CRM and hub field semantics** (Supabase, outreach), see **`docs/FIELD_MANUAL_AGENT.md`** (agent-oriented distillation of the internal field manual).
+- **Agent onboarding:** see **`CLAUDE.md`** (“Agent-first helpers”) for read order (`AGENTS.md`, field manual, migration doc, `docs/components.md`, tests env).
