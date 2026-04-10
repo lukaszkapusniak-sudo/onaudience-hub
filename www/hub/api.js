@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409d5';
-import S from './state.js?v=20260409d5';
-import { classify, _slug, authHdr } from './utils.js?v=20260409d5';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260409d6';
+import S from './state.js?v=20260409d6';
+import { classify, _slug, authHdr } from './utils.js?v=20260409d6';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409d5';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260409d6';
 
 
 
@@ -510,8 +510,19 @@ export async function lemlistFetch(path,method='GET',body=null){
 }
 
 export async function lemlistCampaigns(){
-  const d=await lemlistFetch('/campaigns');
-  return Array.isArray(d)?d:(d.campaigns??[]);
+  // Paginate through all campaigns (API max 100 per page)
+  const all = [];
+  let offset = 0;
+  const limit = 100;
+  while (true) {
+    const d = await lemlistFetch('/campaigns?limit=' + limit + '&offset=' + offset);
+    const page = Array.isArray(d) ? d : (d.campaigns ?? []);
+    all.push(...page);
+    // Stop if fewer than limit returned — last page
+    if (page.length < limit) break;
+    offset += limit;
+  }
+  return all;
 }
 
 export async function lemlistAddLead(campaignId,contact){
