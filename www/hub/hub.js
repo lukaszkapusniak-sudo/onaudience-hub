@@ -1,11 +1,11 @@
 /* ═══ hub.js — main hub logic ═══ */
 
-import { SB_URL, SB_KEY, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d21';
-import S from './state.js?v=20260410d21';
-import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d21';
-import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d21';
-import { resolveAlias } from './merge.js?v=20260410d21';
-import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d21';
+import { SB_URL, SB_KEY, TAG_RULES, MODEL_CREATIVE, MODEL_RESEARCH } from './config.js?v=20260410d22';
+import S from './state.js?v=20260410d22';
+import { classify, _slug, getCoTags, getAv, ini, tClass, tLabel, stars, esc, relTime, authHdr, safeUrl } from './utils.js?v=20260410d22';
+import { renderStats, fetchGoogleNews, saveIntelligence, anthropicFetch, anthropicMcpFetch, researchFetch, refreshRelationsCache, saveContact, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d22';
+import { resolveAlias } from './merge.js?v=20260410d22';
+import { companies as dbCompanies, contacts as dbContacts, relations as dbRelations, intelligence as dbIntel } from './db.js?v=20260410d22';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -387,32 +387,47 @@ export function openCompany(c){
   // System audience membership chips
   const _sysMap={client:'Clients',partner:'Partners',nogo:'NoOutreach'};
   const _coSlug=esc(c.id||_slug(c.name));
-  // Current list membership chip
+  const coId=c.id||_slug(c.name);
+
+  // ── System list membership chip ──────────────────────────────
   const _listCls={client:'sys-chip-client',partner:'sys-chip-partner',nogo:'sys-chip-nogo'}[c.type]||'';
   const _memberChip=_sysMap[c.type]
     ?`<span class="sys-chip ${_listCls}" onclick="sysCoSetType('${_coSlug}','prospect')" title="Remove from ${_sysMap[c.type]}">● ${_sysMap[c.type]} <span class="sys-chip-x">✕</span></span>`
     :'';
-  // + Add to list dropdown
   const _addOpts=Object.entries(_sysMap).filter(([t])=>t!==c.type)
     .map(([t,l])=>`<div class="sys-dd-item sys-dd-${t}" onclick="sysCoSetType('${_coSlug}','${t}');this.closest('.sys-dd').classList.remove('open')">● ${l}</div>`).join('');
-  // Tags — current tags with remove, + add picker
+
+  // ── Custom audience membership chips ─────────────────────────
+  const _userAuds=(S.audiences||[]).filter(a=>!a.is_system);
+  const _memberAuds=_userAuds.filter(a=>(a.company_ids||[]).includes(coId));
+  const _nonMemberAuds=_userAuds.filter(a=>!(a.company_ids||[]).includes(coId));
+  const _audMemberChips=_memberAuds.map(a=>`<span class="sys-chip sys-chip-aud" onclick="audToggleCo('${esc(a.id)}','${esc(coId)}')" title="Remove from ${esc(a.name)}">📋 ${esc(a.name)} <span class="sys-chip-x">✕</span></span>`).join('');
+  const _audAddOpts=_nonMemberAuds.length
+    ?_nonMemberAuds.map(a=>`<div class="sys-dd-item" onclick="audToggleCo('${esc(a.id)}','${esc(coId)}');this.closest('.sys-dd').classList.remove('open')">📋 ${esc(a.name)} <span style="opacity:.4;font-size:8px">${(a.company_ids||[]).length} co</span></div>`).join('')
+    :`<div class="sys-dd-item" style="opacity:.4;cursor:default">No custom audiences yet</div>`;
+
+  // ── Tags ──────────────────────────────────────────────────────
   const _coTags=Array.isArray(c.tags)?c.tags:[];
   const _validTags=TAG_RULES.map(r=>r.tag);
   const _tagChips=_coTags.map(t=>`<span class="sys-tag">${esc(t)}<button class="sys-tag-x" onclick="coRemoveTag('${_coSlug}','${esc(t)}')" title="Remove tag">✕</button></span>`).join('');
-  // Suggested tags from category/note that aren't already applied
   const _suggestedTags=getCoTags(c).filter(t=>!_coTags.includes(t));
   const _suggestHtml=_suggestedTags.length
     ?`<div class="sys-tag-suggest"><span class="sys-tag-suggest-lbl">AI suggested:</span>${_suggestedTags.map(t=>`<span class="sys-tag-pill" onclick="coAddTag('${_coSlug}','${esc(t)}')" title="Add tag">${esc(t)} +</span>`).join('')}</div>`
     :'';
-  // Tag add dropdown
   const _availTags=_validTags.filter(t=>!_coTags.includes(t));
   const _tagAddOpts=_availTags.map(t=>`<div class="sys-dd-item" onclick="coAddTag('${_coSlug}','${esc(t)}');this.closest('.sys-dd').classList.remove('open')">${esc(t)}</div>`).join('');
+
   const sysSection=`<div class="ib-sys-row">
     <div class="sys-list-row">
       ${_memberChip}
+      ${_audMemberChips}
       <div class="sys-dd-wrap">
         <span class="sys-chip sys-chip-add" onclick="this.nextElementSibling.classList.toggle('open')">＋ List ▾</span>
-        <div class="sys-dd">${_addOpts}</div>
+        <div class="sys-dd">
+          ${_addOpts}
+          ${_nonMemberAuds.length||_memberAuds.length?`<div class="sys-dd-sep"></div>`:''}
+          ${_audAddOpts}
+        </div>
       </div>
     </div>
     <div class="sys-tags-row">
@@ -2064,12 +2079,12 @@ export { initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush,
   audPushLemlist, refreshLemlistCampaigns, renderLemlistPanel,
   selectLemlistCampaign, clearCampaignDetail, llSearchLeads,
   llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d21';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected } from './lemlist.js?v=20260410d22';
 
 export { openDrawer, closeDrawer, openContactFull,
-  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d21';
+  drEmail, drLinkedIn, drGmail, drResearch } from './drawer.js?v=20260410d22';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export { tagCountsFor, countPool, matchTags, renderTagPanel, toggleTagPanel,
   toggleTag, toggleTagEl, clearTags, setTagLogic, renderMetaPills,
-  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d21';
+  setFilter, onSearch, setSort, renderList } from './list.js?v=20260410d22';

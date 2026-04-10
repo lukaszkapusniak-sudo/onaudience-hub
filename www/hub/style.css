@@ -574,6 +574,8 @@ body:has(.console-panel.open) #oa-demo-bar{
 .sys-chip-client{background:var(--cb);border-color:var(--cr);color:var(--cc)}
 .sys-chip-partner{background:var(--pb);border-color:var(--pr);color:var(--pc)}
 .sys-chip-nogo{background:var(--nb);border-color:var(--nr);color:var(--nc)}
+.sys-chip-aud{background:var(--pob);border-color:var(--por);color:var(--poc)}
+.sys-dd-sep{height:1px;background:var(--rule);margin:3px 0}
 .sys-chip-add{border-style:dashed;color:var(--t3)}
 .sys-chip-add:hover{border-color:var(--g);color:var(--g);border-style:solid}
 

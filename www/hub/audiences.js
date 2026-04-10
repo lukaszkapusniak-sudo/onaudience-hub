@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d21';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260410d21';
-import S from './state.js?v=20260410d21';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260410d21';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d21';
-import { clog } from './hub.js?v=20260410d21';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d22';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260410d22';
+import S from './state.js?v=20260410d22';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260410d22';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d22';
+import { clog } from './hub.js?v=20260410d22';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -1422,16 +1422,21 @@ export async function audToggleCo(audienceId, companyId) {
   if (!aud) return;
   const ids = Array.isArray(aud.company_ids) ? [...aud.company_ids] : [];
   const idx = ids.indexOf(companyId);
-  if (idx >= 0) ids.splice(idx, 1); else ids.push(companyId);
+  const adding = idx < 0;
+  if (adding) ids.push(companyId); else ids.splice(idx, 1);
   aud.company_ids = ids;
   try {
     await sbSaveAudience(aud);
-    renderAudienceDetail(audienceId);
-    // Refresh left panel count
-    document.querySelector(`.aud-row-head .aud-row-count`) &&
-      renderAudiencesPanel();
+    clog('db', `${adding?'➕':'➖'} <b>${esc(aud.name)}</b>: ${adding?'added':'removed'} company`);
+    // Refresh audience detail if open
+    if (S.activeAudience?.id === audienceId) renderAudienceDetail(audienceId);
+    // Refresh left panel counts
+    renderAudiencesPanel();
+    // Re-render company panel so chips update immediately
+    const co = S.companies.find(c => c.id === companyId || (c.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') === companyId);
+    if (co && window.openCompany) window.openCompany(co);
   } catch (e) {
-    clog('db', `Toggle co error: ${esc(e.message)}`);
+    clog('db', `Toggle audience error: ${esc(e.message)}`);
   }
 }
 
@@ -1987,7 +1992,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260410d21';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260410d22';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260410d21';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260410d22';
