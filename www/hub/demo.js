@@ -266,13 +266,18 @@ export function initDoom() {
       <style>
       #oa-doom-modal{
         position:fixed;inset:0;z-index:10005;
-        background:rgba(0,0,0,.92);
+        background:#000;
         display:flex;flex-direction:column;
-        align-items:center;justify-content:center;
+        align-items:stretch;
         font-family:'IBM Plex Mono',monospace;
+        padding:0;
       }
       #oa-doom-modal .dm-header{
-        display:flex;align-items:center;gap:16px;margin-bottom:12px;width:min(800px,90vw);
+        display:flex;align-items:center;gap:12px;
+        padding:6px 12px;
+        background:rgba(0,0,0,.95);
+        border-bottom:1px solid #600;
+        flex-shrink:0;
       }
       #oa-doom-modal .dm-title{
         font-size:clamp(16px,4vw,24px);font-weight:700;color:#c00;
@@ -292,17 +297,23 @@ export function initDoom() {
       #oa-doom-modal .dm-frame-wrap{
         border:2px solid #c00;
         box-shadow:0 0 40px rgba(200,0,0,.4),inset 0 0 20px rgba(200,0,0,.08);
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+        width:100%;
       }
       #oa-doom-modal iframe{
-        display:block;width:min(800px,90vw);height:min(500px,60vh);
+        display:block;width:100%;height:100%;
         border:none;background:#000;
       }
       #oa-doom-modal .dm-footer{
-        margin-top:8px;font-size:8px;color:#444;letter-spacing:.04em;
-        text-align:center;width:min(800px,90vw);
+        padding:5px 12px;font-size:8px;color:#333;letter-spacing:.04em;
+        text-align:center;background:rgba(0,0,0,.95);
+        border-top:1px solid #600;flex-shrink:0;
       }
       #oa-doom-modal .dm-keys{
-        display:flex;gap:6px;margin-top:5px;justify-content:center;flex-wrap:wrap;
+        display:inline-flex;gap:6px;margin-left:8px;flex-wrap:wrap;vertical-align:middle;
       }
       #oa-doom-modal .dm-key{
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
@@ -322,17 +333,16 @@ export function initDoom() {
         ></iframe>
       </div>
       <div class="dm-footer">
-        Doom shareware Episode 1 is free. Click the iframe first to capture keyboard.
-        <div class="dm-keys">
-          <span class="dm-key">↑ W Forward</span>
+        Click game to capture keyboard ·
+        <span class="dm-keys">
+          <span class="dm-key">↑ W Fwd</span>
           <span class="dm-key">↓ S Back</span>
           <span class="dm-key">← → Turn</span>
           <span class="dm-key">Ctrl Fire</span>
           <span class="dm-key">Space Open</span>
           <span class="dm-key">Shift Run</span>
           <span class="dm-key">Enter Start</span>
-          <span class="dm-key">ESC Menu</span>
-        </div>
+        </span>
       </div>
     `;
     document.body.appendChild(modal);
