@@ -449,6 +449,40 @@ body:has(.console-panel.open) #oa-demo-bar{
 /* ── Tutorial mini pill (also defined inline in tutorial.js) ── */
 .oa-tut-mini-pill{display:none;align-items:center;gap:6px;padding:8px 14px;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--g)}
 .oa-tut-mini-dot{width:7px;height:7px;border-radius:50%;background:var(--g);flex-shrink:0;animation:oa-tut-pulse 1.5s ease-in-out infinite}
+/* ── Lemlist left panel ─────────────────────────────────────────────────── */
+.ll-header{padding:10px 12px;border-bottom:1px solid var(--rule);flex-shrink:0}
+.ll-key-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ll-key-status{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;letter-spacing:.05em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ll-connected{color:var(--g)}.ll-disconnected{color:var(--t4)}
+.ll-sync-row{display:flex;align-items:center;gap:5px}
+.ll-sync-meta{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4);margin-left:auto}
+.ll-toolbar{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--rule3)}
+.ll-count{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);flex:1}
+.ll-list{overflow-y:auto;flex:1}
+.ll-empty{padding:16px 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:.05em;line-height:1.6}
+/* Campaign rows */
+.ll-row{padding:9px 12px;border-bottom:1px solid var(--rule3);cursor:pointer;transition:background .1s}
+.ll-row:hover{background:var(--surf2)}
+.ll-row-active{background:var(--gb);border-left:2px solid var(--g)}
+.ll-row-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}
+.ll-row-name{font-size:11.5px;font-weight:500;color:var(--t1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ll-row-meta{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t4)}
+/* Campaign detail panel */
+.ll-detail{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.ll-detail-header{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--rule);flex-shrink:0}
+.ll-detail-back{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);cursor:pointer;transition:color .15s;flex-shrink:0}
+.ll-detail-back:hover{color:var(--g)}
+.ll-detail-name{font-size:13px;font-weight:500;color:var(--t1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.ll-detail-stats{display:flex;align-items:center;gap:12px;padding:8px 18px;border-bottom:1px solid var(--rule3);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--t3);flex-shrink:0;flex-wrap:wrap}
+.ll-detail-actions{display:flex;align-items:center;gap:6px;padding:8px 18px;border-bottom:1px solid var(--rule);flex-shrink:0;flex-wrap:wrap}
+/* Leads table */
+.ll-table{width:100%;border-collapse:collapse;font-size:10.5px}
+.ll-table thead th{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t4);padding:6px 12px;border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap;background:var(--surf2);position:sticky;top:0;z-index:1}
+.ll-table tbody tr{border-bottom:1px solid var(--rule3);transition:background .1s}
+.ll-table tbody tr:hover{background:var(--surf2)}
+.ll-table tbody td{padding:7px 12px;color:var(--t2);vertical-align:middle}
+.ll-table tbody td:first-child{color:var(--t1);font-weight:500}
+
 /* ── Company Finder (vibe/b2b search) center panel ─────────────────────── */
 .vf-wrap{padding:24px;max-width:800px;width:100%}
 .vf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
