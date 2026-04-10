@@ -28,7 +28,7 @@ writeFileSync(
 <meta http-equiv="refresh" content="0;url=/onaudience-hub/">
 <title>Redirecting…</title>
 </head><body>
-<script>location.replace('/onaudience-hub/' + location.hash);</script>
+<script>location.replace('/onaudience-hub/' + location.search + location.hash);</script>
 </body></html>`,
 );
 
