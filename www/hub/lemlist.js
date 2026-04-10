@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409d4';
-import S from './state.js?v=20260409d4';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409d4';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409d4';
-import { clog } from './hub.js?v=20260409d4';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409d5';
+import S from './state.js?v=20260409d5';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409d5';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409d5';
+import { clog } from './hub.js?v=20260409d5';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -273,6 +273,20 @@ function _renderCampaignDetail(){
     <div class="ll-detail-stats">
       <span>${leads.length} LEADS</span>
       ${c.createdAt?'<span>CREATED '+esc(relTime(c.createdAt).toUpperCase())+'</span>':''}
+      ${(()=>{
+        const n=leads.length||1;
+        const sent    = leads.filter(x=>x.status&&x.status!=='pending').length;
+        const opened  = leads.filter(x=>x.openedAt||x.status==='opened'||x.status==='clicked'||x.status==='replied'||x.status==='interested').length;
+        const replied = leads.filter(x=>x.repliedAt||x.status==='replied'||x.status==='interested').length;
+        const clicked = leads.filter(x=>x.clickedAt||x.status==='clicked').length;
+        const bounced = leads.filter(x=>x.status==='bounced'||x.status==='unsubscribed').length;
+        if(!sent) return '';
+        return '<span title="Sent">📤 '+sent+'</span>'
+          +(opened ?'<span title="Open rate" style="color:var(--g)">👁 '+Math.round(opened/sent*100)+'%</span>':'')
+          +(replied?'<span title="Reply rate" style="color:var(--pc)">💬 '+Math.round(replied/sent*100)+'%</span>':'')
+          +(clicked?'<span title="Click rate" style="color:var(--prc)">🖱 '+Math.round(clicked/sent*100)+'%</span>':'')
+          +(bounced?'<span title="Bounced" style="color:var(--cr)">⚠ '+bounced+'</span>':'');
+      })()}
     </div>
     <div class="ll-detail-actions">
       <select class="inp" id="llAudSel" style="font-size:10px;padding:4px 8px;height:26px;min-width:160px">
@@ -303,13 +317,29 @@ function _renderCampaignDetail(){
 
 function _renderLeadRow(l,campaignId){
   const statusCls={sent:'tpr',opened:'tp',clicked:'tc',replied:'tc',bounced:'tn',unsubscribed:'tn',interested:'tc'}[l.status]||'tpr';
-  const name=esc(((l.firstName||'')+' '+(l.lastName||'')).trim())||'\u2014';
-  const pushed=l.addedAt?relTime(l.addedAt):'\u2014';
+  const name=esc(((l.firstName||'')+' '+(l.lastName||'')).trim())||'—';
+  const pushed=l.addedAt?relTime(l.addedAt):'—';
+  // Activity indicators
+  const acts=''
+    +(l.openedAt ||l.status==='opened' ||l.status==='clicked'||l.status==='replied'||l.status==='interested'?'<span title="Opened" style="color:var(--g)">👁</span>':'')
+    +(l.clickedAt||l.status==='clicked'?'<span title="Clicked" style="color:var(--prc)">🖱</span>':'')
+    +(l.repliedAt||l.status==='replied'||l.status==='interested'?'<span title="Replied" style="color:var(--pc)">💬</span>':'');
+  // Find matching SB contact to enable drawer link
+  const sbCt=S.contacts?.find(c=>c.email&&c.email===l.email);
+  const nameHtml=sbCt
+    ?`<span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="openDrawer('${esc(sbCt.id)}','${esc(sbCt.full_name||'')}')" title="Open contact">${name}</span>`
+    :name;
+  // Company link
+  const coSlug=(l.companyName||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const sbCo=S.companies?.find(c=>c.id===coSlug||(c.name||'').toLowerCase()===(l.companyName||'').toLowerCase());
+  const coHtml=sbCo
+    ?`<span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="openCompany(S.companies.find(c=>c.id==='${esc(sbCo.id)}'))" title="Open company">${esc(l.companyName||'—')}</span>`
+    :esc(l.companyName||'—');
   return `<tr>
-    <td>${name}</td>
-    <td style="color:var(--t3)">${esc(l.email||'\u2014')}</td>
-    <td style="color:var(--t3)">${esc(l.companyName||'\u2014')}</td>
-    <td><span class="tag ${statusCls}">${esc(l.status||'\u2014')}</span></td>
+    <td>${nameHtml}</td>
+    <td style="color:var(--t3)">${esc(l.email||'—')}</td>
+    <td style="color:var(--t3)">${coHtml}</td>
+    <td><span class="tag ${statusCls}">${esc(l.status||'—')}</span>${acts?'<span style="font-size:11px;margin-left:4px">'+acts+'</span>':''}</td>
     <td style="color:var(--t4)">${pushed}</td>
     <td><button class="btn sm" style="color:var(--cr)" title="Unsubscribe"
       onclick="llUnsubLead('${esc(campaignId)}','${esc(l.email||'')}')">&#10005;</button></td>
@@ -424,17 +454,28 @@ export async function llSyncContacts() {
         contactId = (clean(fullName) + (company ? '-'+clean(company) : '')).slice(0,80)
           || email.replace('@','--at--').replace(/\./g,'-') || detail.contactId;
       }
+      // Map Lemlist status to readable form
+      const llStatus = l.status || detail.status || null;
+      // Timestamps from Lemlist activity
+      const openedAt  = l.openedAt  || detail.openedAt  || null;
+      const repliedAt = l.repliedAt || detail.repliedAt || null;
+      const clickedAt = l.clickedAt || detail.clickedAt || null;
       const rec = {
         id: contactId,
         full_name: fullName || detail.email,
         email: detail.email || '',
         company_name: company,
+        company_id: company ? company.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') : null,
         title: detail.jobTitle || detail.fields?.jobTitle || '',
         linkedin_url: detail.linkedinUrl || '',
+        source: 'lemlist',
         lemlist_campaign_id: l.campaignId,
         lemlist_campaign_name: l.campaignName,
         lemlist_pushed_at: detail.addedAt || now,
-        source: 'lemlist',
+        lemlist_status: llStatus,
+        lemlist_opened_at:  openedAt  ? new Date(openedAt).toISOString()  : null,
+        lemlist_replied_at: repliedAt ? new Date(repliedAt).toISOString() : null,
+        lemlist_clicked_at: clickedAt ? new Date(clickedAt).toISOString() : null,
       };
       try {
         await saveContact(rec);
@@ -476,7 +517,13 @@ export async function llSyncCompanies() {
           const r = await fetch(SB_URL + '/rest/v1/companies', {
             method: 'POST',
             headers: { ...authHdr(), 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-            body: JSON.stringify({ id: slug, name, source: 'lemlist' }),
+            body: JSON.stringify({
+              id: slug, name,
+              source: 'lemlist',
+              lemlist_campaign_id:   camp._id,
+              lemlist_campaign_name: camp.name,
+              lemlist_pushed_at:     new Date().toISOString(),
+            }),
           });
           if (r.ok) saved++;
         } catch (e) { /* skip */ }
