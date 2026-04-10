@@ -17,9 +17,9 @@
      enrich-business-firmographics: 1 credit / company
    ═══════════════════════════════════════════════════════════════════ */
 
-import { anthropicFetch } from './api.js?v=20260410d14';
-import { esc } from './utils.js?v=20260410d14';
-import { clog } from './hub.js?v=20260410d14';
+import { anthropicFetch } from './api.js?v=20260410d15';
+import { esc } from './utils.js?v=20260410d15';
+import { clog } from './hub.js?v=20260410d15';
 
 const VIBE_MCP = { type: 'url', url: 'https://mcp.vibe.ai/mcp', name: 'vibe-prospecting' };
 
@@ -167,34 +167,30 @@ export async function vibeEnrichLead(email, name, companyName) {
 
 /* ── Company Finder: search by criteria using b2b MCP + Vibe ───── */
 export async function vibeSearchCompanies(query) {
-  // NOTE: This uses b2b MCP (search_companies) since fetch-entities
-  // (Vibe's bulk criteria search) is not available in current MCP config.
-  // b2b covers 17.5M+ companies — good for name/domain lookups.
-  clog('ai', `🔍 Searching companies: <b>${esc(query)}</b>…`);
+  clog('ai', `🔍 b2b search: <b>${esc(query)}</b>…`);
+  const q = query.trim().replace(/^https?:\/\//, '').split('/')[0];
+  const isDomain = /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(q) && !q.includes(' ');
   try {
+    const prompt = isDomain
+      ? `Use get_company_details for domain "${q}". Return a JSON array with ONE object: {name, description, website, industry, keywords:[]}. JSON array only.`
+      : `Use search_companies with query_text="${query}" and limit=12. Return a JSON array, each with: name, description, website, industry, keywords. JSON array only.`;
     const res = await anthropicFetch({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
+      max_tokens: 1500,
       mcp_servers: [{ type: 'url', url: 'https://b2b.ctpl.dev/sse', name: 'b2b' }],
-      messages: [{ role: 'user', content:
-        `Use search_companies to find companies matching: "${query}".
-         Return a JSON array of up to 15 companies with: name, description, website, industry, keywords.
-         JSON array only, no commentary.`
-      }],
+      messages: [{ role: 'user', content: prompt }],
     });
-    const toolResult = (res.content || [])
-      .filter(b => b.type === 'mcp_tool_result')
-      .map(b => b.content?.[0]?.text || '').join('\n');
-    const textContent = (res.content || [])
-      .filter(b => b.type === 'text').map(b => b.text).join('\n');
-    const combined = toolResult + '\n' + textContent;
-    const arr = combined.match(/\[[\s\S]*\]/);
-    if (arr) {
-      try { return { success: true, companies: JSON.parse(arr[0]) }; } catch {}
-    }
+    const parts = (res.content || []);
+    const toolText = parts.filter(b => b.type === 'mcp_tool_result').map(b => b.content?.[0]?.text || '').join('\n');
+    const mainText = parts.filter(b => b.type === 'text').map(b => b.text).join('\n');
+    const combined = toolText + '\n' + mainText;
+    const arrMatch = combined.match(/\[[\s\S]*?\]/);
+    if (arrMatch) { try { const p = JSON.parse(arrMatch[0]); if (Array.isArray(p) && p.length) return { success: true, companies: p }; } catch {} }
+    const objMatch = combined.match(/\{[\s\S]*?\}/);
+    if (objMatch) { try { const o = JSON.parse(objMatch[0]); if (o.name) return { success: true, companies: [o] }; } catch {} }
     return { success: true, companies: [] };
   } catch (e) {
-    clog('info', `Company search error: ${e.message}`);
+    clog('info', `b2b search error: ${e.message}`);
     return { success: false, error: e.message, companies: [] };
   }
 }

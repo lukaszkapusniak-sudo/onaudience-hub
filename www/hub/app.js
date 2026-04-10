@@ -1,17 +1,17 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260410d14';
-import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260410d14';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260410d14';
-import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260410d14';
-import { _slug, esc } from './utils.js?v=20260410d14';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d14';
+import S from './state.js?v=20260410d15';
+import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260410d15';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260410d15';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260410d15';
+import { _slug, esc } from './utils.js?v=20260410d15';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d15';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead, showEnrichPicker, showSimilarPicker,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260410d14';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, mcToggleCoSearch, mcFilterCos, mcCoSearchKey, mcPickCo, mcPickCoIdx, MC_PERSONAS } from './meeseeks.js?v=20260410d14';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260410d14';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260410d14';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260410d14';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260410d14';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260410d15';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, mcToggleCoSearch, mcFilterCos, mcCoSearchKey, mcPickCo, mcPickCoIdx, MC_PERSONAS } from './meeseeks.js?v=20260410d15';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260410d15';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260410d15';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260410d15';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260410d15';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -21,7 +21,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260410d14';
+} from './auth.js?v=20260410d15';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -144,117 +144,122 @@ function switchTab(t) {
 
 /* ── Prospect finder shim ───────────────────────────────────── */
 async function openProspectFinder(q, event) {
-  // Show the company finder modal
   const hasKey = !!localStorage.getItem('oaAnthropicKey');
-  if (q) {
+  // If called with a query string, route to AI bar
+  if (q && !event) {
     const inp = document.getElementById('aiInp');
     if (inp) { inp.value = q; window.runAI?.(); }
     return;
   }
-  // If triggered from nav button (has event), show a picker first
-  if (event) {
-    showEnrichPicker(event, 'Find Companies', [
-      {
-        icon: '🔍',
-        name: 'Hub AI Search',
-        desc: 'Search companies in your hub by criteria, category, or signal.',
-        badge: 'free', badgeType: 'free',
-        fn: () => { const inp = document.getElementById('aiInp'); if(inp){inp.focus();inp.select();} }
-      },
-      {
-        icon: '🔗',
-        name: 'b2b MCP — Search 17.5M+',
-        desc: 'Semantic company search by industry, tech, or description.',
-        badge: 'free', badgeType: 'free',
-        disabled: !hasKey,
-        fn: () => _openVibeFinder()
-      },
-      {
-        icon: '⚡',
-        name: 'Vibe Prospecting',
-        desc: 'Same 17.5M+ DB with richer firmographic enrichment. Free search.',
-        badge: 'free', badgeType: 'free',
-        disabled: !hasKey,
-        fn: () => _openVibeFinder()
-      },
-    ]);
-    return;
+  _openVibeFinder(q || '');
+}
+
+function _openVibeFinder(prefill = '') {
+  // Render the Company Finder as a proper center panel (using hub CSS classes)
+  const center = document.getElementById('centerScroll');
+  const empty  = document.getElementById('emptyState');
+  const coPanel = document.getElementById('coPanel');
+  const tcf    = document.getElementById('tcf-center');
+  if (!center) return;
+  if (empty)   empty.style.display   = 'none';
+  if (coPanel) coPanel.style.display = 'none';
+  if (tcf)     tcf.style.display     = 'none';
+
+  const hasKey = !!localStorage.getItem('oaAnthropicKey');
+
+  let finder = document.getElementById('vibeFinder');
+  if (!finder) {
+    finder = document.createElement('div');
+    finder.id = 'vibeFinder';
+    center.appendChild(finder);
   }
-  // Show inline finder UI in center panel
-  const panel = document.getElementById('coPanel');
-  const empty = document.getElementById('emptyState');
-  if (!panel) return;
-  if (empty) empty.style.display = 'none';
-  panel.style.display = 'flex';
+  finder.style.display = '';
 
-  const limitNote = hasKey
-    ? ''
-    : '<div style="margin-top:6px;padding:6px 8px;background:var(--prb);border:1px solid var(--prr);border-radius:2px;font-size:9px;color:var(--prc)">⚠ Personal Anthropic key required for enrichment. Click 🔑 in nav.</div>';
-
-  panel.innerHTML = `<div style="padding:20px;font-family:'IBM Plex Mono',monospace;width:100%;box-sizing:border-box">
-    <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t1);margin-bottom:4px">🔍 Company Finder</div>
-    <div style="font-size:9px;color:var(--t3);margin-bottom:12px">Search 17.5M+ companies by industry, technology, or description</div>
-    ${limitNote}
-    <div style="font-size:8px;color:var(--t4);margin:8px 0 4px;letter-spacing:.04em">WHAT THIS CAN DO</div>
-    <div style="font-size:9px;color:var(--t2);margin-bottom:12px;line-height:1.6">
-      ✓ Search companies by industry / tech / description<br>
-      ✓ Enrich a known company with revenue, size, funding<br>
-      ✓ Look up a contact by email or name+company → LinkedIn, title<br>
-      <span style="color:var(--t4)">✗ Bulk "find me VP of Data" queries (not available in current plan)</span>
+  finder.innerHTML = `
+<div class="vf-wrap">
+  <div class="vf-head">
+    <div>
+      <div class="vf-title">🔍 Company Finder</div>
+      <div class="vf-sub">Search 21M+ companies · b2b MCP · free</div>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input id="vibeSearchInp" class="inp" placeholder="e.g. programmatic DSP Europe, audience data AdTech…"
-        style="flex:1;font-size:10px;padding:6px 10px;height:32px"
-        onkeydown="if(event.key==='Enter')vibeDoSearch()">
-      <button class="btn sm p" onclick="vibeDoSearch()" style="height:32px;padding:0 16px">Search</button>
-    </div>
-    <div id="vibeResults" style="margin-top:8px"></div>
-  </div>`;
+    <button class="btn sm" onclick="document.getElementById('vibeFinder').style.display='none';document.getElementById('emptyState').style.display=''">✕</button>
+  </div>
+  ${!hasKey ? `<div class="vf-warn">⚠ Personal Anthropic key required — click 🔑 in nav to add yours.</div>` : ''}
+  <div class="vf-search-row">
+    <input id="vibeSearchInp" class="vf-inp" placeholder="e.g. EU DSPs, programmatic trading desk, audience data marketplace…"
+      onkeydown="if(event.key==='Enter')vibeDoSearch()" ${!hasKey ? 'disabled' : ''} />
+    <button class="btn p vf-btn" onclick="vibeDoSearch()" ${!hasKey ? 'disabled' : ''}>→ Search</button>
+  </div>
+  <div class="vf-chips">
+    <span class="vf-chip" onclick="vibeQuick('EU DSPs programmatic advertising')">EU DSPs</span>
+    <span class="vf-chip" onclick="vibeQuick('SSP supply side platform curation')">SSPs / Curation</span>
+    <span class="vf-chip" onclick="vibeQuick('audience data marketplace third party data')">Data Marketplaces</span>
+    <span class="vf-chip" onclick="vibeQuick('CDP customer data platform identity resolution')">CDPs / Identity</span>
+    <span class="vf-chip" onclick="vibeQuick('programmatic media agency trading desk')">Agencies</span>
+    <span class="vf-chip" onclick="vibeQuick('CTV connected television advertising')">CTV</span>
+  </div>
+  <div id="vibeResults" class="vf-results"></div>
+</div>`;
 
-  setTimeout(() => document.getElementById('vibeSearchInp')?.focus(), 80);
+  const inp = document.getElementById('vibeSearchInp');
+  if (prefill && inp) { inp.value = prefill; }
+  setTimeout(() => inp?.focus(), 80);
 }
 
-function _openVibeFinder() {
-  // Open the Vibe/b2b Company Finder panel in center
-  openProspectFinder('');
-}
+window.vibeQuick = function(q) {
+  const inp = document.getElementById('vibeSearchInp');
+  if (inp) inp.value = q;
+  vibeDoSearch();
+};
 
 window.vibeDoSearch = async function() {
   const q = document.getElementById('vibeSearchInp')?.value?.trim();
   if (!q) return;
   const res = document.getElementById('vibeResults');
-  if (res) res.innerHTML = '<div style="font-size:10px;color:var(--t3)">⟳ Searching…</div>';
-  const result = await window.vibeSearchCompanies(q);
   if (!res) return;
+
+  res.innerHTML = '<div class="vf-loading"><span class="vf-spin">⟳</span> Searching ' + esc(q) + '…</div>';
+
+  const result = await window.vibeSearchCompanies(q);
+
   if (!result.success || !result.companies.length) {
-    res.innerHTML = '<div style="font-size:10px;color:var(--t3)">No results found.</div>';
+    res.innerHTML = '<div class="vf-empty">No results for "' + esc(q) + '"</div>';
     return;
   }
-  const S = window._oaState || {companies:[]};
+
   const companies = result.companies;
-  window._vibeResults = companies; // store for onclick access
-  const esc2 = esc;
-  res.innerHTML = `<div style="font-size:8px;color:var(--t4);margin-bottom:6px;letter-spacing:.04em">${companies.length} RESULTS</div>` +
-    companies.map((c, idx) => {
+  window._vibeResults = companies;
+  const S = window._oaState || {companies:[]};
+
+  res.innerHTML = `<div class="vf-result-hdr">${companies.length} results for "${esc(q)}"</div>` +
+    companies.map((c, i) => {
       const inHub = (S.companies||[]).find(x => (x.name||'').toLowerCase() === (c.name||'').toLowerCase());
-      return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule3)">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:10px;font-weight:600;color:var(--t1)">${esc2(c.name||'—')}${inHub ? ' <span style="color:var(--g);font-size:7px">✓ in hub</span>' : ''}</div>
-          <div style="font-size:8px;color:var(--t3);margin:2px 0">${esc2((c.description||'').slice(0,120))}${(c.description||'').length>120?'…':''}</div>
-          ${c.website ? `<a href="${esc2(c.website)}" target="_blank" style="font-size:8px;color:var(--g)">${esc2(c.website)}</a>` : ''}
+      const domain = (c.website||'').replace(/^https?:\/\//,'').replace(/\/$/,'');
+      const kw = [c.industry, ...(c.keywords||[]).slice(0,3)].filter(Boolean).join(' · ');
+      return `<div class="vf-card">
+        <div class="vf-card-top">
+          <div class="vf-card-name">${esc(c.name||'—')}${inHub ? '<span class="vf-inhub">✓ in hub</span>' : ''}</div>
+          <div class="vf-card-actions">
+            ${!inHub ? `<button class="btn sm" onclick="vibeAddToHub(window._vibeResults[${i}])">+ Add</button>` : ''}
+            ${c.website ? `<button class="btn sm" onclick="vibeEnrichFromCard('${esc(c.name||'')}','${esc(c.website||'')}')">⚡</button>` : ''}
+            ${domain ? `<a class="btn sm" href="https://${esc(domain)}" target="_blank">↗</a>` : ''}
+          </div>
         </div>
-        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:3px">
-          ${!inHub ? `<button class="btn sm" style="font-size:7px" onclick="window.vibeAddToHub(window._vibeResults[${idx}])">+ Add</button>` : ''}
-          ${c.website ? `<button class="btn sm" style="font-size:7px" onclick="window.vibeEnrichCompany({name:'${esc2(c.name||'')}',website:'${esc2(c.website||'')}',id:''})">⚡ Enrich</button>` : ''}
-        </div>
+        ${kw ? `<div class="vf-card-kw">${esc(kw)}</div>` : ''}
+        ${c.description ? `<div class="vf-card-desc">${esc((c.description||'').slice(0,160))}${(c.description||'').length>160?'…':''}</div>` : ''}
       </div>`;
     }).join('');
 };
 
+window.vibeEnrichFromCard = function(name, website) {
+  window.vibeEnrichCompany?.({name, website, id: ''});
+};
+
+
 window.vibeAddToHub = async function(company) {
-  const { _slug, esc } = await import('./utils.js?v=20260410d14');
-  const { SB_URL } = await import('./config.js?v=20260410d14');
-  const { authHdr } = await import('./api.js?v=20260410d14');
+  const { _slug } = await import('./utils.js?v=20260410d15');
+  const { SB_URL } = await import('./config.js?v=20260410d15');
+  const { authHdr } = await import('./api.js?v=20260410d15');
   const S = window._oaState || {companies:[]};
   const id = _slug(company.name || '');
   if (!id) return;
@@ -397,7 +402,7 @@ Object.assign(window, {
   drEmail, drLinkedIn, drGmail, drResearch,
   promptResearch, promptSimilar,
   closeModal, submitModal,
-  openClaude, openProspectFinder,
+  openClaude, openProspectFinder, vibeQuick, vibeEnrichFromCard,
 
   /* sync */
   refreshData,

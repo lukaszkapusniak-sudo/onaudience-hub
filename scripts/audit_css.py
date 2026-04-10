@@ -61,6 +61,9 @@ REQUIRED = [
     ('.aud-row-name{',         'Audience row name'),
     ('.aud-detail-header{',    'Audience detail header'),
     ('.aud-member-row{',       'Audience member row'),
+    ('.vf-wrap{',              'Company finder panel'),
+    ('.vf-card{',              'Company finder result card'),
+    ('.vf-chip{',              'Company finder quick chips'),
 ]
 for selector, name in REQUIRED:
     if selector not in css:
