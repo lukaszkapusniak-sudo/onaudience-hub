@@ -113,14 +113,7 @@
         <span class="ai-qchip" onclick="aiQuick('marketplace or curation platforms')">Marketplace</span>
       </div>
     </div>
-    <div class="console-panel" id="consolePanel">
-      <div class="console-head" onclick="toggleConsole()">
-        <span class="console-head-lbl">&#9889; Console</span>
-        <span class="console-cnt" id="consoleCnt">0</span>
-        <span class="console-clear" onclick="event.stopPropagation();clearConsole()">clear</span>
-      </div>
-      <div class="console-scroll" id="consoleScroll"></div>
-    </div>
+
   </div>
   <div class="center">
     <div class="center-scroll" id="centerScroll">
@@ -275,6 +268,22 @@
   " onmouseover="this.style.color='var(--t1)';this.style.borderColor='var(--rule3)'"
      onmouseout="this.style.color='var(--t3)';this.style.borderColor='var(--rule)'"
   >&#8592; Sign out</button>
+</div>
+
+<!-- ── Console — fixed bottom panel ──────────────────────────────────── -->
+<div id="consolePanel" class="console-panel">
+  <div class="console-head" onclick="toggleConsole()">
+    <span class="console-head-ico">&#9889;</span>
+    <span class="console-head-lbl">Console</span>
+    <span class="console-cnt" id="consoleCnt">0</span>
+    <span class="console-head-right">
+      <span class="console-clear" onclick="event.stopPropagation();clearConsole()">clear</span>
+      <span class="console-chevron" id="consoleChevron">&#9650;</span>
+    </span>
+  </div>
+  <div class="console-body" id="consoleBody">
+    <div class="console-scroll" id="consoleScroll"></div>
+  </div>
 </div>
 </body>
 </html>

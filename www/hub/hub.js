@@ -46,9 +46,26 @@ export function switchTab(t){
   renderList();
 }
 export function clog(type,msg){S.consoleLog.unshift({ts:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),type,msg});if(S.consoleLog.length>100)S.consoleLog.length=100;renderConsole();}
-function renderConsole(){const el=document.getElementById('consoleScroll');const cnt=document.getElementById('consoleCnt');if(!el)return;if(cnt)cnt.textContent=S.consoleLog.length;el.innerHTML=S.consoleLog.map(l=>`<div class="console-line"><span class="console-ts">${l.ts}</span><span class="console-type ${l.type}">${l.type}</span><span class="console-msg">${l.msg}</span></div>`).join('');}
-export function toggleConsole(){const p=document.getElementById('consolePanel');if(p)p.classList.toggle('open');}
+function renderConsole(){
+  const el=document.getElementById('consoleScroll');
+  const cnt=document.getElementById('consoleCnt');
+  if(!el)return;
+  if(cnt)cnt.textContent=S.consoleLog.length;
+  el.innerHTML=S.consoleLog.map(l=>`<div class="console-line"><span class="console-ts">${l.ts}</span><span class="console-type ${l.type}">${l.type}</span><span class="console-msg">${l.msg}</span></div>`).join('');
+  // Auto-open on first log; keep visible
+  if(S.consoleLog.length>0&&!_consoleAutoOpened){
+    _consoleAutoOpened=true;
+    document.getElementById('consolePanel')?.classList.add('open');
+  }
+}
+export function toggleConsole(){
+  const p=document.getElementById('consolePanel');
+  if(p) p.classList.toggle('open');
+}
 export function clearConsole(){S.consoleLog=[];renderConsole();}
+
+// Auto-open console on first log of a session, keep open while active
+let _consoleAutoOpened=false;
 
 /* ═══ Sort ═══════════════════════════════════════════════════ */
 export function sortCompanies(arr){
