@@ -63,7 +63,7 @@ From the repo root (Node 20 as in CI):
 
 - Projects: `setup` (auth), `chromium` (depends on `setup`, uses `tests/fixtures/.auth.json`), `api-only` (no auth; matches `lemlist.spec.ts`, `*.api.spec.ts`, `*.unit.spec.ts`).
 - `baseURL` is the **Vue app** (`VUE_URL` from `tests/env.ts`), not a legacy `/hub/` HTML shell.
-- Shared helpers: `tests/helpers.ts`; env: import from `./env` or `tests/env` as existing specs do.
+- Env: import from `./env` or `tests/env` as existing specs do.
 
 </important>
 
