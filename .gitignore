@@ -1,3 +1,6 @@
+# uv (Python — scripts/audit_css.py)
+.venv/
+
 # Build artifacts
 www/files*.zip
 www/files/

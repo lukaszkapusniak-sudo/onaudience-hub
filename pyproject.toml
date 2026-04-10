@@ -1,0 +1,8 @@
+[project]
+name = "onaudience-hub"
+version = "0"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+# Used by `uv run python scripts/audit_css.py` from validate.js (stdlib-only script).
