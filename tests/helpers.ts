@@ -6,11 +6,9 @@
  * If the login screen appears anyway (expired token), it re-injects via REST API.
  */
 import { Page, expect, request } from '@playwright/test';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
+import { ENV } from './env';
+const SB_URL = ENV.SB_URL;
+const SB_KEY = ENV.SB_ANON_KEY;
 
 async function signInAndInject(page: Page) {
   const email = process.env.OA_EMAIL;

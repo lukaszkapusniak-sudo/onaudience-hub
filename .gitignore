@@ -1,9 +1,18 @@
+# Build artifacts
 www/files*.zip
 www/files/
 node_modules/
 www/files*/
 www/*.zip
 www/hub/*.zip
+
+# Test artifacts
 playwright-report/
 test-results/
 tests/fixtures/.auth.json
+
+# Environment files — NEVER commit secrets
+.env
+.env.local
+.env.test
+.env.*.local

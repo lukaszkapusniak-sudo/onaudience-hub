@@ -6,12 +6,10 @@
  * immediately on page load without any race conditions.
  */
 import { test as setup, expect, request } from '@playwright/test';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const HUB    = 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/';
-const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
+import { ENV } from '../env';
+const HUB    = ENV.HUB_URL;
+const SB_URL = ENV.SB_URL;
+const SB_KEY = ENV.SB_ANON_KEY;
 
 setup('authenticate', async ({ page }) => {
   const email = process.env.OA_EMAIL;
