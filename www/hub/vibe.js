@@ -17,9 +17,9 @@
      enrich-business-firmographics: 1 credit / company
    ═══════════════════════════════════════════════════════════════════ */
 
-import { anthropicFetch } from './api.js?v=20260410d12';
-import { esc } from './utils.js?v=20260410d12';
-import { clog } from './hub.js?v=20260410d12';
+import { anthropicFetch } from './api.js?v=20260410d13';
+import { esc } from './utils.js?v=20260410d13';
+import { clog } from './hub.js?v=20260410d13';
 
 const VIBE_MCP = { type: 'url', url: 'https://mcp.vibe.ai/mcp', name: 'vibe-prospecting' };
 
