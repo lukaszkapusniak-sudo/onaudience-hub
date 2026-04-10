@@ -8,8 +8,8 @@
 import { test, expect, Page } from '@playwright/test';
 import { waitForHub } from './helpers';
 
-const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
 import { ENV } from './env';
+const SB_URL = ENV.SB_URL;
 const SB_KEY = ENV.SB_ANON_KEY;
 /** Inject mock Gmail token so email section shows connected state */
 async function fakeGmailConnect(page: Page) {

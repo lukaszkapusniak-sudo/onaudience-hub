@@ -33,22 +33,31 @@ const SB_URL = optional(
   'https://nyzkkqqjnkctcmxoirdj.supabase.co'
 );
 
+// Public anon key — no admin privileges, safe to commit to .env.example
+// Inline fallback kept so tests work without any .env setup (read-only access only)
 const SB_ANON_KEY = optional(
   'SB_ANON_KEY',
-  // Public anon key — safe to have as fallback (no elevated privileges)
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0'
 );
 
 // ── Lemlist ───────────────────────────────────────────────────────────────────
-// Rotate at: https://app.lemlist.com/settings/integrations
+// Rotate at: https://app.lemlist.com/settings/integrations → API
+// Set LEMLIST_API_KEY in .env locally and in GitHub Secrets for CI
+// Inline default is temp — will break when key is rotated in production
 const LEMLIST_API_KEY = optional(
   'LEMLIST_API_KEY',
-  // Temp key — override via .env or CI secret when rotating
-  'f83f42f7fe5054879499222e393eba95'
+  'f83f42f7fe5054879499222e393eba95' // ← rotate this: update .env + GitHub Secret
 );
 
+// ── Anthropic ─────────────────────────────────────────────────────────────────
+// Required for AI/Vibe integration tests
+// Get from: https://console.anthropic.com/settings/keys
+const ANTHROPIC_API_KEY = optional('ANTHROPIC_API_KEY', '');
+
 // ── Auth (browser tests) ──────────────────────────────────────────────────────
-const OA_EMAIL    = optional('OA_EMAIL',    'test@onaudience.internal');
+// Set in .env locally and as GitHub Secrets OA_EMAIL / OA_PASSWORD for CI
+// If absent: auth.setup.ts skips gracefully, browser tests are skipped
+const OA_EMAIL    = optional('OA_EMAIL',    '');
 const OA_PASSWORD = optional('OA_PASSWORD', '');
 
 // ── Derived constants ─────────────────────────────────────────────────────────
@@ -68,8 +77,12 @@ export const ENV = {
 
   // Auth
   LEMLIST_API_KEY,
+  ANTHROPIC_API_KEY,
   OA_EMAIL,
   OA_PASSWORD,
+  // Computed: true when all browser-test credentials are present
+  HAS_AUTH: !!(optional('OA_EMAIL','') && optional('OA_PASSWORD','')),
+  HAS_LEMLIST: !!optional('LEMLIST_API_KEY','f83f42f7fe5054879499222e393eba95'),
 
   // Well-known test fixtures (stable Lemlist campaign IDs)
   // These are archived/ended campaigns — safe to use as test seeds

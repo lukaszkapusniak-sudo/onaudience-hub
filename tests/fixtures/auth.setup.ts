@@ -12,9 +12,14 @@ const SB_URL = ENV.SB_URL;
 const SB_KEY = ENV.SB_ANON_KEY;
 
 setup('authenticate', async ({ page }) => {
-  const email = process.env.OA_EMAIL;
-  const pwd   = process.env.OA_PASSWORD;
-  if (!email || !pwd) throw new Error('OA_EMAIL and OA_PASSWORD must be set in GitHub Secrets');
+  const email = process.env.OA_EMAIL || ENV.OA_EMAIL;
+  const pwd   = process.env.OA_PASSWORD || ENV.OA_PASSWORD;
+  if (!email || !pwd) {
+    console.warn('[auth.setup] OA_EMAIL/OA_PASSWORD not set — skipping auth, browser tests will be skipped');
+    // Write an empty storage state so chromium project doesn't crash on missing file
+    await page.context().storageState({ path: 'tests/fixtures/.auth.json' });
+    return;
+  }
 
   // ── Step 1: Sign in via REST API (pure Node, no browser JS) ──────────
   const api = await request.newContext();

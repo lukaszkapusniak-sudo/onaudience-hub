@@ -54,7 +54,7 @@ export default defineConfig({
     // api-only: no browser, no auth — pure HTTP requests to proxy/edge functions
     {
       name: 'api-only',
-      testMatch: /lemlist\.spec\.ts/,
+      testMatch: /lemlist\.spec\.ts|.*\.api\.spec\.ts|.*\.unit\.spec\.ts/,
       use: {
         ...(CHROME ? { executablePath: CHROME } : {}),
       },
