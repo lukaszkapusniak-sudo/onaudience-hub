@@ -1,20 +1,21 @@
-# `HomeView.vue` — landing shell
+# `HomeView.vue` — About / migration copy
 
 **Path:** [`frontend/src/views/HomeView.vue`](../frontend/src/views/HomeView.vue)
 
-Default route **`/`** (see [`frontend/src/router/index.ts`](../frontend/src/router/index.ts)). Marketing-style **hero** explaining that the Vue app is a thin shell and the **legacy hub** remains under `/hub/`.
+Route **`/about`** (see [`frontend/src/router/index.ts`](../frontend/src/router/index.ts)). Short **marketing / migration** copy: production **hub** is route **`/`** ([`HubAppView.vue`](../frontend/src/views/HubAppView.vue)) embedding legacy `hub/index.html`. Secondary CTA: **Contact drawer (Vue)** → [`/demo/contact-drawer`](ContactDrawer.md).
 
 ## Script
 
-| Symbol     | Meaning                                                                                             |
-| ---------- | --------------------------------------------------------------------------------------------------- |
-| `year`     | Current year for footer.                                                                            |
-| `hubEntry` | `` `${import.meta.env.BASE_URL}hub/index.html` `` — works with dev `/` and prod `/onaudience-hub/`. |
+| Symbol    | Meaning                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `year`    | Current year for footer.                                                                                                         |
+| `hubRoot` | `` `${import.meta.env.BASE_URL}` `` — site root where [`HubAppView.vue`](../frontend/src/views/HubAppView.vue) hosts the iframe. |
 
 ## Template
 
 - Header: eyebrow “onAudience”, title, explanatory lead.
-- Primary CTA: **Open legacy hub** → static `hub/index.html`.
+- Primary CTA: **Open hub (Vue shell)** → router `/`.
+- Secondary: **Contact drawer (Vue)** → [`ContactDrawerDemoView.vue`](../frontend/src/views/ContactDrawerDemoView.vue) ([`ContactDrawer.md`](ContactDrawer.md)).
 - Footer: copyright + “built with Vite”.
 
 ## Styles

@@ -24,3 +24,4 @@ Reads from **`S.contacts`** ([`state.md`](state.md)). Lemlist subsection renders
 
 - [contact.md](contact.md) — CRM field semantics
 - [meeseeks.md](meeseeks.md) — composer
+- [ContactDrawer.md](ContactDrawer.md) — Vue + TypeScript port (demo route; production still uses this module)

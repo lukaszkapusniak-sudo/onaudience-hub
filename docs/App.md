@@ -10,13 +10,13 @@ Single-file component that wraps the entire Vue SPA. It contains **no business l
 
 ## Template
 
-A single `<RouterView />` — child routes (currently only [`HomeView.md`](HomeView.md)) render in place.
+A single `<RouterView />` — default route **`/`** is [`HubAppView.vue`](HubAppView.md) (iframe host); **`/about`** is [`HomeView.md`](HomeView.md).
 
 ## Build / deploy
 
-Bundled by Vite with [`frontend/vite.config.ts`](../frontend/vite.config.ts): production **`base`** is `/onaudience-hub/`. The legacy hub is **not** part of this component; it is served/copied separately under `/hub/`.
+Bundled by Vite with [`frontend/vite.config.ts`](../frontend/vite.config.ts): production **`base`** is `/onaudience-hub/`. The legacy hub bundle is **embedded** from route `/` and still copied to **`dist/hub/`** for direct URLs and the iframe `src`.
 
 ## Related
 
 - [`HomeView.md`](HomeView.md)
-- [`hub-app.md`](hub-app.md) — real product UI in `www/hub/`
+- [`hub-app.md`](hub-app.md) — legacy hub source in `www/hub/`

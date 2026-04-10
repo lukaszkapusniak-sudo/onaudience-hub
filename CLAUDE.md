@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-OnAudience hub: **Vue 3 + Vite + TypeScript** SPA in `frontend/`, with the **legacy vanilla hub** still shipped from `www/hub/` (copied into the Vite build for `/hub/`). Playwright tests; GitHub Pages deploys `frontend/dist`.
+OnAudience hub: **Vue 3 + Vite + TypeScript** SPA in `frontend/` — **route `/`** embeds the legacy hub (`hub/index.html`) in a same-origin iframe while modules migrate out of `www/hub/` (still copied to `dist/hub/`). Playwright tests; GitHub Pages deploys `frontend/dist`.
 
 ## Project map
 
@@ -11,7 +11,7 @@ OnAudience hub: **Vue 3 + Vite + TypeScript** SPA in `frontend/`, with the **leg
 - `tests/` — Playwright specs; `tests/fixtures/` — auth setup (`auth.setup.ts`, generated `.auth.json` gitignored)
 - `tests/env.ts` — canonical env keys and derived URLs for tests
 - `.github/workflows/` — `e2e.yml` (quality + Playwright on `main`), `deploy.yml` (build Vue + upload `frontend/dist`)
-- `docs/` — human-written module and product notes (not linted by ESLint; Prettier may format). **`docs/components.md`** is the index; each legacy module has a matching **`docs/<name>.md`** (Vue: `App.md`, `HomeView.md`; `www/hub/app.js` → **`docs/hub-app.md`** to avoid colliding with `App.md` on case-insensitive filesystems).
+- `docs/` — human-written module and product notes (not linted by ESLint; Prettier may format). **`docs/components.md`** is the index; each legacy module has a matching **`docs/<name>.md`** (Vue: `App.md`, `HomeView.md`, `HubAppView.md`, `HubDataView.md`, `LemlistView.md`, [`VUE_MIGRATION.md`](VUE_MIGRATION.md); `www/hub/app.js` → **`docs/hub-app.md`** to avoid colliding with `App.md` on case-insensitive filesystems).
 
 ## Keeping `docs/` up to date
 
@@ -20,7 +20,7 @@ When you change the codebase, update docs in the same PR when behavior or struct
 | Change                                                                           | Update                                                                                                                                                     |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Add/remove/rename a **`www/hub/*.js`** module, or change its main responsibility | **`docs/components.md`** table + the corresponding **`docs/<module>.md`** (create/rename/delete the elaboration file).                                     |
-| Add/remove a **Vue SFC** under `frontend/src/`                                   | **`docs/components.md`** + **`docs/App.md`** / **`docs/HomeView.md`** (or new `docs/<ViewName>.md` if you add views).                                      |
+| Add/remove a **Vue SFC** under `frontend/src/`                                   | **`docs/components.md`** + **`docs/App.md`** / **`docs/HomeView.md`** / **`docs/HubAppView.md`** (or new `docs/<ViewName>.md` if you add views).           |
 | Move logic between files                                                         | Adjust the affected **`docs/<name>.md`** files and any “Related” / cross-links.                                                                            |
 | Change **hub loading**, **Gmail**, **company panel**, or **contacts** behavior   | **`docs/loader.md`**, **`docs/gmail.md`**, **`docs/company.md`**, **`docs/contact.md`** as appropriate (these are topic guides, not 1:1 file names).       |
 | Change **env vars** / **`config.generated.js`** shape                            | **`docs/config.generated.md`** and **`.env.example`**; mention new keys in **`docs/config.md`** if they are user-facing.                                   |
@@ -52,7 +52,7 @@ From the repo root (Node 20 as in CI):
 | `npx playwright install --with-deps chromium`                 | Install Chromium for Playwright                                                                                               |
 | `npx playwright test`                                         | All projects (`setup` / `chromium` / `api-only`)                                                                              |
 | `npx playwright test --project=setup`                         | Auth fixture only                                                                                                             |
-| `npm run validate:hub`                                        | `node validate.js` — legacy hub checks (needs local `python3` for CSS audit)                                                  |
+| `npm run validate:hub`                                        | `node validate.js` — legacy hub checks; CSS audit via **`uv run python`** ([uv](https://docs.astral.sh/uv/))                  |
 | `npm run prepare` (automatic on `npm ci`)                     | Installs Husky git hooks (`.husky/pre-commit` → `lint-staged`)                                                                |
 
 </important>

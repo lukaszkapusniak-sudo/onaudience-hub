@@ -6,6 +6,10 @@
 
 Re-exports from [`config.generated.md`](config.generated.md): **`SB_URL`**, **`SB_KEY`**, **`HDR`**, **`LEMLIST_PROXY`**, **`GMAIL_CLIENT_ID`**, **`NOMINATIM_URL`**.
 
+## Supabase OAuth (Vue shell)
+
+Google OAuth **`redirectTo`** is computed in [`www/hub/auth.js`](../www/hub/auth.js) (`oauthAppBaseUrl`) so the return URL can be the **Vue SPA root** (e.g. `https://<host>/onaudience-hub/`). Register that URL under **Supabase → Authentication → URL configuration** (Redirect URLs) alongside any `/hub/` URLs you still use.
+
 ## Models
 
 - **`MODEL_RESEARCH`** — Claude model id for factual / research tasks.

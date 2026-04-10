@@ -6,7 +6,7 @@
 ## Learned Workspace Facts
 
 - **npm workspaces:** `frontend/` (Vue 3 + Vite + TypeScript), `tooling/` (shared ESLint / Prettier / root `tsc` used by Turborepo).
-- The **legacy vanilla hub** is under `www/hub/`; the production build copies it into the Vite output so existing `/hub/` URLs keep working until features are ported into Vue.
+- The **legacy vanilla hub** is under `www/hub/`; the production build copies it into the Vite output. **Route `/`** (Vue) embeds `hub/index.html` in an iframe; direct `/hub/` URLs still work until features are ported into Vue. Full **step-by-step plan:** `docs/VUE_MIGRATION.md`; in-app **`/migrate`** lists the same phases.
 - **`npm run check`** runs Turborepo: `lint`, `format:check`, and `typecheck` across workspaces.
 - **Playwright** specs and `playwright.config.ts` live at the repo root; **`tests/env.ts`** is the single place for test env keys and derived URLs (do not scatter secrets across specs).
 - Vite **`base`** in production is **`/onaudience-hub/`** (GitHub Pages project URL).

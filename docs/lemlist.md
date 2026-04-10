@@ -18,6 +18,10 @@ Integrates **lemlist** campaigns and leads through the Supabase **edge proxy** [
 
 [`hub.js`](hub.md) calls `_loadLemlistSection` when opening a company if a key exists. [`api.js`](api.md) supplies `lemlistFetch`, `lemlistCampaigns`, etc.
 
+## Vue port
+
+Native implementation: route **`/lemlist`** — [`LemlistView.vue`](../frontend/src/views/LemlistView.vue), Pinia [`stores/lemlist.ts`](../frontend/src/stores/lemlist.ts), [`lib/lemlistApi.ts`](../frontend/src/lib/lemlistApi.ts). See [`LemlistView.md`](LemlistView.md). The legacy **`www/hub/lemlist.js`** remains for the embedded hub Lemlist tab until that UI is switched over.
+
 ## Related
 
 - [drawer.md](drawer.md) — Lemlist history strip on contacts
