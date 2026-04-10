@@ -1,17 +1,17 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260410d13';
-import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260410d13';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260410d13';
-import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260410d13';
-import { _slug, esc } from './utils.js?v=20260410d13';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d13';
+import S from './state.js?v=20260410d14';
+import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260410d14';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260410d14';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260410d14';
+import { _slug, esc } from './utils.js?v=20260410d14';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260410d14';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead, showEnrichPicker, showSimilarPicker,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260410d13';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, mcToggleCoSearch, mcFilterCos, mcCoSearchKey, mcPickCo, mcPickCoIdx, MC_PERSONAS } from './meeseeks.js?v=20260410d13';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260410d13';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260410d13';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260410d13';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260410d13';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260410d14';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, mcToggleCoSearch, mcFilterCos, mcCoSearchKey, mcPickCo, mcPickCoIdx, MC_PERSONAS } from './meeseeks.js?v=20260410d14';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260410d14';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260410d14';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260410d14';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260410d14';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -21,7 +21,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260410d13';
+} from './auth.js?v=20260410d14';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -252,9 +252,9 @@ window.vibeDoSearch = async function() {
 };
 
 window.vibeAddToHub = async function(company) {
-  const { _slug, esc } = await import('./utils.js?v=20260410d13');
-  const { SB_URL } = await import('./config.js?v=20260410d13');
-  const { authHdr } = await import('./api.js?v=20260410d13');
+  const { _slug, esc } = await import('./utils.js?v=20260410d14');
+  const { SB_URL } = await import('./config.js?v=20260410d14');
+  const { authHdr } = await import('./api.js?v=20260410d14');
   const S = window._oaState || {companies:[]};
   const id = _slug(company.name || '');
   if (!id) return;

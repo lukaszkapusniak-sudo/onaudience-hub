@@ -56,6 +56,11 @@ REQUIRED = [
     ('.mc-pgrid{',             'Meeseeks persona grid'),
     ('.mc-co-search-inp{',     'Meeseeks company search'),
     ('.oa-tut-mini-pill{',     'Tutorial mini pill'),
+    ('.aud-row{',              'Audience list row'),
+    ('.aud-toolbar{',          'Audience toolbar'),
+    ('.aud-row-name{',         'Audience row name'),
+    ('.aud-detail-header{',    'Audience detail header'),
+    ('.aud-member-row{',       'Audience member row'),
 ]
 for selector, name in REQUIRED:
     if selector not in css:
