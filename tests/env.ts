@@ -9,6 +9,9 @@
  * To rotate a key: update GitHub Secret + local .env
  * NEVER hardcode secrets elsewhere in test files — import from here.
  *
+ * Hub E2E base URL: set PLAYWRIGHT_BASE_URL or HUB_BASE_URL (e.g. local:
+ *   http://localhost:5173/onaudience-hub/hub/ ) — see playwright.config.ts.
+ *
  * Usage:
  *   import { ENV } from './env';
  *   const res = await request.post(ENV.LEMLIST_PROXY, { ... });
@@ -20,6 +23,18 @@ dotenv.config();
 function optional(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
+
+function withTrailingSlash(url: string): string {
+  if (!url) return url;
+  return url.endsWith('/') ? url : `${url}/`;
+}
+
+const HUB_URL_DEFAULT = 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/';
+
+/** Base URL for Playwright browser tests (trailing slash). PLAYWRIGHT_BASE_URL wins over HUB_BASE_URL. */
+export const HUB_URL = withTrailingSlash(
+  optional('PLAYWRIGHT_BASE_URL', '') || optional('HUB_BASE_URL', HUB_URL_DEFAULT),
+);
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
 const SB_URL = optional('SB_URL', 'https://nyzkkqqjnkctcmxoirdj.supabase.co');
@@ -81,8 +96,7 @@ export const ENV = {
     ORACLE_B2B: 'cam_qCnf7FZ7cR4mn6tcr', // "Oracle B2B data" — archived, 100 leads
   },
 
-  // Hub URL
-  HUB_URL: 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+  HUB_URL,
 } as const;
 
 // ── Convenience helpers ───────────────────────────────────────────────────────

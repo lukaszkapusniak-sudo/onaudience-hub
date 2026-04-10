@@ -1,12 +1,12 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260410d22';
+import S from './state.js?v=__OA_ASSET_VERSION__';
 import {
   vibeEnrichLead,
   vibeSearchCompanies,
   vibeEnrichCompany,
   vibeEnrichContact,
   vibeEnrichContacts,
-} from './vibe.js?v=20260410d22';
+} from './vibe.js?v=__OA_ASSET_VERSION__';
 import {
   isDemoMode,
   loadDemoData,
@@ -16,14 +16,14 @@ import {
   exitDemoMode,
   demoGuard,
   initDoom,
-} from './demo.js?v=20260410d22';
+} from './demo.js?v=__OA_ASSET_VERSION__';
 import {
   startTutorial,
   resetTutorial,
   isTutorialDone,
   initKonami,
-} from './tutorial.js?v=20260410d22';
-import { _slug, esc } from './utils.js?v=20260410d22';
+} from './tutorial.js?v=__OA_ASSET_VERSION__';
+import { _slug, esc } from './utils.js?v=__OA_ASSET_VERSION__';
 import {
   renderStats,
   loadFromSupabase,
@@ -44,7 +44,7 @@ import {
   lemlistCampaigns,
   lemlistAddLead,
   lemlistWriteBack,
-} from './api.js?v=20260410d22';
+} from './api.js?v=__OA_ASSET_VERSION__';
 import {
   renderList,
   switchTab as _switchTab,
@@ -121,7 +121,7 @@ import {
   setCompanyStatus,
   coAddTag,
   coRemoveTag,
-} from './hub.js?v=20260410d22';
+} from './hub.js?v=__OA_ASSET_VERSION__';
 import {
   openComposer,
   closeComposer,
@@ -137,7 +137,7 @@ import {
   mcPickCo,
   mcPickCoIdx,
   MC_PERSONAS,
-} from './meeseeks.js?v=20260410d22';
+} from './meeseeks.js?v=__OA_ASSET_VERSION__';
 import {
   renderTCFList,
   renderTCFCenter,
@@ -148,7 +148,7 @@ import {
   closeGVLConfirm,
   executeGVLConfirm,
   loadGVL,
-} from './tcf.js?v=20260410d22';
+} from './tcf.js?v=__OA_ASSET_VERSION__';
 import {
   renderAudiencesPanel,
   renderAudienceDetail,
@@ -192,8 +192,8 @@ import {
   audOpenCoOverlay,
   audCloseCoOverlay,
   audFilter,
-} from './audiences.js?v=20260410d22';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260410d22';
+} from './audiences.js?v=__OA_ASSET_VERSION__';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=__OA_ASSET_VERSION__';
 import {
   gmailSectionHTML,
   gmailConnectAndScan,
@@ -210,7 +210,7 @@ import {
   gmailSaveRelationshipSummary,
   gmailSaveSelectedContacts,
   gmailRenderResults,
-} from './gmail.js?v=20260410d22';
+} from './gmail.js?v=__OA_ASSET_VERSION__';
 import {
   getSession,
   getAuthToken,
@@ -226,7 +226,7 @@ import {
   hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260410d22';
+} from './auth.js?v=__OA_ASSET_VERSION__';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t) {
@@ -473,9 +473,9 @@ window.vibeEnrichFromCard = function (name, website) {
 };
 
 window.vibeAddToHub = async function (company) {
-  const { _slug } = await import('./utils.js?v=20260410d22');
-  const { SB_URL } = await import('./config.js?v=20260410d22');
-  const { authHdr } = await import('./api.js?v=20260410d22');
+  const { _slug } = await import('./utils.js?v=__OA_ASSET_VERSION__');
+  const { SB_URL } = await import('./config.js?v=__OA_ASSET_VERSION__');
+  const { authHdr } = await import('./api.js?v=__OA_ASSET_VERSION__');
   const S = window._oaState || { companies: [] };
   const id = _slug(company.name || '');
   if (!id) return;

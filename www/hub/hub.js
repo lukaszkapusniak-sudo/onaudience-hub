@@ -6,8 +6,8 @@ import {
   TAG_RULES,
   MODEL_CREATIVE,
   MODEL_RESEARCH,
-} from './config.js?v=20260410d22';
-import S from './state.js?v=20260410d22';
+} from './config.js?v=__OA_ASSET_VERSION__';
+import S from './state.js?v=__OA_ASSET_VERSION__';
 import {
   classify,
   _slug,
@@ -21,7 +21,7 @@ import {
   relTime,
   authHdr,
   safeUrl,
-} from './utils.js?v=20260410d22';
+} from './utils.js?v=__OA_ASSET_VERSION__';
 import {
   renderStats,
   fetchGoogleNews,
@@ -35,14 +35,14 @@ import {
   lemlistCampaigns,
   lemlistAddLead,
   lemlistWriteBack,
-} from './api.js?v=20260410d22';
-import { resolveAlias } from './merge.js?v=20260410d22';
+} from './api.js?v=__OA_ASSET_VERSION__';
+import { resolveAlias } from './merge.js?v=__OA_ASSET_VERSION__';
 import {
   companies as dbCompanies,
   contacts as dbContacts,
   relations as dbRelations,
   intelligence as dbIntel,
-} from './db.js?v=20260410d22';
+} from './db.js?v=__OA_ASSET_VERSION__';
 
 /* ═══ Tag helpers ════════════════════════════════════════════ */
 let _taxData = null;
@@ -3606,7 +3606,7 @@ export {
   llSetKey,
   llClearKey,
   llIsConnected,
-} from './lemlist.js?v=20260410d22';
+} from './lemlist.js?v=__OA_ASSET_VERSION__';
 
 export {
   openDrawer,
@@ -3616,7 +3616,7 @@ export {
   drLinkedIn,
   drGmail,
   drResearch,
-} from './drawer.js?v=20260410d22';
+} from './drawer.js?v=__OA_ASSET_VERSION__';
 
 /* ── Re-exports from list.js ─────────────────────────────────── */
 export {
@@ -3634,4 +3634,4 @@ export {
   onSearch,
   setSort,
   renderList,
-} from './list.js?v=20260410d22';
+} from './list.js?v=__OA_ASSET_VERSION__';

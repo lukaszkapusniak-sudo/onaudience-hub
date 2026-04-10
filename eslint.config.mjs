@@ -12,7 +12,7 @@ export default tseslint.config(
       'node_modules/**',
       'playwright-report/**',
       'test-results/**',
-      'www/**',
+      'www/hub/config.generated.js',
       'frontend/dist/**',
       '.turbo/**',
       '.cursor/**',
@@ -63,11 +63,34 @@ export default tseslint.config(
     },
   },
   {
-    files: ['frontend/scripts/**/*.mjs', 'tooling/**/*.mjs'],
+    files: ['frontend/scripts/**/*.mjs', 'tooling/**/*.mjs', 'scripts/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: globals.node,
+    },
+  },
+  /** Legacy hub: plain ES modules, heavy window usage — ratchet stricter rules later. */
+  {
+    files: ['www/hub/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'no-unused-expressions': 'off',
+      'no-dupe-keys': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-useless-assignment': 'off',
+      'no-useless-escape': 'off',
+      'no-self-assign': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
   {

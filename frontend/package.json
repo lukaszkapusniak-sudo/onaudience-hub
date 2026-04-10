@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build && node scripts/postbuild.mjs",
+    "dev": "node ../scripts/generate-hub-config.mjs && vite",
+    "build": "node ../scripts/generate-hub-config.mjs && vue-tsc -b && vite build && node scripts/postbuild.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json"
   },

@@ -1,13 +1,14 @@
-/* ═══ config.js — constants, SEED, TAG_RULES, personas, TCF data ═══ */
-
-export const SB_URL = 'https://nyzkkqqjnkctcmxoirdj.supabase.co';
-export const SB_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55emtrcXFqbmtjdGNteG9pcmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzMxMzYsImV4cCI6MjA4OTQ0OTEzNn0.jhAq_C68klOp4iTyj9HmsyyvoxsOI6ACld7t_87TAk0';
-export const HDR = {
-  apikey: SB_KEY,
-  Authorization: `Bearer ${SB_KEY}`,
-  'Content-Type': 'application/json',
-};
+/* ═══ config.js — constants, SEED, TAG_RULES, personas, TCF data ═══
+ * Environment-specific exports come from config.generated.js (scripts/generate-hub-config.mjs).
+ */
+export {
+  SB_URL,
+  SB_KEY,
+  HDR,
+  LEMLIST_PROXY,
+  GMAIL_CLIENT_ID,
+  NOMINATIM_URL,
+} from './config.generated.js?v=__OA_ASSET_VERSION__';
 
 /* ── Model tiers ─────────────────────────────────────────── */
 export const MODEL_RESEARCH = 'claude-opus-4-20250514'; // factual tasks — contacts, relations, company data
@@ -410,8 +411,3 @@ export const TCF_F = {
   3: 'Auto device ID',
 };
 export const TCF_SF = { 1: 'Precise geolocation data', 2: 'Active device scanning' };
-
-export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-export const GMAIL_CLIENT_ID =
-  '1019948080263-r3jeqca1h0olmkjkid128d7vq7m5pusi.apps.googleusercontent.com';
-export const LEMLIST_PROXY = 'https://nyzkkqqjnkctcmxoirdj.supabase.co/functions/v1/lemlist-proxy';

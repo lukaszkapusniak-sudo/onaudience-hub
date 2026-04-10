@@ -1,7 +1,7 @@
 /* ═══ list.js — Company list rendering, filters, tags, sort ═══ */
 
-import { SB_URL, TAG_RULES } from './config.js?v=20260410d22';
-import S from './state.js?v=20260410d22';
+import { SB_URL, TAG_RULES } from './config.js?v=__OA_ASSET_VERSION__';
+import S from './state.js?v=__OA_ASSET_VERSION__';
 import {
   classify,
   _slug,
@@ -15,9 +15,9 @@ import {
   relTime,
   authHdr,
   safeUrl,
-} from './utils.js?v=20260410d22';
-import { anthropicFetch } from './api.js?v=20260410d22';
-import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=20260410d22';
+} from './utils.js?v=__OA_ASSET_VERSION__';
+import { anthropicFetch } from './api.js?v=__OA_ASSET_VERSION__';
+import { openCompany, sortCompanies, boldKw, completeness, clog } from './hub.js?v=__OA_ASSET_VERSION__';
 
 export function tagCountsFor(pool) {
   const m = {};

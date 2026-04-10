@@ -1,10 +1,10 @@
 /* ═══ drawer.js — Contact drawer ═══ */
 
-import S from './state.js?v=20260410d22';
-import { esc, _slug, getAv, ini, relTime } from './utils.js?v=20260410d22';
-import { saveContact } from './api.js?v=20260410d22';
-import { openComposer } from './meeseeks.js?v=20260410d22';
-import { clog } from './hub.js?v=20260410d22';
+import S from './state.js?v=__OA_ASSET_VERSION__';
+import { esc, _slug, getAv, ini, relTime } from './utils.js?v=__OA_ASSET_VERSION__';
+import { saveContact } from './api.js?v=__OA_ASSET_VERSION__';
+import { openComposer } from './meeseeks.js?v=__OA_ASSET_VERSION__';
+import { clog } from './hub.js?v=__OA_ASSET_VERSION__';
 
 export function openDrawer(ctId) {
   const ct = S.contacts.find((c) => c.id === ctId || (c.full_name && _slug(c.full_name) === ctId));

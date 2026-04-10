@@ -6,9 +6,9 @@ import {
   NOMINATIM_URL,
   MODEL_RESEARCH,
   LEMLIST_PROXY,
-} from './config.js?v=20260410d22';
-import S from './state.js?v=20260410d22';
-import { classify, _slug, authHdr } from './utils.js?v=20260410d22';
+} from './config.js?v=__OA_ASSET_VERSION__';
+import S from './state.js?v=__OA_ASSET_VERSION__';
+import { classify, _slug, authHdr } from './utils.js?v=__OA_ASSET_VERSION__';
 import {
   companies as dbCo,
   contacts as dbContacts,
@@ -17,7 +17,7 @@ import {
   enrichCache as dbEnrich,
   mergeSuggestions as dbMerge,
   userProfiles,
-} from './db.js?v=20260410d22';
+} from './db.js?v=__OA_ASSET_VERSION__';
 
 /* ── clog — console logger proxy ─────────────────────────────
    clog lives in hub.js but other modules (audiences.js, prospect.js)

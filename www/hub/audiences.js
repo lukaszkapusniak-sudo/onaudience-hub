@@ -5,7 +5,7 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d22';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=__OA_ASSET_VERSION__';
 import {
   authHdr,
   classify,
@@ -17,16 +17,16 @@ import {
   _slug,
   tClass,
   tLabel,
-} from './utils.js?v=20260410d22';
-import S from './state.js?v=20260410d22';
+} from './utils.js?v=__OA_ASSET_VERSION__';
+import S from './state.js?v=__OA_ASSET_VERSION__';
 import {
   anthropicFetch,
   anthropicMcpFetch,
   geocodeCity,
   saveGeocode,
-} from './api.js?v=20260410d22';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d22';
-import { clog } from './hub.js?v=20260410d22';
+} from './api.js?v=__OA_ASSET_VERSION__';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=__OA_ASSET_VERSION__';
+import { clog } from './hub.js?v=__OA_ASSET_VERSION__';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -2377,7 +2377,7 @@ export {
   icpEditModal,
   icpRegenHook,
   icpPatchAudience,
-} from './aud-icp.js?v=20260410d22';
+} from './aud-icp.js?v=__OA_ASSET_VERSION__';
 
 export {
   generateCampaignHook,
@@ -2386,4 +2386,4 @@ export {
   launchCampaign,
   audDraftEmailToCo,
   audGenAngleForCo,
-} from './aud-campaign.js?v=20260410d22';
+} from './aud-campaign.js?v=__OA_ASSET_VERSION__';

@@ -2,6 +2,8 @@ import { execSync } from 'node:child_process';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
+import { HUB_URL } from './tests/env';
+
 dotenv.config();
 
 const IS_CI = !!process.env.CI;
@@ -34,7 +36,7 @@ export default defineConfig({
   workers: IS_CI ? 1 : undefined,
 
   use: {
-    baseURL: 'https://lukaszkapusniak-sudo.github.io/onaudience-hub/hub/',
+    baseURL: HUB_URL,
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

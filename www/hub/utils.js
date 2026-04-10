@@ -1,6 +1,6 @@
 /* ═══ utils.js — pure utility functions ═══ */
 
-import { TAG_RULES, PAL, SB_KEY } from './config.js?v=20260410d22';
+import { TAG_RULES, PAL, SB_KEY } from './config.js?v=__OA_ASSET_VERSION__';
 
 export function classify(n) {
   const s = (n || '').toLowerCase();
