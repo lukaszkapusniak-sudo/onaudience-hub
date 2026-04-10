@@ -215,6 +215,7 @@ export function showDemoBanner() {
     </style>
     <span>⚠ DEMO MODE — Fictional sample data · No live database connection</span>
     <button class="db-btn" id="oa-demo-signin-btn">Sign In for Live Intelligence →</button>
+    <button class="db-btn" onclick="window._oaDoom&&window._oaDoom()" title="This is fine." style="letter-spacing:.04em">🔫 Doom</button>
     <button class="db-btn" style="opacity:.5" onclick="document.getElementById('oa-demo-bar').remove()">✕</button>
   `;
   document.body.appendChild(bar);
@@ -245,4 +246,99 @@ export function patchNavForDemo() {
       clearInterval(check);
     }
   },300);
+}
+
+/* ── Doom Easter Egg ─────────────────────────────────────────────── */
+export function initDoom() {
+  window._oaDoom = function() {
+    // Toggle: close if already open
+    const existing = document.getElementById('oa-doom-modal');
+    if (existing) { existing.remove(); return; }
+
+    const modal = document.createElement('div');
+    modal.id = 'oa-doom-modal';
+    modal.innerHTML = `
+      <style>
+      #oa-doom-modal{
+        position:fixed;inset:0;z-index:10005;
+        background:rgba(0,0,0,.92);
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;
+        font-family:'IBM Plex Mono',monospace;
+      }
+      #oa-doom-modal .dm-header{
+        display:flex;align-items:center;gap:16px;margin-bottom:12px;width:min(800px,90vw);
+      }
+      #oa-doom-modal .dm-title{
+        font-size:clamp(16px,4vw,24px);font-weight:700;color:#c00;
+        text-shadow:0 0 20px rgba(220,0,0,.6);letter-spacing:.1em;
+        flex:1;
+      }
+      #oa-doom-modal .dm-note{
+        font-size:9px;color:#555;text-align:right;line-height:1.4;
+      }
+      #oa-doom-modal .dm-close{
+        height:28px;padding:0 12px;background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.2);border-radius:2px;color:#aaa;
+        cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9px;
+        font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+      }
+      #oa-doom-modal .dm-close:hover{background:rgba(255,255,255,.15);color:#fff;}
+      #oa-doom-modal .dm-frame-wrap{
+        border:2px solid #c00;
+        box-shadow:0 0 40px rgba(200,0,0,.4),inset 0 0 20px rgba(200,0,0,.08);
+      }
+      #oa-doom-modal iframe{
+        display:block;width:min(800px,90vw);height:min(500px,60vh);
+        border:none;background:#000;
+      }
+      #oa-doom-modal .dm-footer{
+        margin-top:8px;font-size:8px;color:#444;letter-spacing:.04em;
+        text-align:center;width:min(800px,90vw);
+      }
+      #oa-doom-modal .dm-keys{
+        display:flex;gap:6px;margin-top:5px;justify-content:center;flex-wrap:wrap;
+      }
+      #oa-doom-modal .dm-key{
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+        border-radius:2px;padding:2px 6px;font-size:7.5px;color:#666;
+      }
+      </style>
+      <div class="dm-header">
+        <div class="dm-title">💀 DOOM</div>
+        <div class="dm-note">Shareware · id Software 1993<br>Because every sales tool needs this.</div>
+        <button class="dm-close" onclick="document.getElementById('oa-doom-modal').remove()">✕ Close</button>
+      </div>
+      <div class="dm-frame-wrap">
+        <iframe
+          src="https://silentspacemarine.com/"
+          allow="autoplay; fullscreen"
+          title="DOOM Shareware"
+        ></iframe>
+      </div>
+      <div class="dm-footer">
+        Doom shareware Episode 1 is free. Click the iframe first to capture keyboard.
+        <div class="dm-keys">
+          <span class="dm-key">↑ W Forward</span>
+          <span class="dm-key">↓ S Back</span>
+          <span class="dm-key">← → Turn</span>
+          <span class="dm-key">Ctrl Fire</span>
+          <span class="dm-key">Space Open</span>
+          <span class="dm-key">Shift Run</span>
+          <span class="dm-key">Enter Start</span>
+          <span class="dm-key">ESC Menu</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Close on backdrop click or ESC
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.addEventListener('keydown', function _de(e) {
+      if (e.key === 'Escape' && document.getElementById('oa-doom-modal')) {
+        modal.remove();
+        document.removeEventListener('keydown', _de);
+      }
+    });
+  };
 }
