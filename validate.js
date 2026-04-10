@@ -166,6 +166,14 @@ for (const cf of FILES) {
   }
 }
 
+// ── Check 7: CSS audit via audit_css.py ─────────────────────────────────
+const { execSync } = require('child_process');
+try {
+  execSync('python3 scripts/audit_css.py', { stdio: 'inherit' });
+} catch (e) {
+  issues++;
+}
+
 if (issues === 0) {
   console.log(`✓ All ${FILES.length} files pass (6 checks: imports, syntax, onclick, cross-module, utils, db, version)`);
   process.exit(0);

@@ -1,11 +1,11 @@
 /* ═══ api.js — Supabase, status, stats, Google News, Anthropic ═══ */
 
-import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260410d11';
-import S from './state.js?v=20260410d11';
-import { classify, _slug, authHdr } from './utils.js?v=20260410d11';
+import { SB_URL, HDR, NOMINATIM_URL, MODEL_RESEARCH, LEMLIST_PROXY } from './config.js?v=20260410d12';
+import S from './state.js?v=20260410d12';
+import { classify, _slug, authHdr } from './utils.js?v=20260410d12';
 import { companies as dbCo, contacts as dbContacts, relations as dbRelations,
   intelligence as dbIntel, enrichCache as dbEnrich,
-  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260410d11';
+  mergeSuggestions as dbMerge, userProfiles } from './db.js?v=20260410d12';
 
 
 

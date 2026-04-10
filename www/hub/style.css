@@ -445,6 +445,10 @@ body:has(.console-panel.open) #oa-demo-bar{
 }
 .console-msg b{color:var(--t1);font-weight:600;}
 
+
+/* ── Tutorial mini pill (also defined inline in tutorial.js) ── */
+.oa-tut-mini-pill{display:none;align-items:center;gap:6px;padding:8px 14px;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--g)}
+.oa-tut-mini-dot{width:7px;height:7px;border-radius:50%;background:var(--g);flex-shrink:0;animation:oa-tut-pulse 1.5s ease-in-out infinite}
 /* Audience modal */
 .aud-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .aud-modal-box{background:var(--surf);border:1px solid var(--rule);border-radius:4px;width:560px;max-width:94vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sh)}
