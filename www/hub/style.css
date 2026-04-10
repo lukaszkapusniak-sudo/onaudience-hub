@@ -550,6 +550,17 @@ body:has(.console-panel.open) #oa-demo-bar{
 .aud-add-search{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surf2);border:1px solid var(--rule2);color:var(--t1);padding:5px 8px;border-radius:2px;outline:none;flex:1;transition:border-color .15s}
 .aud-add-search:focus{border-color:var(--g)}
 
+/* Audience search row */
+.aud-search-row{padding:5px 8px;border-bottom:1px solid var(--rule3)}
+.aud-search-inp{width:100%;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:5px 8px;border:1px solid var(--rule2);border-radius:2px;background:var(--surf2);color:var(--t1);outline:none;transition:border-color .15s;box-sizing:border-box}
+.aud-search-inp:focus{border-color:var(--g)}
+.aud-search-inp::placeholder{color:var(--t4)}
+/* Lemlist campaign row stats */
+.ll-row-stats{display:flex;align-items:center;gap:8px;margin-top:4px}
+.ll-stat{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t4)}
+.ll-stat-open{color:var(--g)}
+.ll-stat-reply{color:var(--pc)}
+
 /* Audience modal */
 .aud-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .aud-modal-box{background:var(--surf);border:1px solid var(--rule);border-radius:4px;width:560px;max-width:94vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sh)}

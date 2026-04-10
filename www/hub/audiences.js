@@ -5,12 +5,12 @@
    Lemlist export: CSV today, MCP connector stub ready.
    ════════════════════════════════════════════════════════ */
 
-import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d16';
-import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260410d16';
-import S from './state.js?v=20260410d16';
-import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260410d16';
-import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d16';
-import { clog } from './hub.js?v=20260410d16';
+import { SB_URL, MODEL_CREATIVE } from './config.js?v=20260410d17';
+import { authHdr, classify, esc, getAv, getCoTags, ini, relTime, _slug, tClass, tLabel } from './utils.js?v=20260410d17';
+import S from './state.js?v=20260410d17';
+import { anthropicFetch, anthropicMcpFetch, geocodeCity, saveGeocode } from './api.js?v=20260410d17';
+import { companies as dbCo, audiences as dbAud } from './db.js?v=20260410d17';
+import { clog } from './hub.js?v=20260410d17';
 
 /* ── Map state ─────────────────────────────────────────────── */
 let _audMap = null;
@@ -41,6 +41,9 @@ async function sbPatchCompanyType(companyId, type) {
 
 /* ─── Left panel render ────────────────────────────────────── */
 
+let _audSearchQ = '';
+export function audFilter(q){ _audSearchQ = q; renderAudiencesPanel(); }
+
 export async function renderAudiencesPanel() {
   const panel = document.getElementById('audiencesPanel');
   if (!panel) return;
@@ -58,11 +61,15 @@ export async function renderAudiencesPanel() {
   <button class="btn sm" onclick="icpFindByIcp()">✦ Find by ICP</button>
   <button class="btn sm p" onclick="audNew()">＋ NEW</button>
 </div>
+<div class="aud-search-row">
+  <input class="aud-search-inp" id="audSearchInp" placeholder="Search audiences…"
+    oninput="audFilter(this.value)" value="${_audSearchQ||''}" />
+</div>
 ${sysSection}
 <div class="aud-list">
   ${userAuds.length === 0
     ? '<div class="aud-empty">No audiences yet.<br>Use AI to build your first list.</div>'
-    : userAuds.map(audRowHtml).join('')}
+    : userAuds.filter(a=>!_audSearchQ||(a.name||'').toLowerCase().includes(_audSearchQ.toLowerCase())).map(audRowHtml).join('')}
 </div>`;
 }
 
@@ -1980,7 +1987,7 @@ export async function audAddExternalCo(slug, name, category, hq, website) {
 
 /* ── Re-exports from extracted modules ──────────────────────── */
 export { icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience,
-  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260410d16';
+  icpEditModal, icpRegenHook, icpPatchAudience } from './aud-icp.js?v=20260410d17';
 
 export { generateCampaignHook, generateEmailTemplate, saveCampaignTemplate,
-  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260410d16';
+  launchCampaign, audDraftEmailToCo, audGenAngleForCo } from './aud-campaign.js?v=20260410d17';

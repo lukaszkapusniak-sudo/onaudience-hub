@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260410d16';
-import S from './state.js?v=20260410d16';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260410d16';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260410d16';
-import { clog } from './hub.js?v=20260410d16';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260410d17';
+import S from './state.js?v=20260410d17';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260410d17';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260410d17';
+import { clog } from './hub.js?v=20260410d17';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -180,12 +180,24 @@ export function renderLemlistPanel(){
 function _renderLemlistRow(c){
   const active=_llSelCampaign?._id===c._id;
   const statusCls={active:'tc',paused:'tpo',draft:'tpr',stopped:'tn'}[c.status]||'tpr';
+  // Stats from synced contacts (no extra API call)
+  const cc=(S.contacts||[]).filter(x=>x.lemlist_campaign_id===c._id);
+  const tot=cc.length;
+  const sent=cc.filter(x=>x.lemlist_status&&x.lemlist_status!=='pending').length||tot;
+  const opened=cc.filter(x=>x.lemlist_opened_at).length;
+  const replied=cc.filter(x=>x.lemlist_replied_at).length;
+  const oP=sent?Math.round(opened/sent*100):0;
+  const rP=sent?Math.round(replied/sent*100):0;
+  const stats=tot>0
+    ?`<div class="ll-row-stats"><span class="ll-stat">👥 ${tot}</span>${oP?`<span class="ll-stat ll-stat-open">👁 ${oP}%</span>`:''} ${rP?`<span class="ll-stat ll-stat-reply">💬 ${rP}%</span>`:''}</div>`
+    :'';
   return `<div class="ll-row${active?' ll-row-active':''}" onclick="selectLemlistCampaign('${esc(c._id)}')">
     <div class="ll-row-head">
       <span class="ll-row-name">${esc(c.name)}</span>
       <span class="tag ${statusCls}">${esc(c.status||'draft')}</span>
     </div>
     <div class="ll-row-meta">${c.createdAt?relTime(c.createdAt):''}</div>
+    ${stats}
   </div>`;
 }
 
