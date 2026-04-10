@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409d8';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d1';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -1227,5 +1227,6 @@ export function isTutorialDone() {
 /* window exports (onclick handlers) */
 window._tutNext  = _tutNext;
 window._tutClose = _tutClose;
+window._tutToggleMini = _tutToggleMiniCard;
 window._tutGmail = _tutGmail;
 window._tutLang  = _setLang;
