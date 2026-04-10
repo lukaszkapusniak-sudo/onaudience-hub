@@ -10,7 +10,7 @@
 const fs   = require('fs');
 const vm   = require('vm');
 const HUB  = 'www/hub/';
-const FILES = ['app.js','hub.js','audiences.js','api.js','auth.js','meeseeks.js','utils.js','state.js','lemlist.js','drawer.js','aud-icp.js','aud-campaign.js','list.js','db.js'];
+const FILES = ['app.js','hub.js','audiences.js','api.js','auth.js','meeseeks.js','utils.js','state.js','lemlist.js','drawer.js','aud-icp.js','aud-campaign.js','list.js','db.js','vibe.js'];
 let issues = 0;
 
 for (const f of FILES) {

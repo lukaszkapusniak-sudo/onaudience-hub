@@ -1,10 +1,10 @@
 /* ═══ lemlist.js — Lemlist CRM integration ═══ */
 
-import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409d6';
-import S from './state.js?v=20260409d6';
-import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409d6';
-import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409d6';
-import { clog } from './hub.js?v=20260409d6';
+import { SB_URL, LEMLIST_PROXY } from './config.js?v=20260409d7';
+import S from './state.js?v=20260409d7';
+import { esc, _slug, relTime, authHdr } from './utils.js?v=20260409d7';
+import { lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack, anthropicFetch, saveContact } from './api.js?v=20260409d7';
+import { clog } from './hub.js?v=20260409d7';
 
 let _llContacts   = [];
 let _llLeads      = [];
@@ -342,7 +342,8 @@ function _renderLeadRow(l,campaignId){
     <td><span class="tag ${statusCls}">${esc(l.status||'—')}</span>${acts?'<span style="font-size:11px;margin-left:4px">'+acts+'</span>':''}</td>
     <td style="color:var(--t4)">${pushed}</td>
     <td><button class="btn sm" style="color:var(--cr)" title="Unsubscribe"
-      onclick="llUnsubLead('${esc(campaignId)}','${esc(l.email||'')}')">&#10005;</button></td>
+      onclick="llUnsubLead('${esc(campaignId)}','${esc(l.email||'')}')">&#10005;</button>${l.email?`<button class="btn sm" style="font-size:7px;padding:0 5px;opacity:.75" title="Enrich via Vibe Prospecting (1 credit)" onclick="window.vibeEnrichLead&&window.vibeEnrichLead('${esc(l.email||'')}','${esc(((l.firstName||'')+' '+(l.lastName||'')).trim())}','${esc(l.companyName||'')}')">⚡</button>`:''}
+    </td>
   </tr>`;
 }
 

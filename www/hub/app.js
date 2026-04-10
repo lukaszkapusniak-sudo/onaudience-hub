@@ -1,16 +1,17 @@
 /* ═══ app.js — boot + window exports (v2.3 — magic link + audit) ═══ */
-import S from './state.js?v=20260409d6';
-import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260409d6';
-import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409d6';
-import { _slug } from './utils.js?v=20260409d6';
-import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d6';
+import S from './state.js?v=20260409d7';
+import { vibeEnrichLead, vibeSearchCompanies, vibeEnrichCompany, vibeEnrichContact, vibeEnrichContacts } from './vibe.js?v=20260409d7';
+import { isDemoMode, loadDemoData, showDemoBanner, patchNavForDemo, enterDemoMode, exitDemoMode, demoGuard, initDoom } from './demo.js?v=20260409d7';
+import { startTutorial, resetTutorial, isTutorialDone, initKonami } from './tutorial.js?v=20260409d7';
+import { _slug, esc } from './utils.js?v=20260409d7';
+import { renderStats, loadFromSupabase, setStatus, saveCompany, saveContact, promptApiKey, updateKeyBtn, toggleKeyPanel, saveKeyPanel, clearKeyPanel, cacheGet, cacheSet, cacheInvalidate, withCache, lemlistKey, lemlistFetch, lemlistCampaigns, lemlistAddLead, lemlistWriteBack } from './api.js?v=20260409d7';
 import { renderList, switchTab as _switchTab, setFilter, onSearch, renderTagPanel, toggleTagPanel, toggleTag, toggleTagEl, clearTags, setTagLogic, matchTags, runAI, clearAI, aiQuick, openCompany, closePanel, coAction, ctAction, bgGenerateAngle, bgFindDMs, bgRefreshIntel, loadRelationsBrief, openBySlug, showCtxSlug, showCtx, openDrawer, closeDrawer, openContactFull, drEmail, drLinkedIn, drGmail, drResearch, promptResearch, promptSimilar, closeModal, submitModal, openClaude, clog, toggleConsole, clearConsole, setSort, quickEnrich, mapSegments, extractIntelRelations, openClaudeGmail, oaGmailConnect, oaGmailDisconnect, oaEmailScan, oaEmailSaveContacts, initLemlistModal, openLemlistModal, closeLemlistModal, lemlistPush, audPushLemlist, renderLemlistPanel, refreshLemlistCampaigns, selectLemlistCampaign, clearCampaignDetail, llSearchLeads, llPushFromAudience, llUnsubLead,
-  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409d6';
-import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409d6';
-import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409d6';
-import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409d6';
-import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409d6';
-import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409d6';
+  llSyncContacts, llSyncCompanies, llSetKey, llClearKey, llIsConnected, _llPushCompany, showPersonaPicker, _onPersonaPick, bgGenerateAngleWithPersona, setCompanyStatus } from './hub.js?v=20260409d7';
+import { openComposer, closeComposer, openPanel as mcOpenPanel, mcPickPersona, mcGenerate, mcCopy, mcHint, mcPickContact, MC_PERSONAS } from './meeseeks.js?v=20260409d7';
+import { renderTCFList, renderTCFCenter, tcfSelectRow, tcfClearSel, doGVLMatch, promptGVLConfirm, closeGVLConfirm, executeGVLConfirm, loadGVL } from './tcf.js?v=20260409d7';
+import { renderAudiencesPanel, renderAudienceDetail, openAudienceModal, audCloseModal, audNew, audEdit, audOpen, audCloseDetail, audSave, audDelete, audToggleCo, audSetSort, audRefreshDetail, audAIBuild, audExportCsv, audFindContacts, addToSystemAudience, removeFromSystemAudience, sysAudSearchInput, sysCoSetType, icpFindByIcp, icpMatch, icpSaveStep, icpSaveAudience, icpEditModal, icpRegenHook, icpPatchAudience, audToggleCoRow, audFilterCoList, audProviderChange, generateCampaignHook, generateEmailTemplate, saveCampaignTemplate, launchCampaign, audDraftEmailToCo, audGenAngleForCo, audAddExternalCo, audB2bLookup, toggleAudienceMap, audOpenCoOverlay, audCloseCoOverlay } from './audiences.js?v=20260409d7';
+import { openMergeModal, loadMergeSuggestionsCount } from './merge.js?v=20260409d7';
+import { gmailSectionHTML, gmailConnectAndScan, gmailDisconnectUI, gmailScanCompany, gmailSaveContacts, gmailIsConnected, gmailNavToggle, updateGmailNavBtn, gmailEnrichContacts, gmailSaveAndEnrichContacts, gmailShowSummarizePrompt, gmailRunSummarize, gmailSaveRelationshipSummary, gmailSaveSelectedContacts, gmailRenderResults } from './gmail.js?v=20260409d7';
 import {
   getSession, getAuthToken, getCurrentUser, oaEnterDemoMode,
   signIn, signInWithGoogle,
@@ -20,7 +21,7 @@ import {
   renderLoginScreen, hideLoginScreen,
   doGoogleSignIn,
   renderUserBadge,
-} from './auth.js?v=20260409d6';
+} from './auth.js?v=20260409d7';
 
 /* ── Theme ──────────────────────────────────────────────────── */
 function applyTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('oaTheme',t); }
@@ -142,16 +143,104 @@ function switchTab(t) {
 }
 
 /* ── Prospect finder shim ───────────────────────────────────── */
-function openProspectFinder(q) {
+async function openProspectFinder(q) {
+  // Show the company finder modal
+  const hasKey = !!localStorage.getItem('oaAnthropicKey');
   if (q) {
-    // Fill AI bar and run search internally
     const inp = document.getElementById('aiInp');
     if (inp) { inp.value = q; window.runAI?.(); }
-  } else {
-    // Open Meeseeks composer for a new prospecting email
-    window.openComposer?.({});
+    return;
   }
+  // Show inline finder UI in center panel
+  const panel = document.getElementById('coPanel');
+  const empty = document.getElementById('emptyState');
+  if (!panel) return;
+  if (empty) empty.style.display = 'none';
+  panel.style.display = 'flex';
+
+  const limitNote = hasKey
+    ? ''
+    : '<div style="margin-top:6px;padding:6px 8px;background:var(--prb);border:1px solid var(--prr);border-radius:2px;font-size:9px;color:var(--prc)">⚠ Personal Anthropic key required for enrichment. Click 🔑 in nav.</div>';
+
+  panel.innerHTML = `<div style="padding:20px;font-family:'IBM Plex Mono',monospace;width:100%;box-sizing:border-box">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t1);margin-bottom:4px">🔍 Company Finder</div>
+    <div style="font-size:9px;color:var(--t3);margin-bottom:12px">Search 17.5M+ companies by industry, technology, or description</div>
+    ${limitNote}
+    <div style="font-size:8px;color:var(--t4);margin:8px 0 4px;letter-spacing:.04em">WHAT THIS CAN DO</div>
+    <div style="font-size:9px;color:var(--t2);margin-bottom:12px;line-height:1.6">
+      ✓ Search companies by industry / tech / description<br>
+      ✓ Enrich a known company with revenue, size, funding<br>
+      ✓ Look up a contact by email or name+company → LinkedIn, title<br>
+      <span style="color:var(--t4)">✗ Bulk "find me VP of Data" queries (not available in current plan)</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input id="vibeSearchInp" class="inp" placeholder="e.g. programmatic DSP Europe, audience data AdTech…"
+        style="flex:1;font-size:10px;padding:6px 10px;height:32px"
+        onkeydown="if(event.key==='Enter')vibeDoSearch()">
+      <button class="btn sm p" onclick="vibeDoSearch()" style="height:32px;padding:0 16px">Search</button>
+    </div>
+    <div id="vibeResults" style="margin-top:8px"></div>
+  </div>`;
+
+  setTimeout(() => document.getElementById('vibeSearchInp')?.focus(), 80);
 }
+
+window.vibeDoSearch = async function() {
+  const q = document.getElementById('vibeSearchInp')?.value?.trim();
+  if (!q) return;
+  const res = document.getElementById('vibeResults');
+  if (res) res.innerHTML = '<div style="font-size:10px;color:var(--t3)">⟳ Searching…</div>';
+  const result = await window.vibeSearchCompanies(q);
+  if (!res) return;
+  if (!result.success || !result.companies.length) {
+    res.innerHTML = '<div style="font-size:10px;color:var(--t3)">No results found.</div>';
+    return;
+  }
+  const S = window._oaState || {companies:[]};
+  const companies = result.companies;
+  window._vibeResults = companies; // store for onclick access
+  const esc2 = esc;
+  res.innerHTML = `<div style="font-size:8px;color:var(--t4);margin-bottom:6px;letter-spacing:.04em">${companies.length} RESULTS</div>` +
+    companies.map((c, idx) => {
+      const inHub = (S.companies||[]).find(x => (x.name||'').toLowerCase() === (c.name||'').toLowerCase());
+      return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule3)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:600;color:var(--t1)">${esc2(c.name||'—')}${inHub ? ' <span style="color:var(--g);font-size:7px">✓ in hub</span>' : ''}</div>
+          <div style="font-size:8px;color:var(--t3);margin:2px 0">${esc2((c.description||'').slice(0,120))}${(c.description||'').length>120?'…':''}</div>
+          ${c.website ? `<a href="${esc2(c.website)}" target="_blank" style="font-size:8px;color:var(--g)">${esc2(c.website)}</a>` : ''}
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:3px">
+          ${!inHub ? `<button class="btn sm" style="font-size:7px" onclick="window.vibeAddToHub(window._vibeResults[${idx}])">+ Add</button>` : ''}
+          ${c.website ? `<button class="btn sm" style="font-size:7px" onclick="window.vibeEnrichCompany({name:'${esc2(c.name||'')}',website:'${esc2(c.website||'')}',id:''})">⚡ Enrich</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+};
+
+window.vibeAddToHub = async function(company) {
+  const { _slug, esc } = await import('./utils.js?v=20260409d7');
+  const { SB_URL } = await import('./config.js?v=20260409d7');
+  const { authHdr } = await import('./api.js?v=20260409d7');
+  const S = window._oaState || {companies:[]};
+  const id = _slug(company.name || '');
+  if (!id) return;
+  const rec = {
+    id, name: company.name,
+    website: company.website || '',
+    description: (company.description || '').slice(0, 500),
+    category: company.industry || '',
+    type: 'prospect',
+    source: 'vibe_search',
+  };
+  await fetch(SB_URL + '/rest/v1/companies', {
+    method: 'POST',
+    headers: { ...authHdr(), 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(rec),
+  });
+  S.companies.push(rec);
+  window.renderList?.();
+  window.clog?.('db', `➕ Added <b>${esc(company.name)}</b> from Vibe search`);
+};
 
 /* ── Sign out ───────────────────────────────────────────────── */
 async function oaSignOut() {
@@ -207,6 +296,12 @@ document.addEventListener('visibilitychange', () => {
 /* ── window exports ─────────────────────────────────────────── */
 window.MC_PERSONAS_LIST = MC_PERSONAS;
 window.startTutorial = startTutorial;
+// Vibe Prospecting
+window.vibeEnrichLead = vibeEnrichLead;
+window.vibeSearchCompanies = vibeSearchCompanies;
+window.vibeEnrichCompany = vibeEnrichCompany;
+window.vibeEnrichContact = vibeEnrichContact;
+window.vibeEnrichContacts = vibeEnrichContacts;
 window.renderStats = renderStats;
 initKonami(); // ↑↑↓↓←→←→BA
 window.oaEnterDemo = oaEnterDemoMode;
