@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409c9';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260409d1';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -583,9 +583,47 @@ function _injectStyles() {
   transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1),
              width .35s cubic-bezier(.4,0,.2,1),height .35s cubic-bezier(.4,0,.2,1);
   border-radius:4px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.72);
+  /* JRPG: dark overlay + animated border */
+  box-shadow:0 0 0 9999px rgba(0,0,0,.78);
   border:2px solid var(--g);
+  animation:oa-sp-pulse 1.8s ease-in-out infinite;
 }
+@keyframes oa-sp-pulse{
+  0%,100%{border-color:var(--g);box-shadow:0 0 0 9999px rgba(0,0,0,.78),0 0 0 3px rgba(23,128,102,.2),0 0 20px 2px rgba(23,128,102,.4);}
+  50%{border-color:#2dd4a7;box-shadow:0 0 0 9999px rgba(0,0,0,.78),0 0 0 5px rgba(23,128,102,.15),0 0 32px 6px rgba(45,212,167,.55);}
+}
+/* Corner brackets — JRPG cursor style */
+#oa-tut-spotlight::before,#oa-tut-spotlight::after{
+  content:'';position:absolute;width:12px;height:12px;
+  border-color:var(--g);border-style:solid;
+  animation:oa-sp-corner 1.8s ease-in-out infinite;
+}
+#oa-tut-spotlight::before{top:-5px;left:-5px;border-width:3px 0 0 3px;border-radius:2px 0 0 0;}
+#oa-tut-spotlight::after{bottom:-5px;right:-5px;border-width:0 3px 3px 0;border-radius:0 0 2px 0;}
+@keyframes oa-sp-corner{
+  0%,100%{border-color:var(--g);opacity:1;}
+  50%{border-color:#2dd4a7;opacity:.7;}
+}
+/* Step-transition flash: briefly white when spotlight moves */
+#oa-tut-spotlight.flash{
+  animation:none;
+  border-color:#fff;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.78),0 0 0 4px rgba(255,255,255,.3),0 0 24px 8px rgba(255,255,255,.6);
+}
+/* "▶ FOCUS" label that appears below the spotlight */
+#oa-tut-sp-label{
+  position:fixed;z-index:9998;pointer-events:none;
+  font-family:'IBM Plex Mono',monospace;font-size:clamp(7px,1.5vw,9px);
+  font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--g);opacity:0;
+  transition:opacity .3s;
+  white-space:nowrap;
+  text-shadow:0 0 8px rgba(23,128,102,.8);
+  animation:oa-sp-label-blink 1.8s ease-in-out infinite;
+}
+#oa-tut-sp-label.vis{opacity:1;}
+@keyframes oa-sp-label-blink{0%,100%{opacity:.9;}50%{opacity:.5;}}
+
 #oa-tut-card{
   position:fixed;z-index:9999;
   font-family:'IBM Plex Mono',monospace;
@@ -790,6 +828,12 @@ function _injectStyles() {
 function _getEl(id) { return document.getElementById(id); }
 
 function _ensureDom() {
+  // JRPG FOCUS label
+  if (!document.getElementById('oa-tut-sp-label')) {
+    const lbl = document.createElement('div');
+    lbl.id = 'oa-tut-sp-label';
+    document.body.appendChild(lbl);
+  }
   if (!_getEl('oa-tut-spotlight')) {
     const sp = document.createElement('div');
     sp.id = 'oa-tut-spotlight';
@@ -817,28 +861,73 @@ function _ensureDom() {
 }
 
 /* ── Spotlight ────────────────────────────────────────────────────────── */
-function _spotlight(selector) {
+function _spotlight(selector, label) {
   const sp = _getEl('oa-tut-spotlight');
-  if (!selector) { sp.style.display = 'none'; return; }
+  const lb = document.getElementById('oa-tut-sp-label');
+  if (!selector) {
+    sp.style.display = 'none';
+    if (lb) lb.classList.remove('vis');
+    return;
+  }
   const el = document.querySelector(selector);
-  if (!el) { sp.style.display = 'none'; return; }
+  if (!el) {
+    sp.style.display = 'none';
+    if (lb) lb.classList.remove('vis');
+    return;
+  }
   const r = el.getBoundingClientRect();
-  if (!r.width) { sp.style.display = 'none'; return; }
+  if (!r.width) {
+    sp.style.display = 'none';
+    if (lb) lb.classList.remove('vis');
+    return;
+  }
+  // Flash on each new target
+  sp.classList.add('flash');
+  setTimeout(() => sp.classList.remove('flash'), 220);
   const pad = 6;
+  const bc2 = _bottomClearance();
+  const maxBottom = window.innerHeight - bc2 - pad;
+  const spotTop = r.top - pad;
+  const spotH   = Math.min(r.height + pad * 2, maxBottom - spotTop);
   sp.style.display = 'block';
-  sp.style.top    = (r.top - pad) + 'px';
+  sp.style.top    = spotTop + 'px';
   sp.style.left   = (r.left - pad) + 'px';
   sp.style.width  = (r.width + pad * 2) + 'px';
-  sp.style.height = (r.height + pad * 2) + 'px';
+  sp.style.height = spotH + 'px';
+
+  // FOCUS label — positioned below spotlight, or above if too low
+  if (lb && label) {
+    const lbBottom = spotTop + spotH + 6;
+    const lbTop = lbBottom > window.innerHeight - 60 - _bottomClearance()
+      ? spotTop - 22 : lbBottom;
+    lb.style.top  = lbTop + 'px';
+    lb.style.left = (r.left - pad) + 'px';
+    lb.textContent = '▶ ' + label;
+    lb.classList.add('vis');
+  } else if (lb) {
+    lb.classList.remove('vis');
+  }
 }
 
 /* ── Card positioning ─────────────────────────────────────────────────── */
+
+/* ── Bottom clearance — demo bar / any fixed bottom bar ─────────── */
+function _bottomClearance() {
+  const bar = document.getElementById('oa-demo-bar');
+  return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 4 : 0;
+}
+
 function _positionCard(card, position, target) {
-  const vw = window.innerWidth, vh = window.innerHeight;
+  const vw = window.innerWidth, rawVh = window.innerHeight;
+  const bc = _bottomClearance();            // height of demo bar (if any)
+  const vh = rawVh - bc;                    // usable vertical space
   const cw = 560, ch = card.offsetHeight || 400;
 
-  // Mobile: CSS @media handles layout — skip JS positioning
-  if (vw <= 600) return;
+  // On mobile, update CSS bottom offset to clear demo bar
+  if (vw <= 600) {
+    card.style.bottom = (20 + bc) + 'px';
+    return;
+  }
 
   if (position === 'center' || !target) {
     card.style.top  = Math.round((vh - ch) / 2) + 'px';
@@ -955,7 +1044,12 @@ function _renderCard() {
 
   // Position after render (so offsetHeight is known)
   requestAnimationFrame(() => {
-    _spotlight(s.target);
+    const _spLabel = {
+      company_list:'Company List',stats_bar:'Pipeline Filters',
+      company_panel:'Left Panel',outreach_angle:'Left Panel',
+      ai_bar:'AI Query Bar',compose:'Compose Button'
+    }[s.id] || null;
+    _spotlight(s.target, _spLabel);
     _positionCard(card, s.card, s.target);
   });
 }

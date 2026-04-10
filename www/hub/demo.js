@@ -215,15 +215,20 @@ export function showDemoBanner() {
     </style>
     <span>⚠ DEMO MODE — Fictional sample data · No live database connection</span>
     <button class="db-btn" id="oa-demo-signin-btn">Sign In for Live Intelligence →</button>
+    <button class="db-btn" id="oa-demo-signout-btn" title="Exit demo, return to login">← Sign Out</button>
     <button class="db-btn" onclick="window._oaDoom&&window._oaDoom()" title="This is fine." style="letter-spacing:.04em">🔫 Doom</button>
     <button class="db-btn" style="opacity:.5" onclick="document.getElementById('oa-demo-bar').remove()">✕</button>
   `;
   document.body.appendChild(bar);
   document.getElementById('oa-demo-signin-btn')?.addEventListener('click',()=>{
     exitDemoMode();
-    // Trigger Google OAuth directly
     if(typeof window.oaGoogleSignIn==='function') window.oaGoogleSignIn();
     else location.reload();
+  });
+  document.getElementById('oa-demo-signout-btn')?.addEventListener('click',()=>{
+    exitDemoMode();
+    // Return to login/demo-select screen
+    location.reload();
   });
   const pill = document.getElementById('signOutPill');
   if(pill) pill.style.bottom='36px';
