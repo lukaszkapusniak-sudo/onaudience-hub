@@ -1,4 +1,4 @@
-import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d10';
+import { LANG_META, STEP_I18N } from './tutorial-i18n.js?v=20260410d11';
 /* ═══ tutorial.js — onAudience Hub v2 — In-Game Tutorial ═══
    Self-contained. Reads from/writes to localStorage only.
    Never touches S, never calls hub functions (except oaGmailConnect via window).
@@ -455,6 +455,9 @@ function _showKonamiOverlay() {
     </div>
     <button class="kn-btn" id="kn-email-btn">
       📧 Send Meeting Request
+    </button>
+    <button class="kn-btn" onclick="document.getElementById('oa-konami').remove();window._oaDoom&&window._oaDoom();" style="border-color:#c00;color:#c00;background:rgba(200,0,0,.08)">
+      💀 PLAY DOOM
     </button>
     <div class="kn-dismiss" onclick="document.getElementById('oa-konami').remove()">
       [ press ESC or click anywhere to close ]

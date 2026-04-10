@@ -3,9 +3,9 @@
    Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { enterDemoMode, isDemoMode } from './demo.js?v=20260410d10';
-import { SB_URL, SB_KEY } from './config.js?v=20260410d10';
-import { authHdr } from './utils.js?v=20260410d10';
+import { enterDemoMode, isDemoMode } from './demo.js?v=20260410d11';
+import { SB_URL, SB_KEY } from './config.js?v=20260410d11';
+import { authHdr } from './utils.js?v=20260410d11';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
@@ -183,9 +183,27 @@ export function renderLoginScreen() {
     </svg>
     Sign in with Google
   </button>
-  
+
+  <div style="display:flex;align-items:center;gap:10px;margin:16px 0 4px">
+    <div style="flex:1;height:1px;background:var(--rule)"></div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--t4);text-transform:uppercase;letter-spacing:.06em">or</span>
+    <div style="flex:1;height:1px;background:var(--rule)"></div>
+  </div>
+
+  <button onclick="window.oaEnterDemo()" style="
+    width:100%;height:36px;border:1px solid var(--rule);border-radius:2px;
+    background:transparent;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--t3);
+    transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px;
+    margin-top:4px;
+  " onmouseover="this.style.borderColor='var(--g)';this.style.color='var(--g)'"
+     onmouseout="this.style.borderColor='var(--rule)';this.style.color='var(--t3)'">
+    👁 Try Demo — no account needed
+  </button>
+
   <div class="oa-err" id="oa-err"></div>
-  <div class="oa-ver">Hub v2.4 · onAudience</div>
+  <div class="oa-ver">Hub v2.4 · onAudience · <span style="cursor:pointer;opacity:.4" onclick="window._oaDoom&&window._oaDoom()" title="↑↑↓↓←→←→BA">💀</span></div>
 </div>`;
 }
 
