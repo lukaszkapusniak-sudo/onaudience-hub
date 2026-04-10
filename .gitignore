@@ -1,3 +1,6 @@
+# uv (Python — scripts/audit_css.py)
+.venv/
+
 # Build artifacts
 www/files*.zip
 www/files/
@@ -5,6 +8,12 @@ node_modules/
 www/files*/
 www/*.zip
 www/hub/*.zip
+
+# Turborepo
+.turbo/
+
+# Vite
+frontend/dist/
 
 # Test artifacts
 playwright-report/

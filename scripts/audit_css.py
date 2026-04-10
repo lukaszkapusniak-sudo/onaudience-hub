@@ -77,8 +77,20 @@ REQUIRED = [
     ('.vf-card{',              'Company finder result card'),
     ('.vf-chip{',              'Company finder quick chips'),
 ]
+def _css_compact(s: str) -> str:
+    return "".join(s.split())
+
+
+def component_present(css_text: str, selector: str) -> bool:
+    """Match `.foo{` or `.foo {` in source; match complex selectors without relying on exact whitespace."""
+    if selector.endswith("{"):
+        base = selector[:-1].strip()
+        return re.search(re.escape(base) + r"\s*\{", css_text) is not None
+    return _css_compact(selector) in _css_compact(css_text)
+
+
 for selector, name in REQUIRED:
-    if selector not in css:
+    if not component_present(css, selector):
         issues.append(f"Missing CSS component: {name} ({selector})")
 
 # ── 4. Typography checks — key values we set ─────────────────────────────

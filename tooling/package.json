@@ -1,0 +1,11 @@
+{
+  "name": "@onaudience/tooling",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Repo-root lint / format / tsc — run via Turborepo from the monorepo root",
+  "scripts": {
+    "lint": "node run-root.mjs lint",
+    "format:check": "node run-root.mjs format:check",
+    "typecheck": "node run-root.mjs typecheck:root"
+  }
+}

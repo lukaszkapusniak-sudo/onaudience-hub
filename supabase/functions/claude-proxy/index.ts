@@ -16,7 +16,7 @@
 
 const ALLOWED_ORIGINS = [
   'https://lukaszkapusniak-sudo.github.io',
-  'http://localhost',          // local dev
+  'http://localhost', // local dev
   'http://127.0.0.1',
 ];
 
@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') ?? '';
 
   // ── CORS preflight ──────────────────────────────────────────────
-  const allowed = ALLOWED_ORIGINS.some(o => origin.startsWith(o));
+  const allowed = ALLOWED_ORIGINS.some((o) => origin.startsWith(o));
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -65,10 +65,13 @@ Deno.serve(async (req: Request) => {
   // ── Read key from Supabase secret ───────────────────────────────
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Proxy not configured — ANTHROPIC_API_KEY secret missing' }), {
-      status: 503,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: 'Proxy not configured — ANTHROPIC_API_KEY secret missing' }),
+      {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    );
   }
 
   // ── Forward to Anthropic with retries on 429/529 ────────────────
@@ -91,8 +94,10 @@ Deno.serve(async (req: Request) => {
 
     if (res.status === 429 || res.status === 529) {
       const wait = Math.min(2000 * Math.pow(2, attempt), 10000);
-      console.warn(`[claude-proxy] ${res.status} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
-      await new Promise(r => setTimeout(r, wait));
+      console.warn(
+        `[claude-proxy] ${res.status} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`,
+      );
+      await new Promise((r) => setTimeout(r, wait));
       continue;
     }
 
@@ -108,10 +113,12 @@ Deno.serve(async (req: Request) => {
   }
 
   return new Response(
-    JSON.stringify({ error: `Anthropic API overloaded after ${MAX_RETRIES} retries (status ${lastStatus})` }),
+    JSON.stringify({
+      error: `Anthropic API overloaded after ${MAX_RETRIES} retries (status ${lastStatus})`,
+    }),
     {
       status: 503,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    },
   );
 });

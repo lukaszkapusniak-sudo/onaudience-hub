@@ -6,8 +6,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  quality:
+    name: Lint, typecheck & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint, format & typecheck
+        run: npm run check
+
   api-tests:
     name: API & Unit Tests (no auth)
+    needs: quality
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -24,8 +39,8 @@ jobs:
         run: npx playwright test --project=api-only --reporter=list,html
         env:
           LEMLIST_API_KEY: ${{ secrets.LEMLIST_API_KEY }}
-          SB_ANON_KEY:     ${{ secrets.SB_ANON_KEY }}
-          SB_URL:          ${{ secrets.SB_URL }}
+          SB_ANON_KEY: ${{ secrets.SB_ANON_KEY }}
+          SB_URL: ${{ secrets.SB_URL }}
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -36,6 +51,7 @@ jobs:
 
   browser-tests:
     name: Browser Tests (auth required)
+    needs: quality
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -51,11 +67,11 @@ jobs:
       - name: Run browser tests
         run: npx playwright test --project=chromium --reporter=list,html
         env:
-          OA_EMAIL:        ${{ secrets.OA_EMAIL }}
-          OA_PASSWORD:     ${{ secrets.OA_PASSWORD }}
+          OA_EMAIL: ${{ secrets.OA_EMAIL }}
+          OA_PASSWORD: ${{ secrets.OA_PASSWORD }}
           LEMLIST_API_KEY: ${{ secrets.LEMLIST_API_KEY }}
-          SB_ANON_KEY:     ${{ secrets.SB_ANON_KEY }}
-          SB_URL:          ${{ secrets.SB_URL }}
+          SB_ANON_KEY: ${{ secrets.SB_ANON_KEY }}
+          SB_URL: ${{ secrets.SB_URL }}
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
