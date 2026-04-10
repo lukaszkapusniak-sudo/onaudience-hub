@@ -3,9 +3,9 @@
    Access control is enforced by Supabase RLS — not client-side.
    ════════════════════════════════════════════════════ */
 
-import { enterDemoMode, isDemoMode } from './demo.js?v=20260409d3';
-import { SB_URL, SB_KEY } from './config.js?v=20260409d3';
-import { authHdr } from './utils.js?v=20260409d3';
+import { enterDemoMode, isDemoMode } from './demo.js?v=20260409d4';
+import { SB_URL, SB_KEY } from './config.js?v=20260409d4';
+import { authHdr } from './utils.js?v=20260409d4';
 
 /* ── JS mutex ──────────────────────────────────────── */
 function makeMutex() {
@@ -183,18 +183,9 @@ export function renderLoginScreen() {
     </svg>
     Sign in with Google
   </button>
-  <div style="margin:10px 0;display:flex;align-items:center;gap:8px;">
-    <div style="flex:1;height:1px;background:var(--rule)"></div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--t4);letter-spacing:.06em">OR</div>
-    <div style="flex:1;height:1px;background:var(--rule)"></div>
-  </div>
-  <button class="oa-google" id="oa-demo-btn" onclick="window.oaEnterDemo()"
-    style="background:var(--surf3);border-color:rgba(122,66,0,.3);color:#7A4200;">
-    <span style="font-size:16px">👁</span>
-    Try Demo — No sign-in required
-  </button>
+  
   <div class="oa-err" id="oa-err"></div>
-  <div class="oa-ver">Hub v2.4 · onAudience · Demo available without account</div>
+  <div class="oa-ver">Hub v2.4 · onAudience</div>
 </div>`;
 }
 

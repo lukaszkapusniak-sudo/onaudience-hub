@@ -213,11 +213,10 @@ export function showDemoBanner() {
     }
     #oa-demo-bar .db-btn:hover{background:rgba(255,255,255,.28);}
     </style>
-    <span>⚠ DEMO MODE — Fictional sample data · No live database connection</span>
-    <button class="db-btn" id="oa-demo-signin-btn">Sign In for Live Intelligence →</button>
-    <button class="db-btn" id="oa-demo-signout-btn" title="Exit demo, return to login">← Sign Out</button>
-    <button class="db-btn" onclick="window._oaDoom&&window._oaDoom()" title="This is fine." style="letter-spacing:.04em">🔫 Doom</button>
-    <button class="db-btn" style="opacity:.5" onclick="document.getElementById('oa-demo-bar').remove()">✕</button>
+    <span>⚠ DEMO MODE — Sample data only · Not connected to live database</span>
+        <button class="db-btn" id="oa-demo-restart-btn" title="Restart demo + tutorial">↺ Restart Demo</button>
+    <button class="db-btn" id="oa-demo-signin-btn">🔐 Sign In →</button>
+        <button class="db-btn" style="opacity:.5" onclick="document.getElementById('oa-demo-bar').remove()">✕</button>
   `;
   document.body.appendChild(bar);
   document.getElementById('oa-demo-signin-btn')?.addEventListener('click',()=>{
@@ -225,32 +224,34 @@ export function showDemoBanner() {
     if(typeof window.oaGoogleSignIn==='function') window.oaGoogleSignIn();
     else location.reload();
   });
-  document.getElementById('oa-demo-signout-btn')?.addEventListener('click',()=>{
-    exitDemoMode();
-    // Return to login/demo-select screen
+  document.getElementById('oa-demo-restart-btn')?.addEventListener('click',()=>{
+    ['oaTutorialDone','oaTutXP','oaAchievements','oaTutStep','oaTutLangs']
+      .forEach(k => localStorage.removeItem(k));
     location.reload();
-  });
-  const pill = document.getElementById('signOutPill');
+  });  const pill = document.getElementById('signOutPill');
   if(pill) pill.style.bottom='36px';
 }
 
 /* ── Nav DEMO badge ──────────────────────────────────────────── */
 export function patchNavForDemo() {
-  const check = setInterval(()=>{
-    const nb = document.getElementById('userBadge');
-    if(nb){
-      nb.innerHTML=`<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;color:#7A4200;background:#FEF2E0;border:1px solid rgba(122,66,0,.35);border-radius:2px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase;">DEMO</span>`;
-      // Hide live-only nav buttons
-      const composeBtn = document.getElementById('navComposeBtn');
-      if(composeBtn) composeBtn.style.display='none';
-      const llKeyBtn = document.getElementById('llKeyBtn');
-      if(llKeyBtn) llKeyBtn.style.display='none';
-      // Hide Lemlist tab (requires live DB + API key)
-      const llTab = document.getElementById('tabLemlist');
-      if(llTab) llTab.style.display='none';
-      clearInterval(check);
+  let _tries = 0;
+  const _patch = () => {
+    _tries++;
+    const nb = document.getElementById('nav-user-badge');
+    if (nb && !nb.dataset.demo) {
+      nb.innerHTML = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;color:#7A4200;background:#FEF2E0;border:1px solid rgba(122,66,0,.35);border-radius:2px;padding:2px 7px;letter-spacing:.06em;text-transform:uppercase;margin-right:4px;">DEMO</span>';
+      nb.dataset.demo = '1';
     }
-  },300);
+    ['navComposeBtn','llKeyBtn','gmailNavBtn','tabLemlist'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-right .btn.p').forEach(b => {
+      if (b.textContent.includes('Research')) b.style.display = 'none';
+    });
+    if (_tries < 20) setTimeout(_patch, 250);
+  };
+  _patch();
 }
 
 /* ── Doom Easter Egg ─────────────────────────────────────────────── */
